@@ -4,6 +4,4 @@ alabaster
 numpydoc
 scipy
 numpy
-ecos
-scs
 recommonmark
