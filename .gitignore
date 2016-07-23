@@ -88,3 +88,6 @@ ENV/
 # Rope project settings
 .ropeproject
 site/
+
+# Mo stuff
+.DS_Store
