@@ -63,7 +63,7 @@ class sum(LinOp):
         float
             Magnitude of outputs.
         """
-        return sum(input_mags)
+        return np.sum(input_mags)
 
 class copy(sum):
     def __init__(self, shape, implem=None):

@@ -107,6 +107,24 @@ class ProxFn(object):
         """
         return self.__class__.__name__
 
+    def __add__(self, other):
+        """ProxFn + ProxFn(s).
+        """
+        if isinstance(other, ProxFn):
+            return [self, other]
+        elif type(other) == list:
+            return [self] + other
+        else:
+            return NotImplemented
+
+    def __radd__(self, other):
+        """Called for list + ProxFn.
+        """
+        if type(other) == list:
+            return other + [self]
+        else:
+            raise NotImplemented
+
     def __mul__(self, other):
         """ProxFn * Number.
         """

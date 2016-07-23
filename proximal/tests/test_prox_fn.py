@@ -269,3 +269,12 @@ class TestProxFn(BaseTest):
         fn = sum_squares(x, b=1)/2
         val = fn.prox(1.0, 0)
         self.assertItemsAlmostEqual([val], [0.5])
+
+        fn1 = sum_squares(x, b=1)
+        fn2 = norm1(x)
+        arr = fn1 + fn2
+        self.assertEqual(type(arr), list)
+        self.assertEqual(len(arr), 2)
+        arr = arr + fn2
+        self.assertEqual(type(arr), list)
+        self.assertEqual(len(arr), 3)

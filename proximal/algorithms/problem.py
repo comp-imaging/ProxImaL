@@ -26,7 +26,7 @@ class Problem(object):
                  absorb=True, merge=True,
                  try_split=True, try_fast_norm=True, scale=True,
                  psi_fns=None, omega_fns=None,
-                 lin_solver="cg", solver="admm"):
+                 lin_solver="cg", solver="pc"):
         self.prox_fns = prox_fns
         self.implem = implem
         self.try_diagonalize = try_diagonalize # Auto diagonalize?

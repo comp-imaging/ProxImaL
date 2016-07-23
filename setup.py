@@ -2,6 +2,7 @@ from setuptools import setup
 
 setup(
     name='proximal',
+    version='0.1.0', 
     packages=['proximal',
               'proximal.prox_fns',
               'proximal.lin_ops',
@@ -15,7 +16,8 @@ setup(
                     'proximal.halide': ['src/*.cpp', 'src/core/*', 'src/external/*', 'src/fft/*']},
     install_requires=["numpy >= 1.9",
                       "scipy >= 0.15",
-                      "nose",
-                      "cvxpy"],
+                      "cvxpy",
+                      "cv2",
+                      "PIL"],
     use_2to3=True,
 )

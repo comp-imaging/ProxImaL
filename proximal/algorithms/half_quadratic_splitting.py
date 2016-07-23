@@ -26,7 +26,8 @@ def partition(prox_fns, try_diagonalize=True):
 
 def solve(psi_fns, omega_fns,
           rho_0 = 1.0, rho_scale = np.sqrt(2.0) * 2.0, rho_max = 2**8,
-          max_iters = -1, max_inner_iters = 100, x0 = None, eps_rel=1e-6,
+          max_iters = -1, max_inner_iters = 100, x0 = None,
+          eps_rel=1e-3, eps_abs=1e-3,
           lin_solver="cg", lin_solver_options=None,
           try_diagonalize=True, scaled=False, try_fast_norm=False,
           metric=None, convlog=None, verbose=0):
