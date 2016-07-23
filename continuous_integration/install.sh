@@ -7,12 +7,6 @@
 set -e
 
 sudo apt-get update -qq
-if [[ "$INSTALL_ATLAS" == "true" ]]; then
-    #sudo apt-get install -qq libatlas-base-dev
-    sudo apt-get install -qq libatlas-base-dev gfortran
-    export ATLAS="/usr/lib/atlas-base/libatlas.so"
-fi
-
 if [[ "$DISTRIB" == "conda" ]]; then
     # Deactivate the travis-provided virtual environment and setup a
     # conda-based environment instead
