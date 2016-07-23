@@ -45,7 +45,10 @@ plt.show()
 ```
 ![Optimization results](https://gist.githubusercontent.com/SteveDiamond/592094bdbd7d9d3f8606383d84db3de5/raw/47ef609f995ee92ab7d9af1d4ad47c60a9764b65/results.png)
 
+The example above uses simple, well-known priors. Much better results can be obtained using the more sophisticated priors provided in ProxImaL.
+
 ProxImaL was designed and implemented by Felix Heide, Steven Diamond, Matthias Neissner, and Jonathan Ragan-Kelley.
+See [the accompanying paper](http://web.stanford.edu/~stevend2/pdf/proximal.pdf) for a full discussion of ProxImaL's design and examples of state-of-the-art results obtained with ProxImaL.
 
 A tutorial and other documentation can be found at [proximal-lang.org](http://www.proximal-lang.org/).
 
