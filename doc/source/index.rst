@@ -54,7 +54,7 @@ For example, the following code denoises an image using simple sparse gradient a
 
 The example above uses simple, well-known priors. Much better results can be obtained using the more sophisticated priors provided in ProxImaL.
 
-ProxImaL was designed and implemented by Felix Heide, Steven Diamond, Matthias Neissner, and Jonathan Ragan-Kelley.
+ProxImaL was designed and implemented by Felix Heide and Steven Diamond.
 See `the accompanying paper <http://web.stanford.edu/~stevend2/pdf/proximal.pdf>`_ for a full discussion of ProxImaL's design and examples of state-of-the-art results obtained with ProxImaL.
 
 .. toctree::
@@ -68,18 +68,14 @@ See `the accompanying paper <http://web.stanford.edu/~stevend2/pdf/proximal.pdf>
 
     tutorial/index
 
-.. toctree::
-   :hidden:
+..
+   .. toctree::
+      :hidden:
 
-   examples/index
+      examples/index
 
-.. toctree::
-   :maxdepth: 1
-   :hidden:
+..
+   .. toctree::
+      :hidden:
 
-   faq/index
-
-.. toctree::
-   :hidden:
-
-   citing/index
+      citing/index

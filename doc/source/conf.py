@@ -75,7 +75,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'ProxImaL'
-copyright = u'2016, Felix Heide, Steven Diamond, Matthias Neissner, Jonathan Ragan-Kelley' 
+copyright = u'2016, Felix Heide and Steven Diamond' 
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -146,7 +146,7 @@ html_theme_options = {
    'github_repo': 'ProxImaL',
    'github_banner': True,
    'github_type': 'star',
-   'travis_button': True,
+  # 'travis_button': True,
    'analytics_id': 'UA-50248335-1',
 }
 
@@ -236,7 +236,7 @@ latex_elements = {
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
   ('index', 'proximal.tex', u'ProxImaL Documentation',
-   u'Felix Heide, Steven Diamond, Matthias Neissner, Jonathan Ragan-Kelley', 'manual'),
+   u'Felix Heide and Steven Diamond', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -266,7 +266,7 @@ latex_documents = [
 # (source start file, name, description, authors, manual section).
 man_pages = [
     ('index', 'proximal', u'ProxImaL Documentation',
-     [u'Felix Heide, Steven Diamond, Matthias Neissner, Jonathan Ragan-Kelley'], 1)
+     [u'Felix Heide and Steven Diamond'], 1)
 ]
 
 # If true, show URL addresses after external links.
@@ -280,7 +280,7 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
   ('index', 'proximal', u'ProxImaL Documentation',
-   u'Felix Heide, Steven Diamond, Matthias Neissner, Jonathan Ragan-Kelley', 'ProxImaL',
+   u'Felix Heide and Steven Diamond', 'ProxImaL',
    'A domain-specific language for image optimization.',
    'Miscellaneous'),
 ]
