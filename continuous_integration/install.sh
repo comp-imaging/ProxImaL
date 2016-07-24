@@ -17,13 +17,13 @@ if [[ "$DISTRIB" == "conda" ]]; then
     wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh \
         -O miniconda.sh
     chmod +x miniconda.sh && ./miniconda.sh -b
-    export PATH=/home/travis/miniconda/bin:$PATH
+    export PATH=/home/travis/miniconda2/bin:$PATH
     conda update --yes conda
 
     # Configure the conda environment and put it in the path using the
     # provided versions
     conda create -n testenv --yes python=$PYTHON_VERSION pip nose \
-        numpy=$NUMPY_VERSION scipy=$SCIPY_VERSION cv2 PIL
+        numpy=$NUMPY_VERSION scipy=$SCIPY_VERSION pil
     source activate testenv
 
     # if [[ "$INSTALL_MKL" == "true" ]]; then

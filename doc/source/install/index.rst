@@ -3,6 +3,9 @@
 Install Guide
 =============
 
+Anaconda install
+----------------
+
 The easiest way to install ProxImaL and its dependencies is using `Anaconda`_.
 To install ProxImaL without `Anaconda`_, see the section on installation from source.
 
@@ -10,19 +13,17 @@ To install ProxImaL without `Anaconda`_, see the section on installation from so
 
    ::
 
-      conda install numpy scipy pil pip
+      conda install numpy scipy pil pip opencv
 
-2. Install `OpenCV version 2.* <http://opencv.org/downloads.html>`_. We recommend installing using a package manager like apt or homebrew.
+2. (Optional) Install `Halide`_ and define the ``HALIDE_PATH`` environment variable to point to the installation. Also, add the `Halide`_ binary to your ``LD_LIBRARY_PATH`` for Linux or ``DYLD_LIBRARY_PATH`` for Mac OS X. 
 
-3. (Optional) Install `Halide`_ and define the ``HALIDE_PATH`` environment variable to point to the installation. Also, add the `Halide`_ binary to your ``LD_LIBRARY_PATH`` for Linux or ``DYLD_LIBRARY_PATH`` for Mac OS X. 
-
-4. Install ``proximal`` with ``pip`` from the command-line.
+3. Install ``proximal`` with ``pip`` from the command-line.
 
    ::
 
        pip install proximal 
 
-5. (Optional) Test the installation with ``nose``. The tests require that you have `CVXPY`_ installed.
+4. (Optional) Test the installation with ``nose``. The tests require that you have `CVXPY`_ installed.
 
   ::
 

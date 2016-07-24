@@ -1,4 +1,5 @@
 import numpy as np
+import math
 from proximal.lin_ops import CompGraph, scale, Variable, vstack
 from proximal.prox_fns import least_squares
 from proximal.utils.timings_log import TimingsLog, TimingsEntry
@@ -25,7 +26,7 @@ def partition(prox_fns, try_diagonalize=True):
     return psi_fns, quad_funcs
 
 def solve(psi_fns, omega_fns,
-          rho_0 = 1.0, rho_scale = np.sqrt(2.0) * 2.0, rho_max = 2**8,
+          rho_0 = 1.0, rho_scale = math.sqrt(2.0) * 2.0, rho_max = 2**8,
           max_iters = -1, max_inner_iters = 100, x0 = None,
           eps_rel=1e-3, eps_abs=1e-3,
           lin_solver="cg", lin_solver_options=None,

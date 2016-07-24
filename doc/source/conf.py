@@ -16,7 +16,7 @@ import sys, os
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-# To import CVXPY:
+# To import ProxImaL:
 sys.path.insert(0, os.path.abspath('../..'))
 # To import sphinx extensions we've put in the repository:
 sys.path.insert(0, os.path.abspath('../sphinxext'))
@@ -37,6 +37,7 @@ extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.coverage',
               'sphinx.ext.mathjax',
               'sphinx.ext.viewcode',
+              'sphinx.ext.napoleon',
               'numpydoc']
 
 # To suppress autodoc/numpydoc warning.
@@ -58,7 +59,8 @@ class Mocked(object):
         else:
             return None
 
-MOCK_MODULES = ['numpy', 'scipy']
+MOCK_MODULES = ['numpy', 'numpy.fft', 'scipy', 'cv2', 'numpy.core',
+                'scipy.optimize', 'scipy.sparse', 'scipy.sparse.linalg']
 sys.modules.update((mod_name, Mocked()) for mod_name in MOCK_MODULES)
 
 # Add any paths that contain templates here, relative to this directory.

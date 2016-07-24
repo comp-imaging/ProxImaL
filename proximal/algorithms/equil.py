@@ -1,6 +1,7 @@
 import numpy as np
+import math
 
-def equil(K, iters=50, gamma=1e-1, M=np.log(1e4)):
+def equil(K, iters=50, gamma=1e-1, M=math.log(1e4)):
     """Computes diagonal D, E so that DKE is approximately equilibrated.
     """
     m = K.output_size
