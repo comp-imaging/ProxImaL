@@ -16,7 +16,6 @@ setup(
                     'proximal.halide': ['src/*.cpp', 'src/core/*', 'src/external/*', 'src/fft/*']},
     install_requires=["numpy >= 1.9",
                       "scipy >= 0.15",
-                      "cvxpy",
                       "cv2",
                       "PIL"],
     use_2to3=True,
