@@ -74,8 +74,7 @@ See `the accompanying paper <http://web.stanford.edu/~stevend2/pdf/proximal.pdf>
 
       examples/index
 
-..
-   .. toctree::
-      :hidden:
+.. toctree::
+   :hidden:
 
-      citing/index
+   publications/index

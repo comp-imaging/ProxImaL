@@ -24,7 +24,7 @@ class TestAlgs(BaseTest):
         self.assertAlmostEqual(sltn, 0)
 
         prox_fns = [norm1(X), sum_squares(X, b=B)]
-        sltn = admm.solve(prox_fns, [], 1.0)
+        sltn = admm.solve(prox_fns, [], 1.0, eps_rel=1e-5, eps_abs=1e-5)
 
         cvx_X = cvx.Variable(10, 5)
         cost = cvx.sum_squares(cvx_X - B) + cvx.norm(cvx_X, 1)
@@ -34,20 +34,20 @@ class TestAlgs(BaseTest):
         self.assertAlmostEqual(sltn, prob.value)
 
         psi_fns, omega_fns = admm.partition(prox_fns)
-        sltn = admm.solve(psi_fns, omega_fns, 1.0)
+        sltn = admm.solve(psi_fns, omega_fns, 1.0, eps_rel=1e-5, eps_abs=1e-5)
         self.assertItemsAlmostEqual(X.value, cvx_X.value, places=2)
         self.assertAlmostEqual(sltn, prob.value)
 
         prox_fns = [norm1(X)]
         quad_funcs = [sum_squares(X, b=B)]
-        sltn = admm.solve(prox_fns, quad_funcs, 1.0)
+        sltn = admm.solve(prox_fns, quad_funcs, 1.0, eps_rel=1e-5, eps_abs=1e-5)
         self.assertItemsAlmostEqual(X.value, cvx_X.value, places=2)
         self.assertAlmostEqual(sltn, prob.value)
 
         # With parameters for sum_squares
         prox_fns = [norm1(X)]
         quad_funcs = [sum_squares(X, b=B, alpha=0.1, beta=2., gamma=1, c=B)]
-        sltn = admm.solve(prox_fns, quad_funcs, 1.0)
+        sltn = admm.solve(prox_fns, quad_funcs, 1.0, eps_rel=1e-5, eps_abs=1e-5)
 
         cvx_X = cvx.Variable(10, 5)
         cost = 0.1*cvx.sum_squares(2*cvx_X - B) + cvx.sum_squares(cvx_X) + \
@@ -60,7 +60,7 @@ class TestAlgs(BaseTest):
         prox_fns = [norm1(X)]
         quad_funcs = [sum_squares(X - B, alpha=0.1, beta=2., gamma=1, c=B)]
         quad_funcs[0] = absorb_offset(quad_funcs[0])
-        sltn = admm.solve(prox_fns, quad_funcs, 1.0)
+        sltn = admm.solve(prox_fns, quad_funcs, 1.0, eps_rel=1e-5, eps_abs=1e-5)
         self.assertItemsAlmostEqual(X.value, cvx_X.value, places=2)
         self.assertAlmostEqual(sltn, prob.value, places=3)
 
@@ -93,17 +93,17 @@ class TestAlgs(BaseTest):
         X = Variable((10,5))
         B = np.reshape(np.arange(50), (10,5))
         prox_fns = [sum_squares(X, b=B)]
-        sltn = pc.solve(prox_fns, [], 1.0, 1.0, 1.0)
+        sltn = pc.solve(prox_fns, [], 1.0, 1.0, 1.0, eps_rel=1e-5, eps_abs=1e-5)
         self.assertItemsAlmostEqual(X.value, B, places=2)
         self.assertAlmostEqual(sltn, 0)
 
         prox_fns = [norm1(X, b=B, beta=2)]
-        sltn = pc.solve(prox_fns, [], 1.0, 1.0, 1.0)
+        sltn = pc.solve(prox_fns, [], 1.0, 1.0, 1.0, eps_rel=1e-5, eps_abs=1e-5)
         self.assertItemsAlmostEqual(X.value, B/2., places=2)
         self.assertAlmostEqual(sltn, 0, places=2)
 
         prox_fns = [norm1(X), sum_squares(X, b=B)]
-        sltn = pc.solve(prox_fns, [], 0.5, 1.0, 1.0)
+        sltn = pc.solve(prox_fns, [], 0.5, 1.0, 1.0, eps_rel=1e-5, eps_abs=1e-5)
 
         cvx_X = cvx.Variable(10, 5)
         cost = cvx.sum_squares(cvx_X - B) + cvx.norm(cvx_X, 1)
@@ -216,17 +216,17 @@ class TestAlgs(BaseTest):
         X = Variable((10,5))
         B = np.reshape(np.arange(50), (10,5))
         prox_fns = [sum_squares(X, b=B)]
-        sltn = ladmm.solve(prox_fns, [], 0.1, max_iters=500)
+        sltn = ladmm.solve(prox_fns, [], 0.1, max_iters=500, eps_rel=1e-5, eps_abs=1e-5)
         self.assertItemsAlmostEqual(X.value, B, places=2)
         self.assertAlmostEqual(sltn, 0)
 
         prox_fns = [norm1(X, b=B, beta=2)]
-        sltn = ladmm.solve(prox_fns, [], 0.1, max_iters=500)
+        sltn = ladmm.solve(prox_fns, [], 0.1, max_iters=500, eps_rel=1e-5, eps_abs=1e-5)
         self.assertItemsAlmostEqual(X.value, B/2., places=2)
         self.assertAlmostEqual(sltn, 0, places=2)
 
         prox_fns = [norm1(X), sum_squares(X, b=B)]
-        sltn = ladmm.solve(prox_fns, [], 0.1, max_iters=500)
+        sltn = ladmm.solve(prox_fns, [], 0.1, max_iters=500, eps_rel=1e-5, eps_abs=1e-5)
 
         cvx_X = cvx.Variable(10, 5)
         cost = cvx.sum_squares(cvx_X - B) + cvx.norm(cvx_X, 1)
@@ -236,7 +236,7 @@ class TestAlgs(BaseTest):
         self.assertAlmostEqual(sltn, prob.value)
 
         psi_fns, omega_fns = ladmm.partition(prox_fns)
-        sltn = ladmm.solve(psi_fns, omega_fns, 0.1, max_iters=500)
+        sltn = ladmm.solve(psi_fns, omega_fns, 0.1, max_iters=500, eps_rel=1e-5, eps_abs=1e-5)
         self.assertItemsAlmostEqual(X.value, cvx_X.value, places=2)
         self.assertAlmostEqual(sltn, prob.value)
 
