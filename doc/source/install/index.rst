@@ -9,11 +9,18 @@ Anaconda install
 The easiest way to install ProxImaL and its dependencies is using `Anaconda`_.
 To install ProxImaL without `Anaconda`_, see the section on installation from source.
 
-1. Install `Anaconda`_. Install all Python dependencies by running
+1. Install `Anaconda`_. On Linux and Mac OS X, install all Python dependencies by running
 
    ::
 
       conda install numpy scipy pil pip opencv
+
+   On Windows, install all Python dependencies by running
+
+   ::
+
+     conda install numpy scipy pil pip
+     conda install -c https://conda.binstar.org/menpo opencv
 
 2. (Optional) Install `Halide`_ and define the ``HALIDE_PATH`` environment variable to point to the installation. Also, add the `Halide`_ binary to your ``LD_LIBRARY_PATH`` for Linux or ``DYLD_LIBRARY_PATH`` for Mac OS X. 
 
