@@ -14,6 +14,12 @@ import cv2
 
 class TestLinOps(BaseTest):
 
+    def test_variable(self):
+        """Test basic variable creation.
+        """
+        var = Variable([2,2])
+        self.assertEqual((2,2), var.shape)
+
     def test_subsample(self):
         """Test subsample lin op.
         """

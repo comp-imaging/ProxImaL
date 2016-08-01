@@ -30,7 +30,7 @@ class LinOp(object):
         # Convert scalars to tuples.
         if np.isscalar(shape):
             shape = (shape,)
-        return shape
+        return tuple(shape)
 
     def variables(self):
         """Return the list of variables used in the LinOp.
