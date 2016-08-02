@@ -10,9 +10,8 @@ class patch_NLM(ProxFn):
     def __init__(self, lin_op, params=None, **kwargs):
 
         #Check for the shape
-        if not ( len(lin_op.shape) == 2 or len(lin_op.shape) == 3 or lin_op.shape[2] in [1,3] ):
-            print >> sys.stderr, "Error, NLM needs a 3 or 1 channel image."
-            sys.exit(1)
+        if not ( len(lin_op.shape) == 2 or len(lin_op.shape) == 3 and lin_op.shape[2] in [1,3] ):
+            raise ValueError('NLM needs a 3 or 1 channel image')
 
         self.params = params
         if params is None:
