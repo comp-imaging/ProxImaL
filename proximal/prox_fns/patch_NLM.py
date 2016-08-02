@@ -9,6 +9,10 @@ class patch_NLM(ProxFn):
     """
     def __init__(self, lin_op, params=None, **kwargs):
 
+        #Check for the shape
+        if not ( len(lin_op.shape) == 2 or len(lin_op.shape) == 3 and lin_op.shape[2] in [1,3] ):
+            raise ValueError('NLM needs a 3 or 1 channel image')
+
         self.params = params
         if params is None:
             self.sigma_fixed = 0.6
@@ -24,6 +28,10 @@ class patch_NLM(ProxFn):
             self.searchWindowSizeNLM = params[3]
             self.gamma_trans = params[4]
             self.prior = params[5]
+
+        #Force regular NLM for grayscale
+        if len(lin_op.shape) == 2 or len(lin_op.shape) == 3 and lin_op.shape[2] == 1:
+            self.prior = 0
 
         #Halide
         if len(lin_op.shape) == 3 and lin_op.shape[2] == 3:
