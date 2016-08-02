@@ -14,6 +14,17 @@ import cv2
 
 class TestLinOps(BaseTest):
 
+    def test_variable(self):
+        """Test Variable"""
+        var = Variable(3)
+        assert var.shape == (3,)
+        var = Variable((3,))
+        assert var.shape == (3,)
+        var = Variable((3, 2))
+        assert var.shape == (3, 2)
+        var = Variable([3, 2])
+        assert var.shape == (3, 2)
+
     def test_subsample(self):
         """Test subsample lin op.
         """
@@ -341,7 +352,7 @@ class TestLinOps(BaseTest):
         W = np.arange(10)
         W = np.reshape(W, (2,5))
         fn = mul_elemwise(W, x)
-        fn = fn + x + W 
+        fn = fn + x + W
         self.assertEquals(len(fn.input_nodes), 3)
         fn = CompGraph(fn)
         x = W.copy()
