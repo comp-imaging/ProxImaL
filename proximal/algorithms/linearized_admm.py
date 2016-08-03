@@ -1,6 +1,5 @@
 from __future__ import division
-from proximal.lin_ops import CompGraph, est_CompGraph_norm, scale, Variable, vstack
-from proximal.prox_fns import least_squares
+from proximal.lin_ops import CompGraph, est_CompGraph_norm, Variable, vstack
 from proximal.utils.timings_log import TimingsLog, TimingsEntry
 from invert import get_least_squares_inverse, max_diag_set
 import numpy as np
@@ -32,13 +31,12 @@ def partition(prox_fns, try_diagonalize=True):
             quad_ops.append(fn.beta * fn.lin_op)
             const_terms.append(fn.b.flatten())
 
-        stacked_ops = vstack(quad_ops)
         b = np.hstack(const_terms)
         # Get optimize inverse (tries spatial and frequency diagonalization)
         x_update = get_least_squares_inverse(quad_ops, b, try_diagonalize)
         omega_fns = [x_update]
 
-    psi_fns = [fn for fn in prox_fns if fn not in split_fn + quad_fns]
+    psi_fns = [func for func in prox_fns if func not in split_fn + quad_fns]
     return psi_fns, omega_fns
 
 
@@ -68,7 +66,6 @@ def solve(psi_fns, omega_fns, lmb=1.0, mu=None, quad_funcs=None,
     s = np.zeros(K.input_size)
 
     Kvzu = np.zeros(K.output_size)
-    vzu = np.zeros(K.input_size)
     v_prev = np.zeros(K.input_size)
     z_prev = np.zeros(K.output_size)
 
@@ -77,7 +74,7 @@ def solve(psi_fns, omega_fns, lmb=1.0, mu=None, quad_funcs=None,
     # Time iterations.
     iter_timing = TimingsEntry("LIN-ADMM iteration")
     # Convergence log for initial iterate
-    if convlog != None:
+    if convlog is not None:
         K.update_vars(v)
         objval = sum([fn.value for fn in prox_fns])
         convlog.record_objective(objval)
@@ -85,7 +82,7 @@ def solve(psi_fns, omega_fns, lmb=1.0, mu=None, quad_funcs=None,
 
     for i in range(max_iters):
         iter_timing.tic()
-        if convlog != None:
+        if convlog is not None:
             convlog.tic()
 
         v_prev[:] = v
@@ -122,11 +119,11 @@ def solve(psi_fns, omega_fns, lmb=1.0, mu=None, quad_funcs=None,
         r = Kv - z
         K.adjoint((1.0 / lmb) * (z - z_prev), s)
         eps_pri = np.sqrt(K.output_size) * eps_abs + eps_rel * \
-                          max([np.linalg.norm(Kv), np.linalg.norm(z)])
+            max([np.linalg.norm(Kv), np.linalg.norm(z)])
         eps_dual = np.sqrt(K.input_size) * eps_abs + eps_rel * np.linalg.norm(KTu) / (1.0 / lmb)
 
         # Convergence log
-        if convlog != None:
+        if convlog is not None:
             convlog.toc()
             K.update_vars(v)
             objval = sum([fn.value for fn in prox_fns])

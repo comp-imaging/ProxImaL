@@ -4,7 +4,6 @@ from __future__ import print_function
 import subprocess
 import os
 from ctypes import cdll
-import re
 import ctypes
 import sys
 import numpy as np
@@ -26,7 +25,9 @@ class Halide(object):
             #Only compiles the source --> generates conv.so file 
             Halide('conv.cpp')
 
-            #Compiles the source and runs function generator conv --> result is in numpy array output
+            #Compiles the source and runs function generator conv --> result is in
+            numpy array output
+
             Halide('conv.cpp').run(A,K,output) 
 
             or 
@@ -151,7 +152,8 @@ def gengen(generator_source, builddir='./build',
            target='host', generator_name=[], function_name=[], generator_param=[],
            external_source=[], external_libs=[], compile_flags=[],
            cleansource=True, verbose=True):
-    """ Will take .cpp containing one (or more) Generators, compile them, link them with libHalide, and run
+    """ Will take .cpp containing one (or more) Generators, compile them,
+        link them with libHalide, and run
         the resulting executable to produce a .o/.h expressing the Generator's
         function. Function name is the C function name for the result """
 
@@ -195,7 +197,8 @@ def gengen(generator_source, builddir='./build',
                 compile_flag_str += cf + ' '
 
         # Compile
-        cmd = 'g++ {0} -g -Wwrite-strings -std=c++11 -fno-rtti {1} {2} {3} {4} -lz -lpthread -ldl -o {5}'.format(
+        cmd = ("g++ {0} -g -Wwrite-strings -std=c++11 -fno-rtti {1} {2} {3} {4} "
+               " -lz -lpthread -ldl -o {5}").format(
             compile_flag_str, halid_incl, generator_source, generator_main, halide_lib, generator)
 
         if verbose:
@@ -217,7 +220,9 @@ def gengen(generator_source, builddir='./build',
         params = scan_params(header_file, function_name, verbose)
         if verbose:
             print('Found {0} buffers and {1} float params and {2} int params'.format(
-                params.count(Params.ImageParam_Float32), params.count(Params.Param_Float32), params.count(Params.Param_Int32)))
+                params.count(Params.ImageParam_Float32),
+                params.count(Params.Param_Float32),
+                params.count(Params.Param_Int32)))
 
         # Generate launcher cpp and write
         launcher_file = os.path.join(builddir, function_name + '.cpp')
@@ -241,8 +246,9 @@ def gengen(generator_source, builddir='./build',
             for el in external_libs:
                 external_libs_str += el + ' '
 
-        cmd = 'g++ -fPIC -std=c++11 -Wall -O2 {0} {1} {2} -lpthread {3} -shared -o {4}'.format(launcher_file,
-                                                                                               external_source_str, external_libs_str, object_file, output_lib)
+        cmd = ("g++ -fPIC -std=c++11 -Wall -O2 {0} {1} {2} -lpthread "
+               "{3} -shared -o {4}").format(launcher_file, external_source_str,
+                                            external_libs_str, object_file, output_lib)
         if verbose:
             print('Compiling library')
             print('\t' + cmd)
@@ -284,7 +290,8 @@ def convert_to_ctypes(args, func):
                 # Otherwise add the bounds
                 if len(arg.shape) > 4:
                     raise ValueError(
-                        'Detected {0} dimensions. Halide supports only up to 4.'.format(len(arg.shape)))
+                        'Detected {0} dimensions. Halide supports only up to 4.'.format(
+                            len(arg.shape)))
 
                 # Check if fortran array
                 if len(arg.shape) > 1 and not np.isfortran(arg):
@@ -386,7 +393,8 @@ def generate_launcher_arguments(params):
 
             # Flip first two axis for natural buffer access (numpy like)
             # Extent and stride
-            bbody += '{{ {0}w,{0}h,{0}s,{0}t }}, {{ {0}h, 1, {0}w * {0}h, {0}w * {0}h * {0}s }}, '.format(
+            bbody += ("{{ {0}w,{0}h,{0}s,{0}t }}, "
+                      "{{ {0}h, 1, {0}w * {0}h, {0}w * {0}h * {0}s }}, ").format(
                 argname)
 
             bbody += '{0}, sizeof(float),};'
@@ -419,7 +427,8 @@ def generate_launcher(header_file, function_name, function_name_c, params):
 
     # Header
     body = '// Launcher code for generator of function: {0}\n'.format(function_name)
-    body += """#include <stdio.h>\n#include <stdlib.h>\n#include "{0}.h"\n\n#define LIBRARY_API extern "C"\n\n""".format(
+    body += ("#include <stdio.h>\n#include <stdlib.h>\n#include "
+             """"{0}.h"\n\n#define LIBRARY_API extern "C"\n\n""").format(
         function_name)
 
     # Generate arguments

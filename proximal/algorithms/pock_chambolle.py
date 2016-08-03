@@ -1,6 +1,5 @@
-from proximal.lin_ops import (CompGraph, est_CompGraph_norm, scale, Variable,
+from proximal.lin_ops import (CompGraph, est_CompGraph_norm, Variable,
                               vstack)
-from proximal.prox_fns import least_squares
 from proximal.utils.timings_log import TimingsLog, TimingsEntry
 from invert import get_least_squares_inverse, max_diag_set
 import numpy as np
@@ -31,13 +30,12 @@ def partition(prox_fns, try_diagonalize=True):
             quad_ops.append(fn.beta * fn.lin_op)
             const_terms.append(fn.b.flatten())
 
-        stacked_ops = vstack(quad_ops)
         b = np.hstack(const_terms)
         # Get optimize inverse (tries spatial and frequency diagonalization)
         x_update = get_least_squares_inverse(quad_ops, b, try_diagonalize)
         omega_fns = [x_update]
 
-    psi_fns = [fn for fn in prox_fns if fn not in split_fn + quad_fns]
+    psi_fns = [func for func in prox_fns if func not in split_fn + quad_fns]
     return psi_fns, omega_fns
 
 
@@ -86,7 +84,7 @@ def solve(psi_fns, omega_fns, tau=None, sigma=None, theta=None,
     iter_timing = TimingsEntry("PC iteration")
 
     # Convergence log for initial iterate
-    if convlog != None:
+    if convlog is not None:
         K.update_vars(x)
         objval = sum([fn.value for fn in prox_fns])
         convlog.record_objective(objval)
@@ -94,7 +92,7 @@ def solve(psi_fns, omega_fns, tau=None, sigma=None, theta=None,
 
     for i in range(max_iters):
         iter_timing.tic()
-        if convlog != None:
+        if convlog is not None:
             convlog.tic()
 
         # Keep track of previous iterates
@@ -134,7 +132,7 @@ def solve(psi_fns, omega_fns, tau=None, sigma=None, theta=None,
         xbar += theta * (x - prev_x)
 
         # Convergence log
-        if convlog != None:
+        if convlog is not None:
             convlog.toc()
             K.update_vars(x)
             objval = sum([fn.value for fn in prox_fns])
@@ -161,7 +159,7 @@ def solve(psi_fns, omega_fns, tau=None, sigma=None, theta=None,
             r = prev_Kx - z
             K.adjoint(sigma * (z - prev_z), s)
             eps_pri = np.sqrt(K.output_size) * eps_abs + eps_rel * \
-                              max([np.linalg.norm(prev_Kx), np.linalg.norm(z)])
+                max([np.linalg.norm(prev_Kx), np.linalg.norm(z)])
 
             K.adjoint(u, KTu)
             eps_dual = np.sqrt(K.input_size) * eps_abs + eps_rel * np.linalg.norm(KTu) / sigma
@@ -187,8 +185,10 @@ def solve(psi_fns, omega_fns, tau=None, sigma=None, theta=None,
 
                 # Evaluate metric potentially
                 metstr = '' if metric is None else ", {}".format(metric.message(v))
-                print "iter %d: ||r||_2 = %.3f, eps_pri = %.3f, ||s||_2 = %.3f, eps_dual = %.3f%s%s" % (
-                    i, np.linalg.norm(r), eps_pri, np.linalg.norm(s), eps_dual, objstr, metstr)
+                print(
+                    "iter %d: ||r||_2 = %.3f, eps_pri = %.3f, ||s||_2 = %.3f, eps_dual = %.3f%s%s"
+                    % (i, np.linalg.norm(r), eps_pri, np.linalg.norm(s), eps_dual, objstr, metstr)
+                )
 
             iter_timing.toc()
             if np.linalg.norm(r) <= eps_pri and np.linalg.norm(s) <= eps_dual:
@@ -233,6 +233,7 @@ def est_params_pc(K, tau=None, sigma=None, verbose=True, scaled=False, try_fast_
     tau = 1.0 / (sigma * L**2)
 
     if verbose:
-        print "Estimated params [sigma = %3.3f | tau = %3.3f | theta = %3.3f | L_est = %3.4f]" % (sigma, tau, theta, L)
+        print("Estimated params [sigma = %3.3f | tau = %3.3f | theta = %3.3f | L_est = %3.4f]"
+              % (sigma, tau, theta, L))
 
     return tau, sigma, theta

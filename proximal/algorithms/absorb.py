@@ -1,7 +1,9 @@
 # Absorb linear operators into proximal operators.
 
-from proximal.lin_ops import *
-from proximal.prox_fns import *
+from proximal.lin_ops import Variable, scale, mul_elemwise, Constant
+from proximal.prox_fns import (nonneg, weighted_nonneg, norm1, weighted_norm1, poisson_norm,
+                               weighted_poisson_norm, sum_squares, weighted_sum_squares,
+                               group_norm1, weighted_group_norm1, zero_prox)
 import numpy as np
 import copy as cp
 
@@ -72,7 +74,8 @@ def absorb_lin_op(prox_fn):
     if isinstance(prox_fn.lin_op, scale):
         scalar = prox_fn.lin_op.scalar
         new_prox = prox_fn.copy(prox_fn.lin_op.input_nodes[0],
-                                beta=prox_fn.beta * scalar, b=prox_fn.b / scalar, c=prox_fn.c * scalar,
+                                beta=prox_fn.beta * scalar, b=prox_fn.b / scalar,
+                                c=prox_fn.c * scalar,
                                 gamma=prox_fn.gamma * scalar**2)
         return [new_prox]
     # No change.

@@ -1,9 +1,7 @@
 from __future__ import division
-from proximal.lin_ops import CompGraph, scale, Variable, vstack
-from proximal.prox_fns import least_squares
+from proximal.lin_ops import CompGraph, scale, vstack
 from proximal.utils.timings_log import TimingsLog, TimingsEntry
 from invert import get_least_squares_inverse, get_diag_quads
-from absorb import absorb_offset
 import numpy as np
 
 
@@ -45,7 +43,7 @@ def solve(psi_fns, omega_fns, rho=1.0,
         quad_ops.append(scale(rescaling * fn.beta, fn.lin_op))
         const_terms.append(fn.b.flatten() * rescaling)
     # Check for fast inverse.
-    op_list = [fn.lin_op for fn in psi_fns] + quad_ops
+    op_list = [func.lin_op for func in psi_fns] + quad_ops
     stacked_ops = vstack(op_list)
 
     # Get optimize inverse (tries spatial and frequency diagonalization)
@@ -71,15 +69,15 @@ def solve(psi_fns, omega_fns, rho=1.0,
     # Time iterations.
     iter_timing = TimingsEntry("ADMM iteration")
     # Convergence log for initial iterate
-    if convlog != None:
+    if convlog is not None:
         K.update_vars(v)
-        objval = sum([fn.value for fn in prox_fns])
+        objval = sum([func.value for func in prox_fns])
         convlog.record_objective(objval)
         convlog.record_timing(0.0)
 
     for i in range(max_iters):
         iter_timing.tic()
-        if convlog != None:
+        if convlog is not None:
             convlog.tic()
 
         z_prev = z.copy()
@@ -108,11 +106,11 @@ def solve(psi_fns, omega_fns, rho=1.0,
         r = Kv - z
         K.adjoint(rho * (z - z_prev), s)
         eps_pri = np.sqrt(K.output_size) * eps_abs + eps_rel * \
-                          max([np.linalg.norm(Kv), np.linalg.norm(z)])
+            max([np.linalg.norm(Kv), np.linalg.norm(z)])
         eps_dual = np.sqrt(K.input_size) * eps_abs + eps_rel * np.linalg.norm(KTu) / rho
 
         # Convergence log
-        if convlog != None:
+        if convlog is not None:
             convlog.toc()
             K.update_vars(v)
             objval = sum([fn.value for fn in prox_fns])

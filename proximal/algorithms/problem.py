@@ -138,6 +138,7 @@ class Problem(object):
             if self.scale:
                 for var in self.variables():
                     var.value /= np.sqrt(Knorm)
+            return opt_val
         else:
             raise Exception("Unknown solver.")
 

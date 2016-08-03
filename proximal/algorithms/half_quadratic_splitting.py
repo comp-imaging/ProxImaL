@@ -1,7 +1,6 @@
 import numpy as np
 import math
-from proximal.lin_ops import CompGraph, scale, Variable, vstack
-from proximal.prox_fns import least_squares
+from proximal.lin_ops import CompGraph, scale, vstack
 from proximal.utils.timings_log import TimingsLog, TimingsEntry
 from invert import get_least_squares_inverse, get_diag_quads
 
@@ -9,7 +8,7 @@ from invert import get_least_squares_inverse, get_diag_quads
 def partition(prox_fns, try_diagonalize=True):
     """Divide the proxable functions into sets Psi and Omega.
     """
-   # Merge these quadratic functions with the v update.
+    # Merge these quadratic functions with the v update.
     quad_funcs = []
     # All lin ops must be gram diagonal for the least squares problem
     # to be diagonal.
@@ -48,7 +47,7 @@ def solve(psi_fns, omega_fns,
         const_terms.append(fn.b.flatten() * rescaling)
 
     # Get optimize inverse (tries spatial and frequency diagonalization)
-    op_list = [fn.lin_op for fn in psi_fns] + quad_ops
+    op_list = [func.lin_op for func in psi_fns] + quad_ops
     stacked_ops = vstack(op_list)
     x_update = get_least_squares_inverse(op_list, None,
                                          try_diagonalize, verbose)
@@ -62,9 +61,6 @@ def solve(psi_fns, omega_fns,
     Kx = np.zeros(K.output_size)
     w = Kx.copy()
 
-    Kxn = np.zeros(K.output_size)
-    KTx = np.zeros(K.input_size)
-
     # Temporary iteration counts
     x_prev = x.copy()
 
@@ -74,9 +70,9 @@ def solve(psi_fns, omega_fns,
     iter_timing = TimingsEntry("HQS iteration")
     inner_iter_timing = TimingsEntry("HQS inner iteration")
     # Convergence log for initial iterate
-    if convlog != None:
+    if convlog is not None:
         K.update_vars(x)
-        objval = sum([fn.value for fn in prox_fns])
+        objval = sum([func.value for func in prox_fns])
         convlog.record_objective(objval)
         convlog.record_timing(0.0)
 
@@ -85,7 +81,7 @@ def solve(psi_fns, omega_fns,
     i = 0
     while rho < rho_max and i < max_iters:
         iter_timing.tic()
-        if convlog != None:
+        if convlog is not None:
             convlog.tic()
 
         # Update rho for quadratics
@@ -123,7 +119,7 @@ def solve(psi_fns, omega_fns,
             eps_w = eps_rel * np.prod(K.output_size)
 
             # Convergence log
-            if convlog != None:
+            if convlog is not None:
                 convlog.toc()
                 K.update_vars(x)
                 objval = sum([fn.value for fn in prox_fns])
