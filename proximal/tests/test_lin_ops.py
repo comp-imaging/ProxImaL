@@ -1,10 +1,10 @@
 from __future__ import division
 from proximal.tests.base_test import BaseTest
-from proximal.lin_ops import *
-from proximal.halide.halide import *
-from proximal.utils.utils import *
+from proximal.lin_ops import (Variable, subsample, conv, sum, vstack, LinOpFactory,
+                              mul_elemwise, CompGraph)
+from proximal.halide.halide import Halide
+from proximal.utils.utils import im2nparray, psf2otf
 import numpy as np
-import scipy as sp
 
 import os
 from PIL import Image
@@ -116,7 +116,8 @@ class TestLinOps(BaseTest):
             for j in range(3):
                 for s in range(2):
                     for t in range(3):
-                        y[i, j] += kernel[ks[0] - 1 - s, ks[1] - 1 - t] * x[(s + i - cc[0]) % 2, (t + j - cc[1]) % 3]
+                        y[i, j] += kernel[ks[0] - 1 - s, ks[1] - 1 - t] * \
+                                   x[(s + i - cc[0]) % 2, (t + j - cc[1]) % 3]
 
         # For loop same as convolve
         #y = ndimage.convolve(x, kernel, mode='wrap')
@@ -133,7 +134,8 @@ class TestLinOps(BaseTest):
             for j in range(3):
                 for s in range(2):
                     for t in range(3):
-                        y[i, j] += kernel[s, t] * x[(s + i - (ks[0] - 1 - cc[0])) % 2, (t + j - (ks[1] - 1 - cc[1])) % 3]
+                        y[i, j] += kernel[s, t] * x[(s + i - (ks[0] - 1 - cc[0])) % 2,
+                                                    (t + j - (ks[1] - 1 - cc[1])) % 3]
 
         # For loop same as correlate
         #y = ndimage.correlate(x, kernel, mode='wrap')
@@ -155,8 +157,10 @@ class TestLinOps(BaseTest):
         """
 
         # Load image
-        testimg_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data', 'angela.jpg')
-        img = Image.open(testimg_filename)  # opens the file using Pillow - it's not an array yet
+        testimg_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                        'data', 'angela.jpg')
+        # opens the file using Pillow - it's not an array yet
+        img = Image.open(testimg_filename) 
         np_img = np.asfortranarray(im2nparray(img))
 
         # Convert to gray
@@ -177,7 +181,8 @@ class TestLinOps(BaseTest):
         output_corr = np.zeros_like(np_img);
         Halide('At_conv.cpp').At_conv(np_img, K, output_corr)  # Call
 
-        output_corr_ref = signal.convolve2d(np_img, np.flipud(np.fliplr(K)), mode='same', boundary='wrap')
+        output_corr_ref = signal.convolve2d(np_img, np.flipud(np.fliplr(K)),
+                                            mode='same', boundary='wrap')
 
         self.assertItemsAlmostEqual(output, output_ref)
         self.assertItemsAlmostEqual(output_corr, output_corr_ref)
@@ -386,8 +391,10 @@ class TestLinOps(BaseTest):
         """
 
         # Load image
-        testimg_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data', 'angela.jpg')
-        img = Image.open(testimg_filename)  # opens the file using Pillow - it's not an array yet
+        testimg_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                        'data', 'angela.jpg')
+        # opens the file using Pillow - it's not an array yet
+        img = Image.open(testimg_filename) 
         np_img = np.asfortranarray(im2nparray(img))
 
         # Test problem
@@ -410,15 +417,18 @@ class TestLinOps(BaseTest):
         """
 
         # Load image
-        testimg_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data', 'angela.jpg')
-        img = Image.open(testimg_filename)  # opens the file using Pillow - it's not an array yet
+        testimg_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                        'data', 'angela.jpg')
+        img = Image.open(testimg_filename) 
         np_img = np.asfortranarray(im2nparray(img))
 
         # Convert to gray
         np_img = np.mean(np_img, axis=2)
 
         # Test problem
-        output = np.zeros((np_img.shape[0], np_img.shape[1], np_img.shape[2] if (len(np_img.shape) > 2) else 1, 2), dtype=np.float32, order='FORTRAN');
+        output = np.zeros((np_img.shape[0], np_img.shape[1],
+                           np_img.shape[2] if (len(np_img.shape) > 2) else 1, 2),
+                          dtype=np.float32, order='FORTRAN');
 
         #Gradient in halide
         Halide('A_grad.cpp').A_grad(np_img, output)  # Call
@@ -449,8 +459,8 @@ class TestLinOps(BaseTest):
         fx[:, 0, :] = Kfx[:, 0, :];
         fx[:, -1, :] = -Kfx[:, -2, :];
 
-        KtKf = -fx - fy
         # TODO are these wrong?
+        # KtKf = -fx - fy
         # self.assertItemsAlmostEqual(output, Kf)
         # self.assertItemsAlmostEqual(output_trans, KtKf)
 
@@ -459,8 +469,9 @@ class TestLinOps(BaseTest):
         """
 
         # Load image
-        testimg_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data', 'angela.jpg')
-        img = Image.open(testimg_filename)  # opens the file using Pillow - it's not an array yet
+        testimg_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                        'data', 'angela.jpg')
+        img = Image.open(testimg_filename)
         np_img = np.asfortranarray(im2nparray(img))
 
         # Convert to gray
@@ -474,7 +485,7 @@ class TestLinOps(BaseTest):
 
         # Reference
         output_ref = cv2.warpPerspective(np_img, H.T, np_img.shape[1::-1], flags=cv2.INTER_LINEAR,
-                                    borderMode=cv2.BORDER_CONSTANT, borderValue=0.)  # cv2.WARP_INVERSE_MAP,
+                                    borderMode=cv2.BORDER_CONSTANT, borderValue=0.)
 
         # Halide
         output = np.zeros_like(np_img);
@@ -487,8 +498,10 @@ class TestLinOps(BaseTest):
         Halide('At_warp.cpp').At_warp(output, Hinvc, output_trans)  # Call
 
         # Compute reference
-        output_ref_trans = cv2.warpPerspective(output_ref, H.T, np_img.shape[1::-1], flags=cv2.INTER_LINEAR + cv2.WARP_INVERSE_MAP,
+        output_ref_trans = cv2.warpPerspective(output_ref, H.T, np_img.shape[1::-1],
+                                               flags=cv2.INTER_LINEAR + cv2.WARP_INVERSE_MAP,
                                     borderMode=cv2.BORDER_CONSTANT, borderValue=0.)
-
-        self.assertItemsAlmostEqual(output, output_ref, places=1)  # Opencv does inverse warp
-        self.assertItemsAlmostEqual(output_trans, output_ref_trans, places=1)  # Opencv does inverse warp
+        # Opencv does inverse warp
+        self.assertItemsAlmostEqual(output, output_ref, places=1)
+        # Opencv does inverse warp
+        self.assertItemsAlmostEqual(output_trans, output_ref_trans, places=1)

@@ -1,11 +1,11 @@
 from proximal.tests.base_test import BaseTest
-from proximal.prox_fns import *
+from proximal.prox_fns import (norm1, sum_squares, sum_entries, nonneg, weighted_norm1,
+                               weighted_nonneg, diff_fn)
 from proximal.lin_ops import Variable
-from proximal.halide.halide import *
-from proximal.utils.utils import *
+from proximal.halide.halide import Halide
+from proximal.utils.utils import im2nparray, tic, toc
 import cvxpy as cvx
 import numpy as np
-import scipy as sp
 
 import os
 from PIL import Image
@@ -40,7 +40,9 @@ class TestProxFn(BaseTest):
         # rho_hat = rho/(mod_fn.alpha*np.sqrt(np.abs(mod_fn.beta)))
         # xhat = fn.prox(rho_hat, vhat)
         x_var = cvx.Variable(10)
-        cost = 2 * cvx.sum_squares(-x_var - np.ones(10)) + np.ones(10).T * x_var + cvx.sum_squares(x_var) + (rho / 2) * cvx.sum_squares(x_var - v)
+        cost = 2 * cvx.sum_squares(-x_var - np.ones(10)) + \
+               np.ones(10).T * x_var + cvx.sum_squares(x_var) + \
+               (rho / 2) * cvx.sum_squares(x_var - v)
         prob = cvx.Problem(cvx.Minimize(cost))
         prob.solve()
 
@@ -73,7 +75,8 @@ class TestProxFn(BaseTest):
         # rho_hat = rho/(mod_fn.alpha*mod_fn.beta**2)
         # xhat = fn.prox(rho_hat, vhat)
         x_var = cvx.Variable(10)
-        cost = 0.1 * cvx.norm1(5 * x_var + np.ones(10)) + np.ones(10).T * x_var + 4 * cvx.sum_squares(x_var) + (rho / 2) * cvx.sum_squares(x_var - v)
+        cost = 0.1 * cvx.norm1(5 * x_var + np.ones(10)) + np.ones(10).T * x_var + \
+               4 * cvx.sum_squares(x_var) + (rho / 2) * cvx.sum_squares(x_var - v)
         prob = cvx.Problem(cvx.Minimize(cost))
         prob.solve()
 
@@ -85,7 +88,8 @@ class TestProxFn(BaseTest):
         fn = weighted_norm1(tmp, -v + 1)
         rho = 2
         x = fn.prox(rho, v)
-        self.assertItemsAlmostEqual(x, np.sign(v) * np.maximum(np.abs(v) - np.abs(-v + 1) / rho, 0))
+        self.assertItemsAlmostEqual(x, np.sign(v) * \
+                                    np.maximum(np.abs(v) - np.abs(-v + 1) / rho, 0))
 
     def test_nonneg(self):
         """Test I(x >= 0) prox fn.
@@ -132,7 +136,8 @@ class TestProxFn(BaseTest):
         """
 
         # Load image
-        testimg_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data', 'angela.jpg')
+        testimg_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                        'data', 'angela.jpg')
         img = Image.open(testimg_filename)  # opens the file using Pillow - it's not an array yet
         np_img = np.asfortranarray(im2nparray(img))
 
@@ -157,8 +162,9 @@ class TestProxFn(BaseTest):
         """
 
         # Load image
-        testimg_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data', 'angela.jpg')
-        img = Image.open(testimg_filename)  # opens the file using Pillow - it's not an array yet
+        testimg_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                        'data', 'angela.jpg')
+        img = Image.open(testimg_filename) 
         np_img = np.asfortranarray(im2nparray(img))
 
         # Convert to gray
@@ -181,7 +187,8 @@ class TestProxFn(BaseTest):
         Halide('prox_IsoL1.cpp').prox_IsoL1(v, theta, output)  # Call
 
         # Reference
-        normv = np.sqrt(np.multiply(v[:, :, :, 0], v[:, :, :, 0]) + np.multiply(v[:, :, :, 1], v[:, :, :, 1]))
+        normv = np.sqrt(np.multiply(v[:, :, :, 0], v[:, :, :, 0]) + \
+                        np.multiply(v[:, :, :, 1], v[:, :, :, 1]))
         normv = np.stack((normv, normv), axis=-1)
         with np.errstate(divide='ignore'):
             output_ref = np.maximum(0.0, 1.0 - theta / normv) * v
@@ -193,8 +200,9 @@ class TestProxFn(BaseTest):
         """
 
         # Load image
-        testimg_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data', 'angela.jpg')
-        img = Image.open(testimg_filename)  # opens the file using Pillow - it's not an array yet
+        testimg_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                        'data', 'angela.jpg')
+        img = Image.open(testimg_filename)
         np_img = np.asfortranarray(im2nparray(img))
 
         # Convert to gray

@@ -1,11 +1,10 @@
 from proximal.tests.base_test import BaseTest
-from proximal.lin_ops import *
-from proximal.prox_fns import *
-from proximal.algorithms import *
+from proximal.lin_ops import Variable, mul_elemwise
+from proximal.prox_fns import norm1, sum_squares
+from proximal.algorithms import Problem
 from proximal.utils.utils import Impl
 import cvxpy as cvx
 import numpy as np
-import scipy as sp
 
 
 class TestProblem(BaseTest):
@@ -22,13 +21,13 @@ class TestProblem(BaseTest):
         prob.set_absorb(False)
         prob.set_implementation(Impl['halide'])
         prob.set_solver('admm')
-        sltn = prob.solve()
+        prob.solve()
 
         true_X = norm1(X).prox(2, B.copy())
         self.assertItemsAlmostEqual(X.value, true_X, places=2)
-        sltn = prob.solve(solver="pc")
+        prob.solve(solver="pc")
         self.assertItemsAlmostEqual(X.value, true_X, places=2)
-        sltn = prob.solve(solver="hqs", eps_rel=1e-6,
+        prob.solve(solver="hqs", eps_rel=1e-6,
                      rho_0=1.0, rho_scale=np.sqrt(2.0) * 2.0, rho_max=2**16,
                     max_iters=20, max_inner_iters=500, verbose=False)
         self.assertItemsAlmostEqual(X.value, true_X, places=2)
@@ -36,16 +35,16 @@ class TestProblem(BaseTest):
         # CG
         prob = Problem(prox_fns)
         prob.set_lin_solver("cg")
-        sltn = prob.solve(solver="admm")
+        prob.solve(solver="admm")
         self.assertItemsAlmostEqual(X.value, true_X, places=2)
-        sltn = prob.solve(solver="hqs", eps_rel=1e-6,
+        prob.solve(solver="hqs", eps_rel=1e-6,
                      rho_0=1.0, rho_scale=np.sqrt(2.0) * 2.0, rho_max=2**16,
                     max_iters=20, max_inner_iters=500, verbose=False)
         self.assertItemsAlmostEqual(X.value, true_X, places=2)
 
         # Quad funcs.
         prob = Problem(prox_fns)
-        sltn = prob.solve(solver="admm")
+        prob.solve(solver="admm")
         self.assertItemsAlmostEqual(X.value, true_X, places=2)
 
         # Absorbing lin ops.

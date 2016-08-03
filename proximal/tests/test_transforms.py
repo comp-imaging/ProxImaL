@@ -1,11 +1,11 @@
 from proximal.tests.base_test import BaseTest
-from proximal.prox_fns import *
-from proximal.lin_ops import *
-from proximal.algorithms import *
+from proximal.prox_fns import sum_squares, norm1, sum_entries, nonneg
+from proximal.lin_ops import Variable, grad, mul_elemwise, sum
+from proximal.algorithms import can_merge, absorb_offset, merge_fns, absorb_lin_op
 from proximal.algorithms.merge import merge_all
 import numpy as np
 import cvxpy as cvx
-import proximal.algorithms.absorb
+import proximal.algorithms.absorb as absorb
 
 
 class TestTransforms(BaseTest):
@@ -21,17 +21,20 @@ class TestTransforms(BaseTest):
         rho = 2
         new_prox = absorb_lin_op(fn)[0]
         x = new_prox.prox(rho, v.copy())
-        self.assertItemsAlmostEqual(x, np.sign(v) * np.maximum(np.abs(v) - 5. * np.abs(v) / rho, 0))
+        self.assertItemsAlmostEqual(x, np.sign(v) * np.maximum(np.abs(v) - 5. * \
+                                                               np.abs(v) / rho, 0))
 
         fn = norm1(mul_elemwise(-v, mul_elemwise(2 * v, tmp)), alpha=5.)
         rho = 2
         new_prox = absorb_lin_op(fn)[0]
         x = new_prox.prox(rho, v.copy())
-        self.assertItemsAlmostEqual(x, np.sign(v) * np.maximum(np.abs(v) - 5. * np.abs(v) / rho, 0))
+        self.assertItemsAlmostEqual(x, np.sign(v) * np.maximum(np.abs(v) - 5. * \
+                                                               np.abs(v) / rho, 0))
         new_prox = absorb_lin_op(new_prox)[0]
         x = new_prox.prox(rho, v.copy())
         new_v = 2 * v * v
-        self.assertItemsAlmostEqual(x, np.sign(new_v) * np.maximum(np.abs(new_v) - 5. * np.abs(new_v) / rho, 0))
+        self.assertItemsAlmostEqual(x, np.sign(new_v) * \
+                                    np.maximum(np.abs(new_v) - 5. * np.abs(new_v) / rho, 0))
 
         # nonneg.
         tmp = Variable(10)
@@ -93,7 +96,7 @@ class TestTransforms(BaseTest):
         fn = sum_entries(sum([10 * tmp, mul_elemwise(v, tmp)]))
 
         funcs = absorb.absorb_all_lin_ops([fn])
-        c = __builtins__['sum']([fn.c for fn in funcs])
+        c = __builtins__['sum']([func.c for func in funcs])
         self.assertItemsAlmostEqual(c, v + 10, places=3)
 
     def test_merge(self):

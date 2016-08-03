@@ -1,6 +1,6 @@
 from proximal.tests.base_test import BaseTest
-from proximal.halide.halide import *
-from proximal.utils.utils import *
+from proximal.halide.halide import Halide
+from proximal.utils.utils import im2nparray
 
 import os
 import numpy as np
@@ -20,7 +20,8 @@ class TestHalide(BaseTest):
         """Test slicing  over numpy arrays in halide.
         """
         # Load image
-        testimg_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data', 'angela.jpg')
+        testimg_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                        'data', 'angela.jpg')
         np_img = im2nparray(Image.open(testimg_filename))
         np_img = np.asfortranarray(np.tile(np_img[..., np.newaxis], (1, 1, 1, 3)))
 
@@ -30,7 +31,8 @@ class TestHalide(BaseTest):
         mask = np.maximum(mask, 0.)
 
         for k in range(np_img.shape[3]):
-            Halide('A_mask.cpp').A_mask(np.asfortranarray(np_img[:, :, :, k]), mask, output[:, :, :, k])  # Call
+            Halide('A_mask.cpp').A_mask(np.asfortranarray(np_img[:, :, :, k]),
+                                        mask, output[:, :, :, k])  # Call
 
         output_ref = np.zeros_like(np_img);
         for k in range(np_img.shape[3]):
