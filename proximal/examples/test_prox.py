@@ -7,7 +7,7 @@ sys.path.append('../../')
 
 from scipy import ndimage
 import matplotlib as mpl
-mpl.use('Agg')	  
+mpl.use('Agg')
 
 
 from proximal.utils.utils import *
@@ -70,7 +70,7 @@ print( 'Running Halide (second) took: {0:.1f}ms'.format( toc() ) )
 
 
 #Reference
-#output_ref = np.maximum( 0.0, v - theta ) - np.maximum( 0.0, -v - theta ) 
+#output_ref = np.maximum( 0.0, v - theta ) - np.maximum( 0.0, -v - theta )
 
  # No modifiers.
 tmp = Variable(v.shape)
@@ -80,7 +80,7 @@ print( 'Prox Norm1 running took: {0:.1f}ms'.format( toc() ) )
 output_ref = fn.prox(1.0/theta, v.copy())
 
 #Error
-print('Maximum error L1 {0}'.format( np.amax( np.abs( output_ref - output ) ) ) ) 
+print('Maximum error L1 {0}'.format( np.amax( np.abs( output_ref - output ) ) ) )
 
 ############################################################################
 ### Test the Iso L1 prox
@@ -93,7 +93,7 @@ if len(np_img.shape) == 2:
 
 ss = f.shape;
 fx = f[ :, np.r_[1:ss[1],ss[1] - 1],:] - f;
-fy = f[ np.r_[1:ss[0],ss[0] - 1],:,:] - f; 
+fy = f[ np.r_[1:ss[0],ss[0] - 1],:,:] - f;
 v = np.asfortranarray( np.stack( (fx, fy), axis=-1 ) )
 
 #Output
@@ -116,7 +116,7 @@ print( 'Running Halide (second) took: {0:.1f}ms'.format( toc() ) )
 normv = np.sqrt( np.multiply(v[:,:,:,0], v[:,:,:,0]) + np.multiply(v[:,:,:,1], v[:,:,:,1]) )
 normv = np.stack((normv,normv), axis =-1)
 with np.errstate(divide='ignore'):
-	output_ref = np.maximum( 0.0, 1.0 - theta / normv ) * v 
+	output_ref = np.maximum( 0.0, 1.0 - theta / normv ) * v
 
  # No modifiers.
 tmp = Variable(v.shape)
@@ -125,7 +125,7 @@ rho = 1.0/theta
 output_ref = fn.prox(rho, v.copy())
 
 #Error
-print('Maximum error IsoL1 {0}'.format( np.amax( np.abs( output_ref - output ) ) ) ) 
+print('Maximum error IsoL1 {0}'.format( np.amax( np.abs( output_ref - output ) ) ) )
 
 ############################################################################
 ### Test Poisson prox
@@ -165,7 +165,7 @@ rho = 1.0/theta
 output_ref = fp.prox(rho, v.copy())
 
 #Error
-print('Maximum error Poisson {0}'.format( np.amax( np.abs( output_ref - output ) ) ) ) 
+print('Maximum error Poisson {0}'.format( np.amax( np.abs( output_ref - output ) ) ) )
 
 ############################################################################
 ### Test NLM
@@ -203,9 +203,9 @@ plt.savefig('prox1.png')
 # No modifiers.
 v = np_img_color
 tmp = Variable(v.shape)
-gamma = 2.0
-params = [sigma_fixed, sigma_scale,3, 11, gamma, prior]
-fp = patch_NLM( tmp, params, implem='halide' ) #group over all but first two dims
+p = patch_NLM(tmp, sigma_fixed=sigma_fixed, sigma_scale=sigma_scale,
+              templateWindowSizeNLM=3, searchWindowSizeNLM=11, gamma_trans=2.0,
+              prior=prior, implem='halide') #group over all but first two dims
 rho = 1.0/theta
 dst = fp.prox(rho, v.copy())
 
@@ -217,7 +217,7 @@ plt.title('NLM denoised CV2')
 plt.savefig('prox2.png')
 
 #Error
-print('Maximum error NLM (CUDA vs. CPU) {0}'.format( np.amax( np.abs( output - dst ) ) ) ) 
+print('Maximum error NLM (CUDA vs. CPU) {0}'.format( np.amax( np.abs( output - dst ) ) ) )
 
 #Wait until done
 raw_input("Press Enter to continue...")

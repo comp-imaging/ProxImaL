@@ -70,9 +70,9 @@ plt.show()
 # No modifiers.
 v = np_img_color
 tmp = Variable(v.shape)
-gamma = 1.0
-params = [sigma_fixed, sigma_scale,3, 11, gamma, prior]
-fp = patch_NLM( tmp, params ) #group over all but first two dims
+fp = patch_NLM(tmp, sigma_fixed=sigma_fixed, sigma_scale=sigma_scale,
+              templateWindowSizeNLM=3, searchWindowSizeNLM=11, gamma_trans=1.0,
+              prior=prior) #group over all but first two dims
 rho = 1.0/theta
 dst = fp.prox(rho, v.copy())
 
@@ -83,14 +83,14 @@ plt.title('NLM denoised CV2')
 plt.show()
 
 #Error
-print('Maximum error NLM (CUDA vs. CPU) {0}'.format( np.amax( np.abs( output - dst ) ) ) ) 
+print('Maximum error NLM (CUDA vs. CPU) {0}'.format( np.amax( np.abs( output - dst ) ) ) )
 
 ############################################################################
 ### Compute PSNR
 ############################################################################
 
 ref = np_img_color
-print('PSRN: Full {0} dB, Pad {1} dB, Max {2} dB'.format(  psnr(output, ref), psnr(output, ref, (10,10)), psnr(output * 255., ref * 255., maxval = 255.) ) ) 
+print('PSRN: Full {0} dB, Pad {1} dB, Max {2} dB'.format(  psnr(output, ref), psnr(output, ref, (10,10)), psnr(output * 255., ref * 255., maxval = 255.) ) )
 
 #Test metric
 imgmetric = psnr_metric( ref, pad = (10,10), decimals = 2 )

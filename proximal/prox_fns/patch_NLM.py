@@ -7,27 +7,20 @@ import cv2
 class patch_NLM(ProxFn):
     """The function for NLM patch prior
     """
-    def __init__(self, lin_op, params=None, **kwargs):
+    def __init__(self, lin_op, sigma_fixed=0.6, sigma_scale=6.0,
+                 templateWindowSizeNLM=3, searchWindowSizeNLM=11,
+                 gamma_trans=1.0, prior=1, **kwargs):
 
         #Check for the shape
         if not ( len(lin_op.shape) == 2 or len(lin_op.shape) == 3 and lin_op.shape[2] in [1,3] ):
             raise ValueError('NLM needs a 3 or 1 channel image')
 
-        self.params = params
-        if params is None:
-            self.sigma_fixed = 0.6
-            self.sigma_scale = 1.5  * 1 * 4
-            self.templateWindowSizeNLM = 1 * 2 + 1
-            self.searchWindowSizeNLM = 5 * 2 + 1
-            self.gamma_trans= 1.0
-            self.prior = 1
-        else:
-            self.sigma_fixed = params[0]
-            self.sigma_scale = params[1]
-            self.templateWindowSizeNLM = params[2]
-            self.searchWindowSizeNLM = params[3]
-            self.gamma_trans = params[4]
-            self.prior = params[5]
+        self.sigma_fixed = sigma_fixed
+        self.sigma_scale = sigma_scale
+        self.templateWindowSizeNLM = templateWindowSizeNLM
+        self.searchWindowSizeNLM = searchWindowSizeNLM
+        self.gamma_trans = gamma_trans
+        self.prior = prior
 
         #Force regular NLM for grayscale
         if len(lin_op.shape) == 2 or len(lin_op.shape) == 3 and lin_op.shape[2] == 1:
@@ -120,4 +113,5 @@ class patch_NLM(ProxFn):
         -------
         list
         """
-        return [self.params]
+        return [self.sigma_fixed, self.sigma_scale, self.templateWindowSizeNLM,
+                self.searchWindowSizeNLM, self.gamma_trans, self.prior]
