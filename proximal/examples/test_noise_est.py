@@ -1,4 +1,4 @@
-#Proximal
+# Proximal
 import sys
 sys.path.append('../../')
 
@@ -20,7 +20,7 @@ import StringIO
 
 ############################################################
 
-#Load image
+# Load image
 img = Image.open('./data/angela.jpg')  # opens the file using Pillow - it's not an array yet
 I = np.asfortranarray(im2nparray(img))
 I = np.maximum(cv2.resize(I, (512, 512), interpolation=cv2.INTER_LINEAR), 0)
@@ -28,11 +28,11 @@ I = np.mean(I, axis=2)
 I = np.asfortranarray(I)
 I = np.maximum(I, 0.0)
 
-#Generate observation
+# Generate observation
 sigma_noise = 0.01
 b = I + sigma_noise * np.random.randn(*I.shape)
 
-#Display data
+# Display data
 plt.ion()
 plt.figure()
 imgplot = plt.imshow(I, interpolation="nearest", clim=(0.0, 1.0))
@@ -55,13 +55,13 @@ plt.show()
 # eng.quit()
 # print 'Matlab Estimate:', result
 
-#Estimate the noise
+# Estimate the noise
 tic()
 ndev = estimate_std(b, 'daub_replicate')
 print('Estimation took: {0:.1f}ms'.format(toc()))
 
-#Result
+# Result
 print('Noise estimate is: {0:1.4f}, Original was {1:1.4f}'.format(np.mean(ndev), sigma_noise))
 
-#Wait until done
+# Wait until done
 raw_input("Press Enter to continue...")

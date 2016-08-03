@@ -25,7 +25,7 @@ class poisson_norm(ProxFn):
         """
         if self.implementation == Impl['halide'] and (len(self.lin_op.shape) in [2, 3, 4]):
 
-            #Halide implementation
+            # Halide implementation
             tmpin = np.asfortranarray(v)
             Halide('prox_Poisson.cpp').prox_Poisson(tmpin, self.maskh, self.bph, 1. / rho, self.tmpout)
             np.copyto(v, self.tmpout)
@@ -38,11 +38,11 @@ class poisson_norm(ProxFn):
         """Evaluate the function on v (ignoring parameters).
         """
 
-        #Positivity penalty
+        # Positivity penalty
         if np.min(v) < -1e-3:
             return np.inf
 
-        #Other penalties
+        # Other penalties
         vsum = v.copy();
         vsum -= self.bp * np.log(np.maximum(v, 1e-9))
         return vsum.sum()
@@ -70,7 +70,7 @@ class weighted_poisson_norm(poisson_norm):
         """
         output = 0.5 * (v - np.absolute(self.weight) / rho + np.sqrt((v - np.absolute(self.weight) / rho) * (v - np.absolute(self.weight) / rho) + 4. * 1. / rho * self.bp))
 
-        #Reference
+        # Reference
         idxs = self.weight == 0
         output[idxs] = v[idxs]
         return output

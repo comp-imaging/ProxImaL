@@ -1,4 +1,4 @@
-#Proximal
+# Proximal
 import sys
 sys.path.append('../../')
 
@@ -18,23 +18,23 @@ import cv2
 
 ############################################################
 
-#Load image
+# Load image
 img = Image.open('./data/angela.jpg')  # opens the file using Pillow - it's not an array yet
 x = np.asfortranarray(im2nparray(img))
 x = np.mean(x, axis=2)
 x = np.maximum(x, 0.0)
 
-#Kernel
+# Kernel
 K = Image.open('./data/kernel_snake.png')  # opens the file using Pillow - it's not an array yet
 K = np.mean(np.asfortranarray(im2nparray(K)), axis=2)
 K = np.maximum(cv2.resize(K, (15, 15), interpolation=cv2.INTER_LINEAR), 0)
 K /= np.sum(K)
 
-#Generate observation
+# Generate observation
 sigma_noise = 0.01
 b = ndimage.convolve(x, K, mode='wrap') + sigma_noise * np.random.randn(*x.shape)
 
-#Display data
+# Display data
 plt.ion()
 plt.figure()
 imgplot = plt.imshow(x, interpolation="nearest", clim=(0.0, 1.0))
@@ -60,7 +60,7 @@ lambda_data = 500.0
 
 x = Variable(x.shape)
 quad_funcs = [sum_squares(conv(K, x), b=b, alpha=lambda_data)]
-prox_fns = [group_norm1(grad(x, dims=2), [2], alpha=lambda_tv)] #Isotropic
+prox_fns = [group_norm1(grad(x, dims=2), [2], alpha=lambda_tv)]  # Isotropic
 
 tic()
 # options = lsqr_options(atol=1e-5, btol=1e-5, num_iters=100, verbose=False)
@@ -97,10 +97,10 @@ plt.colorbar()
 plt.title('Results with frequency diagonalization')
 plt.show()
 
-#Show output
+# Show output
 print('\nRunning in SPATIAL (LSQR) domain: {0:.1f}sec'.format(sdlsqrtime))
 print('Running in SPATIAL (CG, warm start) domain: {0:.1f}sec'.format(sdcgtime))
 print('Running in FREQUENCY domain: {0:.1f}sec\n'.format(fdtime))
 
-#Wait until done
+# Wait until done
 raw_input("Press Enter to continue...")

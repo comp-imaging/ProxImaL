@@ -13,7 +13,7 @@ class mul_elemwise(LinOp):
         self.weight = weight
         shape = arg.shape
 
-        #Halide temp
+        # Halide temp
         if len(shape) in [2, 3]:
             self.weight = np.asfortranarray(self.weight.astype(np.float32))
             self.tmpout = np.zeros(arg.shape, dtype=np.float32, order='F')
@@ -27,13 +27,13 @@ class mul_elemwise(LinOp):
         """
         if self.implementation == Impl['halide'] and (len(self.shape) in [2, 3]):
 
-            #Halide implementation
+            # Halide implementation
             tmpin = np.asfortranarray(inputs[0].astype(np.float32))
-            Halide('A_mask.cpp').A_mask(tmpin, self.weight, self.tmpout) #Call
+            Halide('A_mask.cpp').A_mask(tmpin, self.weight, self.tmpout)  # Call
             np.copyto(outputs[0], self.tmpout)
 
         else:
-            #Numpy
+            # Numpy
             np.multiply(inputs[0], self.weight, outputs[0])
 
     def adjoint(self, inputs, outputs):

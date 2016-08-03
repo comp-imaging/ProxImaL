@@ -15,11 +15,11 @@ class grad(LinOp):
         if dims is not None:
             self.dims = dims
         else:
-            self.dims = len(arg.shape) #Full n-d gradient
+            self.dims = len(arg.shape)  # Full n-d gradient
 
         shape = arg.shape + (self.dims,)
 
-        #Temp array for halide
+        # Temp array for halide
         self.tmpfwd = None
         self.tmpadj = None
         if len(arg.shape) in [2, 3] and self.dims == 2:
@@ -41,26 +41,26 @@ class grad(LinOp):
 
         if self.implementation == Impl['halide'] and \
             (len(self.shape) == 3 or len(self.shape) == 4) and self.dims == 2:
-            #Halide implementation
+            # Halide implementation
             if len(self.shape) == 3:
                 tmpin = np.asfortranarray((inputs[0][..., np.newaxis]).astype(np.float32))
             else:
                 tmpin = np.asfortranarray((inputs[0]).astype(np.float32))
 
-            Halide('A_grad.cpp').A_grad(tmpin, self.tmpfwd) #Call
+            Halide('A_grad.cpp').A_grad(tmpin, self.tmpfwd)  # Call
             np.copyto(outputs[0], np.reshape(self.tmpfwd, self.shape))
 
         else:
 
-            #Input
+            # Input
             f = inputs[0]
 
-            #Build up index for shifted array
+            # Build up index for shifted array
             ss = f.shape;
             stack_arr = ()
             for j in range(self.dims):
 
-                #Add grad for this dimension (same as index)
+                # Add grad for this dimension (same as index)
                 il = ()
                 for i in range(len(ss)):
                     if i == j:
@@ -71,7 +71,7 @@ class grad(LinOp):
                 fgrad_j = f[il] - f;
                 stack_arr += (fgrad_j,)
 
-            #Stack all grads as new dimension
+            # Stack all grads as new dimension
             np.copyto(outputs[0], np.stack(stack_arr, axis=-1))
 
     def adjoint(self, inputs, outputs):
@@ -83,29 +83,29 @@ class grad(LinOp):
         if self.implementation == Impl['halide'] and \
             (len(self.shape) == 3 or len(self.shape) == 4) and self.dims == 2:
 
-            #Halide implementation
+            # Halide implementation
             if len(self.shape) == 3:
                 tmpin = np.asfortranarray(np.reshape(inputs[0],
                     (self.shape[0], self.shape[1], 1, 2)).astype(np.float32))
             else:
                 tmpin = np.asfortranarray(inputs[0].astype(np.float32))
 
-            Halide('At_grad.cpp').At_grad(tmpin, self.tmpadj) #Call
+            Halide('At_grad.cpp').At_grad(tmpin, self.tmpadj)  # Call
             np.copyto(outputs[0], np.reshape(self.tmpadj, self.shape[:-1]))
 
         else:
 
-            #Compute comparison (Negative divergence)
+            # Compute comparison (Negative divergence)
             f = inputs[0]
 
             outputs[0].fill(0.0)
             for j in [0, 1]:
 
-                #Get component
+                # Get component
                 fj = f[..., j]
                 ss = fj.shape
 
-                #Add grad for this dimension (same as index)
+                # Add grad for this dimension (same as index)
                 istart = ()
                 ic = ()
                 iend_out = ()
@@ -122,7 +122,7 @@ class grad(LinOp):
                         iend_in += np.index_exp[:]
                         iend_out += np.index_exp[:]
 
-                #Do the grad operation for dimension j
+                # Do the grad operation for dimension j
                 fd = fj - fj[ic]
                 fd[istart] = fj[istart]
                 fd[iend_out] = -fj[iend_in]

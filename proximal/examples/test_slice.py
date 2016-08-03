@@ -1,6 +1,6 @@
 
 
-#Proximal
+# Proximal
 import sys
 sys.path.append('../../')
 
@@ -17,7 +17,7 @@ from scipy.misc import lena
 #img = lena().astype(np.uint8)
 #img = img.copy().reshape(img.shape[0],img.shape[1],1)
 
-#Load image
+# Load image
 img = Image.open('./data/angela.jpg')  # opens the file using Pillow - it's not an array yet
 np_img = im2nparray(img)
 #np_img = np.mean( np_img, axis=2)
@@ -32,7 +32,7 @@ imgplot.set_cmap('gray')
 plt.title('Numpy')
 plt.show()
 
-#Test the runner
+# Test the runner
 output = np.zeros_like(np_img);
 mask = np.asfortranarray(np.random.randn(*list(np_img.shape[0:3])).astype(np.float32))
 mask = np.maximum(mask, 0.)
@@ -40,12 +40,12 @@ mask = np.maximum(mask, 0.)
 #mask[mask >= 0.5] = 1.
 print 'Type ', mask.dtype, 'Shape mask', mask.shape
 
-#Recompile
-#Halide('A_mask.cpp', recompile=True) #Call
+# Recompile
+# Halide('A_mask.cpp', recompile=True) #Call
 
 tic()
 for k in range(np_img.shape[3]):
-    Halide('A_mask.cpp').A_mask(np.asfortranarray(np_img[:, :, :, k]), mask, output[:, :, :, k]) #Call
+    Halide('A_mask.cpp').A_mask(np.asfortranarray(np_img[:, :, :, k]), mask, output[:, :, :, k])  # Call
 
 print('Running took: {0:.1f}ms'.format(toc()))
 
@@ -57,8 +57,8 @@ for k in range(np_img.shape[3]):
 
 print('Running mask in scipy took: {0:.1f}ms'.format(toc()))
 
-#Error
+# Error
 print('Maximum error {0}'.format(np.amax(np.abs(output_ref - output))))
 
-#Wait until done
+# Wait until done
 raw_input("Press Enter to continue...")

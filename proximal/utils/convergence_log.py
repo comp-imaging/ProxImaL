@@ -38,13 +38,13 @@ class ConvergenceLog(object):
         """ See tic f
         """
 
-        #Last tic
+        # Last tic
         if self.lastticstamp is None:
             raise Exception('Error: Call to toc did never call tic before.')
         else:
             t = self.lastticstamp
-            #Measure time in ms
-            elapsed = (timeit.default_timer() - t) * 1000.0  #in ms
+            # Measure time in ms
+            elapsed = (timeit.default_timer() - t) * 1000.0  # in ms
             # Update recrod.
             self.record_timing(elapsed)
             self.lastticstamp = None

@@ -10,7 +10,7 @@ class Edge(object):
         self.end = end
         self.shape = shape
         self.data = np.zeros(self.shape)
-        self.mag = None # Used to get norm bounds.
+        self.mag = None  # Used to get norm bounds.
 
     @property
     def size(self):

@@ -52,11 +52,11 @@ def solve(psi_fns, omega_fns, tau=None, sigma=None, theta=None,
     stacked_ops = vstack([fn.lin_op for fn in psi_fns])
     K = CompGraph(stacked_ops)
     v = np.zeros(K.input_size)
-    #Select optimal parameters if wanted
+    # Select optimal parameters if wanted
     if tau is None or sigma is None or theta is None:
         tau, sigma, theta = est_params_pc(K, tau, sigma, verbose, scaled, try_fast_norm)
 
-    #Initialize
+    # Initialize
     x = np.zeros(K.input_size)
     y = np.zeros(K.output_size)
     xbar = np.zeros(K.input_size)
@@ -85,7 +85,7 @@ def solve(psi_fns, omega_fns, tau=None, sigma=None, theta=None,
     # Time iterations.
     iter_timing = TimingsEntry("PC iteration")
 
-    #Convergence log for initial iterate
+    # Convergence log for initial iterate
     if convlog != None:
         K.update_vars(x)
         objval = sum([fn.value for fn in prox_fns])
@@ -97,13 +97,13 @@ def solve(psi_fns, omega_fns, tau=None, sigma=None, theta=None,
         if convlog != None:
             convlog.tic()
 
-        #Keep track of previous iterates
+        # Keep track of previous iterates
         np.copyto(prev_x, x)
         np.copyto(prev_z, z)
         np.copyto(prev_u, u)
         np.copyto(prev_Kx, Kx)
 
-        #Compute z
+        # Compute z
         K.forward(xbar, Kxbar)
         z = y + sigma * Kxbar
 
@@ -120,7 +120,7 @@ def solve(psi_fns, omega_fns, tau=None, sigma=None, theta=None,
             offset += fn.lin_op.size
         y[offset:] = 0
 
-        #Update x
+        # Update x
         K.adjoint(y, KTy)
         x -= tau * KTy
 
@@ -129,11 +129,11 @@ def solve(psi_fns, omega_fns, tau=None, sigma=None, theta=None,
             x[:] = omega_fns[0].prox(1.0 / tau, xtmp, x_init=prev_x,
                                      lin_solver=lin_solver, options=lin_solver_options).flatten()
 
-        #Update xbar
+        # Update xbar
         np.copyto(xbar, x)
         xbar += theta * (x - prev_x)
 
-        #Convergence log
+        # Convergence log
         if convlog != None:
             convlog.toc()
             K.update_vars(x)
@@ -148,12 +148,12 @@ def solve(psi_fns, omega_fns, tau=None, sigma=None, theta=None,
         error = r_x + r_xbar + r_ybar
         """
 
-        #Residual based convergence check
+        # Residual based convergence check
         K.forward(x, Kx)
         u = 1.0 / sigma * y + theta * (Kx - prev_Kx)
         z = prev_u + prev_Kx - 1.0 / sigma * y
 
-        #Iteration order is different than
+        # Iteration order is different than
         # lin-admm (--> start checking at iteration 1)
         if i > 0:
 
@@ -165,9 +165,9 @@ def solve(psi_fns, omega_fns, tau=None, sigma=None, theta=None,
             K.adjoint(u, KTu)
             eps_dual = np.sqrt(K.input_size) * eps_abs + eps_rel * np.linalg.norm(KTu) / sigma
 
-            #Progress
+            # Progress
             if verbose > 0:
-                #Evaluate objective only if required (expensive !)
+                # Evaluate objective only if required (expensive !)
                 objstr = ''
                 if verbose == 2:
                     K.update_vars(x)
@@ -184,7 +184,7 @@ def solve(psi_fns, omega_fns, tau=None, sigma=None, theta=None,
                         % (i, r_x, r_xbar, r_ybar, error, eps, objstr, metstr)
                 """
 
-                #Evaluate metric potentially
+                # Evaluate metric potentially
                 metstr = '' if metric is None else ", {}".format(metric.message(v))
                 print "iter %d: ||r||_2 = %.3f, eps_pri = %.3f, ||s||_2 = %.3f, eps_dual = %.3f%s%s" % (
                     i, np.linalg.norm(r), eps_pri, np.linalg.norm(s), eps_dual, objstr, metstr)
@@ -220,11 +220,11 @@ def solve(psi_fns, omega_fns, tau=None, sigma=None, theta=None,
 
 def est_params_pc(K, tau=None, sigma=None, verbose=True, scaled=False, try_fast_norm=False):
 
-    #Select theta constant and sigma larger 0
+    # Select theta constant and sigma larger 0
     theta = 1.0
     sigma = 1.0 if sigma is None else sigma
 
-    #Estimate Lipschitz constant and comput tau
+    # Estimate Lipschitz constant and comput tau
     if scaled:
         L = 1
     else:

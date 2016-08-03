@@ -14,23 +14,23 @@ class conv(LinOp):
         self.forward_kernel = psf2otf(kernel, arg.shape, dims)
         self.adjoint_kernel = self.forward_kernel.conj()
         self.initialized = False
-        #Set implementation in super-class
+        # Set implementation in super-class
         super(conv, self).__init__([arg], arg.shape, implem)
 
     # TODO hack. Either add to every LinOp or make copy function like for ProxFns.
     def init_kernel(self):
         if not self.initialized:
             arg = self.input_nodes[0]
-            #Replicate kernel for multichannel deconv
+            # Replicate kernel for multichannel deconv
             if len(arg.shape) == 3 and len(self.kernel.shape) == 2:
                 self.kernel = np.stack((self.kernel,) * arg.shape[2], axis=-1)
 
-            #Halide kernel
+            # Halide kernel
             if self.implementation == Impl['halide'] and \
                (len(arg.shape) == 2 or (len(arg.shape) == 3 and arg.dims == 2)):
                 self.kernel = np.asfortranarray(self.kernel.astype(np.float32))
-                #Halide FFT (pack into diag)
-                #TODO: FIX IMREAL LATER
+                # Halide FFT (pack into diag)
+                # TODO: FIX IMREAL LATER
                 hsize = arg.shape if len(arg.shape) == 3 else arg.shape + (1,)
                 output_fft_tmp = np.zeros(((hsize[0] + 1) / 2 + 1, hsize[1], hsize[2], 2),
                                            dtype=np.float32, order='F');
@@ -57,14 +57,14 @@ class conv(LinOp):
         if self.implementation == Impl['halide'] and \
             (len(self.shape) == 2 or (len(self.shape) == 3 and self.dims == 2)):
 
-            #Halide implementation
+            # Halide implementation
             tmpin = np.asfortranarray(inputs[0].astype(np.float32))
-            Halide('A_conv.cpp').A_conv(tmpin, self.kernel, self.tmpout) #Call
+            Halide('A_conv.cpp').A_conv(tmpin, self.kernel, self.tmpout)  # Call
             np.copyto(outputs[0], self.tmpout)
 
         else:
 
-            #Default numpy using FFT
+            # Default numpy using FFT
             X = fftd(inputs[0], self.dims)
             X *= self.forward_kernel
             np.copyto(outputs[0], ifftd(X, self.dims).real)
@@ -78,14 +78,14 @@ class conv(LinOp):
         if self.implementation == Impl['halide'] and \
             (len(self.shape) == 2 or (len(self.shape) == 3 and self.dims == 2)):
 
-            #Halide implementation
+            # Halide implementation
             tmpin = np.asfortranarray(inputs[0].astype(np.float32))
-            Halide('At_conv.cpp').At_conv(tmpin, self.kernel, self.tmpout) #Call
+            Halide('At_conv.cpp').At_conv(tmpin, self.kernel, self.tmpout)  # Call
             np.copyto(outputs[0], self.tmpout)
 
         else:
 
-            #Default numpy using FFT
+            # Default numpy using FFT
             U = fftd(inputs[0], self.dims)
             U *= self.adjoint_kernel
             np.copyto(outputs[0], ifftd(U, self.dims).real)

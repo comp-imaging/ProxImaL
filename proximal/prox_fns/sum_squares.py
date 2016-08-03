@@ -85,7 +85,7 @@ class least_squares(sum_squares):
         self.orig_freq_diag = freq_diag
         self.freq_dims = freq_dims
         self.orig_freq_dims = freq_dims
-        #Get shape for frequency inversion var
+        # Get shape for frequency inversion var
         if self.freq_diag is not None:
             if len(self.K.orig_end.variables()) > 1:
                 raise Exception("Diagonal frequency inversion supports only one var currently.")
@@ -95,7 +95,7 @@ class least_squares(sum_squares):
             if implem == Impl['halide'] and \
                 (len(self.freq_shape) == 2 or (len(self.freq_shape) == 2 and self.freq_dims == 2)):
                 print "hello"
-                #TODO: FIX REAL TO IMAG
+                # TODO: FIX REAL TO IMAG
                 hsize = self.freq_shape if len(self.freq_shape) == 3 else (self.freq_shape[0], self.freq_shape[1], 1)
                 hsizehalide = ((hsize[0] + 1) / 2 + 1, hsize[1], hsize[2], 2)
 
@@ -150,7 +150,7 @@ class least_squares(sum_squares):
             Ktb = np.zeros(self.K.input_size)
             self.K.adjoint(b, Ktb)
 
-            #Frequency inversion
+            # Frequency inversion
             if self.implementation == Impl['halide'] and \
                 (len(self.freq_shape) == 2 or (len(self.freq_shape) == 2 and self.freq_dims == 2)):
 
@@ -169,7 +169,7 @@ class least_squares(sum_squares):
                     Ktb += vhat
                     Ktb /= (1.0 / rho * self.freq_diag + 1.0)
 
-                #Do inverse tranform
+                # Do inverse tranform
                 Ktb = np.asfortranarray(np.stack((Ktb.real, Ktb.imag), axis=-1))
                 Halide('ifft2_c2r.cpp').ifft2_c2r(Ktb, self.ftmp_halide_out)
 
@@ -177,7 +177,7 @@ class least_squares(sum_squares):
 
             else:
 
-                #General frequency inversion
+                # General frequency inversion
                 Ktb = fftd(np.reshape(Ktb, self.freq_shape), self.freq_dims)
 
                 if rho is None:
@@ -200,7 +200,7 @@ class least_squares(sum_squares):
         """Solve ||K*x - b||^2_2 + (rho/2)||x-v||_2^2.
         """
 
-        #Add additional linear terms for the rho terms
+        # Add additional linear terms for the rho terms
         sizev = 0
         if rho is not None:
             vf = v.flatten() * np.sqrt(rho / 2.0)
@@ -213,10 +213,10 @@ class least_squares(sum_squares):
 
         def matvec(x, output_data):
             if rho is None:
-                #Traverse compgraph
+                # Traverse compgraph
                 self.K.forward(x, output_data)
             else:
-                #Compgraph and additional terms
+                # Compgraph and additional terms
                 self.K.forward(x, output_data[0:0 + sizeb])
                 np.copyto(output_data[sizeb:sizeb + sizev], x * np.sqrt(rho / 2.0))
 
@@ -231,16 +231,16 @@ class least_squares(sum_squares):
 
             return input_data
 
-        #Define linear operator
+        # Define linear operator
         matvecComp = lambda x: matvec(x, output_data)
         rmatvecComp = lambda y: rmatvec(y, input_data)
 
         K = LinearOperator((self.K.output_size + sizev, self.K.input_size),
                             matvecComp, rmatvecComp)
 
-        #Options
+        # Options
         if options is None:
-            #Default options
+            # Default options
             return lsqr(K, b)[0]
         else:
             if not isinstance(options, lsqr_options):
@@ -259,15 +259,15 @@ class least_squares(sum_squares):
                 r += rho * x
             return r
 
-        #Compute Ktb
+        # Compute Ktb
         Ktb = np.zeros(self.K.input_size)
         self.K.adjoint(b, Ktb)
         if rho is not None:
             Ktb += rho * v
 
-        #Options
+        # Options
         if options is None:
-            #Default options
+            # Default options
             options = cg_options()
         elif not isinstance(options, cg_options):
             raise Exception("Invalid CG options.")
@@ -297,7 +297,7 @@ def cg(KtKfun, b, tol, num_iters, verbose, x_init=None, implem=Impl['numpy']):
     # Solves KtK x = b with
     # KtKfun being a function that computes the matrix vector product KtK x
 
-    #TODO: Fix halide later
+    # TODO: Fix halide later
     implem == Impl['numpy']
 
     if implem == Impl['halide']:
@@ -305,18 +305,18 @@ def cg(KtKfun, b, tol, num_iters, verbose, x_init=None, implem=Impl['numpy']):
         hl_norm2 = Halide('A_norm_L2.cpp', generator_name="normL2_1DImg", func="A_norm_L2_1D").A_norm_L2_1D
         hl_dot = Halide('A_dot_prod.cpp', generator_name="dot_1DImg", func="A_dot_1D").A_dot_1D
 
-        #Temp vars
+        # Temp vars
         x = np.zeros(b.shape, dtype=np.float32, order='F')
         r = np.zeros(b.shape, dtype=np.float32, order='F')
         Ap = np.zeros(b.shape, dtype=np.float32, order='F')
 
     else:
-        #Temp vars
+        # Temp vars
         x = np.zeros(b.shape)
         r = np.zeros(b.shape)
         Ap = np.zeros(b.shape)
 
-    #Initialize x
+    # Initialize x
     # Initialize everything to zero.
     if x_init is not None:
         x = x_init
@@ -332,7 +332,7 @@ def cg(KtKfun, b, tol, num_iters, verbose, x_init=None, implem=Impl['numpy']):
         hl_norm2(b.ravel().astype(np.float32), output)
         cg_tol = tol * output[0]
     else:
-        cg_tol = tol * np.linalg.norm(b.ravel(), 2)  #Relative tol
+        cg_tol = tol * np.linalg.norm(b.ravel(), 2)  # Relative tol
 
     # CG iteration
     cg_iter = np.minimum(num_iters, np.prod(b.shape))
@@ -345,11 +345,11 @@ def cg(KtKfun, b, tol, num_iters, verbose, x_init=None, implem=Impl['numpy']):
         else:
             normr = np.linalg.norm(r.ravel(), 2)
 
-        #Check for convergence
+        # Check for convergence
         if normr <= cg_tol:
             break
 
-        #gamma = r'*r;
+        # gamma = r'*r;
         if implem == Impl['halide']:
             hl_norm2(r.ravel(), output)
             gamma = output[0]
@@ -357,7 +357,7 @@ def cg(KtKfun, b, tol, num_iters, verbose, x_init=None, implem=Impl['numpy']):
         else:
             gamma = np.dot(r.ravel().T, r.ravel())
 
-        #direction vector
+        # direction vector
         if iter > 0:
             beta = gamma / gamma_1;
             p = r + beta * p;
@@ -367,10 +367,10 @@ def cg(KtKfun, b, tol, num_iters, verbose, x_init=None, implem=Impl['numpy']):
         # Compute Ap
         KtKfun(p, Ap)
 
-        #Cg update
+        # Cg update
         q = Ap
 
-        #alpha = gamma / (p'*q);
+        # alpha = gamma / (p'*q);
         if implem == Impl['halide']:
             hl_dot(p.ravel(), q.ravel(), output)
             alpha = gamma / output[0]

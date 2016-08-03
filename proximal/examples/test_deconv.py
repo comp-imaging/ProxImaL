@@ -1,4 +1,4 @@
-#Proximal
+# Proximal
 import sys
 sys.path.append('../../')
 
@@ -19,7 +19,7 @@ import cv2
 
 ############################################################
 
-#Load image
+# Load image
 img = Image.open('./data/angela.jpg')  # opens the file using Pillow - it's not an array yet
 I = np.asfortranarray(im2nparray(img))
 I = np.maximum(cv2.resize(I, (2048, 2048), interpolation=cv2.INTER_LINEAR), 0)
@@ -27,22 +27,22 @@ I = np.mean(I, axis=2)
 I = np.asfortranarray(I)
 I = np.maximum(I, 0.0)
 
-#Kernel
+# Kernel
 K = Image.open('./data/kernel_snake.png')  # opens the file using Pillow - it's not an array yet
 K = np.mean(np.asfortranarray(im2nparray(K)), axis=2)
 K = np.maximum(cv2.resize(K, (15, 15), interpolation=cv2.INTER_LINEAR), 0)
 K /= np.sum(K)
 
-#Generate observation
+# Generate observation
 sigma_noise = 0.01
 b = ndimage.convolve(I, K, mode='wrap') + sigma_noise * np.random.randn(*I.shape)
 
-#Create a mask for fun
+# Create a mask for fun
 #mask = np.zeros(b.shape)
 #mask[::2,::2] = 1.
 #b *= mask
 
-#Display data
+# Display data
 plt.ion()
 plt.figure()
 imgplot = plt.imshow(I, interpolation="nearest", clim=(0.0, 1.0))
@@ -96,7 +96,7 @@ plt.show()
 # 			eps_rel=1e-3, max_iters = 10, max_inner_iters = 10, x0 = b, verbose=True)
 
 
-#Recompile
+# Recompile
 hflags = ['-DWTARGET={0} -DHTARGET={1}'.format(I.shape[1], I.shape[0])]
 Halide('fft2_r2c.cpp', compile_flags=hflags, recompile=True)
 Halide('ifft2_c2r.cpp', compile_flags=hflags, recompile=True)
@@ -108,15 +108,15 @@ lambda_data = 500.0
 x = Variable(I.shape)
 #quad_funcs = [sum_squares(mul_elemwise(mask, conv(K, x)), b=b, alpha = lambda_data)]
 quad_funcs = [sum_squares(conv(K, x, implem='numpy', dims=2), b=b, alpha=lambda_data)]
-nonquad_fns = [group_norm1(grad(x, dims=2, implem='numpy'), [2], alpha=lambda_tv, implem='numpy')] #Isotropic
+nonquad_fns = [group_norm1(grad(x, dims=2, implem='numpy'), [2], alpha=lambda_tv, implem='numpy')]  # Isotropic
 
-#quad_funcs = [group_norm1( grad(x, dims = 2), [2], alpha = lambda_tv ), sum_squares(conv(K, x), b=b, alpha = lambda_data)] #Isotropic
+# quad_funcs = [group_norm1( grad(x, dims = 2), [2], alpha = lambda_tv ), sum_squares(conv(K, x), b=b, alpha = lambda_data)] #Isotropic
 #nonquad_fns = []
 
-#Output PSNR metric
+# Output PSNR metric
 psnrval = psnr_metric(I, pad=(10, 10), decimals=2)
 
-#Prox functions are the union
+# Prox functions are the union
 prox_fns = nonquad_fns + quad_funcs
 
 options = cg_options(tol=1e-5, num_iters=100, verbose=False)
@@ -136,5 +136,5 @@ plt.colorbar()
 plt.title('Results from Scipy')
 plt.show()
 
-#Wait until done
+# Wait until done
 raw_input("Press Enter to continue...")

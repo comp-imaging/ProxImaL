@@ -266,7 +266,7 @@ def est_CompGraph_norm(K, tol=1e-3, try_fast_norm=True):
         K.adjoint(output_data, input_data)
         return input_data
 
-    #Define linear operator
+    # Define linear operator
     A = LinearOperator((K.input_size, K.input_size),
                         KtK, KtK)
 

@@ -19,13 +19,13 @@ class norm1(ProxFn):
         """
 
         if self.implementation == Impl['halide'] and (len(self.lin_op.shape) in [2, 3, 4]):
-            #Halide implementation
+            # Halide implementation
             tmpin = np.asfortranarray(v.astype(np.float32))
             Halide('prox_L1.cpp').prox_L1(tmpin, 1. / rho, self.tmpout)
             np.copyto(v, self.tmpout)
 
         else:
-            #Numpy implementation
+            # Numpy implementation
             np.sign(v, self.v_sign)
             np.absolute(v, v)
             v -= 1. / rho

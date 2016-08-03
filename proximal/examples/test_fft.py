@@ -1,6 +1,6 @@
 
 
-#Proximal
+# Proximal
 import sys
 sys.path.append('../../')
 
@@ -29,7 +29,7 @@ def complex_mult(a, b):
 
     return c
 
-#Load image
+# Load image
 img = Image.open('./data/angela_large.jpg')  # opens the file using Pillow - it's not an array yet
 
 np_img = np.asfortranarray(im2nparray(img))
@@ -43,7 +43,7 @@ imgplot.set_cmap('gray')
 plt.title('Numpy')
 plt.show()
 
-#Kernel
+# Kernel
 K = Image.open('./data/kernel_snake.png')  # opens the file using Pillow - it's not an array yet
 K = np.mean(im2nparray(K), axis=2)
 K = np.maximum(cv2.resize(K, (15, 15), interpolation=cv2.INTER_LINEAR), 0)
@@ -61,11 +61,11 @@ plt.show()
 # NUMPY FFT
 ######################################################################
 
-#Pad K if necessary
+# Pad K if necessary
 if len(K.shape) < len(np_img.shape):
     K = np.asfortranarray(np.stack((K,) * np_img.shape[2], axis=-1))
 
-#Convolve reference
+# Convolve reference
 tic()
 Khat = psf2otf(K, np_img.shape, dims=2)
 Kx_fft_ref = ifftd(np.multiply(Khat, fftd(np_img, dims=2)), dims=2).real
@@ -91,10 +91,10 @@ print('Running Scipy.convolve2d took: {0:.1f}ms'.format(toc()))
 # Halide spatial convolution
 ######################################################################
 
-#Halide spatial
+# Halide spatial
 output = np.zeros_like(np_img)
 tic()
-Halide('A_conv.cpp').A_conv(np_img, K, output) #Call
+Halide('A_conv.cpp').A_conv(np_img, K, output)  # Call
 print('Running Halide spatial conv took: {0:.1f}ms'.format(toc()))
 
 plt.figure()
@@ -110,7 +110,7 @@ plt.show()
 # #Test the fft in halide
 ######################################################################
 
-#Check for low length
+# Check for low length
 pad = False
 if len(np_img.shape) == 2:
     pad = True
@@ -123,13 +123,13 @@ output_kfft = np.zeros_like(output_fft)
 output_Kf = np.zeros_like(np_img);
 hflags = ['-DWTARGET={0} -DHTARGET={1}'.format(hsize[1], hsize[0])]
 
-#Recompile
+# Recompile
 #Halide('fft2_r2c.cpp', compile_flags=hflags, recompile=True)
 #Halide('ifft2_c2r.cpp', compile_flags=hflags, recompile=True)
 
 tic()
-Halide('fft2_r2c.cpp', compile_flags=hflags).fft2_r2c(np_img, 0, 0, output_fft) #Call
-Halide('fft2_r2c.cpp', compile_flags=hflags).fft2_r2c(K, K.shape[1] / 2, K.shape[0] / 2, output_kfft) #Call
+Halide('fft2_r2c.cpp', compile_flags=hflags).fft2_r2c(np_img, 0, 0, output_fft)  # Call
+Halide('fft2_r2c.cpp', compile_flags=hflags).fft2_r2c(K, K.shape[1] / 2, K.shape[0] / 2, output_kfft)  # Call
 
 
 np_imghat = 1j * output_fft[..., 1]
@@ -142,7 +142,7 @@ Kmultres = Khat * np_imghat
 Khat = np.asfortranarray(np.stack((Kmultres.real, Kmultres.imag), axis=-1))
 #Kx_fft = complex_mult(output_fft, output_kfft)
 
-Halide('ifft2_c2r.cpp', compile_flags=hflags).ifft2_c2r(Khat, output_Kf) #Call
+Halide('ifft2_c2r.cpp', compile_flags=hflags).ifft2_c2r(Khat, output_Kf)  # Call
 
 print('Running Halide FFT took: {0:.1f}ms'.format(toc()))
 
@@ -180,7 +180,7 @@ print('Maximum Halide FFT error {0}'.format(np.amax(np.abs(output_Kf - Kx_fft_re
 # plt.colorbar()
 # plt.show()
 
-#Wait until done
+# Wait until done
 raw_input("Press Enter to continue...")
 
 exit()

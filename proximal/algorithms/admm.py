@@ -56,7 +56,7 @@ def solve(psi_fns, omega_fns, rho=1.0,
     z = np.zeros(K.output_size)
     u = np.zeros(K.output_size)
 
-    #Initialize
+    # Initialize
     if x0 is not None:
         v[:] = np.reshape(x0, K.input_size)
         K.forward(v, z);
@@ -110,22 +110,22 @@ def solve(psi_fns, omega_fns, rho=1.0,
         eps_pri = np.sqrt(K.output_size) * eps_abs + eps_rel * max([np.linalg.norm(Kv), np.linalg.norm(z)])
         eps_dual = np.sqrt(K.input_size) * eps_abs + eps_rel * np.linalg.norm(KTu) / rho
 
-        #Convergence log
+        # Convergence log
         if convlog != None:
             convlog.toc()
             K.update_vars(v)
             objval = sum([fn.value for fn in prox_fns])
             convlog.record_objective(objval)
 
-        #Show progess
+        # Show progess
         if verbose > 0:
-            #Evaluate objective only if required (expensive !)
+            # Evaluate objective only if required (expensive !)
             objstr = ''
             if verbose == 2:
                 K.update_vars(v)
                 objstr = ", obj_val = %02.03e" % sum([fn.value for fn in prox_fns])
 
-            #Evaluate metric potentially
+            # Evaluate metric potentially
             metstr = '' if metric is None else ", {}".format(metric.message(v))
             print "iter %d: ||r||_2 = %.3f, eps_pri = %.3f, ||s||_2 = %.3f, eps_dual = %.3f%s%s" % (
                 i, np.linalg.norm(r), eps_pri, np.linalg.norm(s), eps_dual, objstr, metstr)

@@ -12,10 +12,10 @@ class mul_color(LinOp):
     """
 
     def __init__(self, arg, mode):
-        #General transform or predefined mode
+        # General transform or predefined mode
         if isinstance(mode, np.ndarray) or isinstance(mode, np.matrix):
 
-            #General transform
+            # General transform
             self.TC = np.asarray(mode)
 
             if self.TC.shape != (3, 3):
@@ -24,7 +24,7 @@ class mul_color(LinOp):
 
         else:
 
-            #Check for predefined transforms
+            # Check for predefined transforms
             if mode == 'opp':
                 self.TC = np.array([[1. / 3., 1. / 3., 1. / 3.], [0.5, 0.0, -0.5], [0.25, -0.5, 0.25]], dtype=np.float32, order='F')
             elif mode == 'yuv':
@@ -33,7 +33,7 @@ class mul_color(LinOp):
                 print >> sys.stderr, "Error, unsupported color mode."
                 sys.exit(1)
 
-        #Check for the shape
+        # Check for the shape
         if len(arg.shape) != 3 or arg.shape[2] != 3:
             print >> sys.stderr, "Error, color transform needs a 3 channel image."
             sys.exit(1)

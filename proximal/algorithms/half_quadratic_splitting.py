@@ -65,7 +65,7 @@ def solve(psi_fns, omega_fns,
     Kxn = np.zeros(K.output_size)
     KTx = np.zeros(K.input_size)
 
-    #Temporary iteration counts
+    # Temporary iteration counts
     x_prev = x.copy()
 
     # Log for prox ops.
@@ -73,14 +73,14 @@ def solve(psi_fns, omega_fns,
     # Time iterations.
     iter_timing = TimingsEntry("HQS iteration")
     inner_iter_timing = TimingsEntry("HQS inner iteration")
-    #Convergence log for initial iterate
+    # Convergence log for initial iterate
     if convlog != None:
         K.update_vars(x)
         objval = sum([fn.value for fn in prox_fns])
         convlog.record_objective(objval)
         convlog.record_timing(0.0)
 
-    #Rho scedule
+    # Rho scedule
     rho = rho_0
     i = 0
     while rho < rho_max and i < max_iters:
@@ -88,7 +88,7 @@ def solve(psi_fns, omega_fns,
         if convlog != None:
             convlog.tic()
 
-        #Update rho for quadratics
+        # Update rho for quadratics
         for idx, op in enumerate(quad_ops):
             op.scalar = quad_weights[idx] / np.sqrt(rho)
         x_update = get_least_squares_inverse(op_list, CompGraph(stacked_ops),
@@ -122,22 +122,22 @@ def solve(psi_fns, omega_fns,
             r_w = np.linalg.norm(w_prev - w)
             eps_w = eps_rel * np.prod(K.output_size)
 
-            #Convergence log
+            # Convergence log
             if convlog != None:
                 convlog.toc()
                 K.update_vars(x)
                 objval = sum([fn.value for fn in prox_fns])
                 convlog.record_objective(objval)
 
-            #Show progess
+            # Show progess
             if verbose > 0:
-                #Evaluate objective only if required (expensive !)
+                # Evaluate objective only if required (expensive !)
                 objstr = ''
                 if verbose == 2:
                     K.update_vars(x)
                     objstr = ", obj_val = %02.03e" % sum([fn.value for fn in prox_fns])
 
-                #Evaluate metric potentially
+                # Evaluate metric potentially
                 metstr = '' if metric is None else ", {}".format(metric.message(x))
                 print "iter [%02d (rho=%2.1e) || %02d]:" \
                       "||w - w_prev||_2 = %02.02e (eps=%02.03e)" \
@@ -148,7 +148,7 @@ def solve(psi_fns, omega_fns,
             if r_x < eps_x and r_w < eps_w:
                 break
 
-        #Update rho
+        # Update rho
         rho = np.minimum(rho * rho_scale, rho_max)
         i += 1
         iter_timing.toc()

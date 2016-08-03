@@ -89,7 +89,7 @@ def get_least_squares_inverse(op_list, b, try_freq_diagonalize=True, verbose=Fal
         diag = stacked.get_diag(freq=True).values()[0]
         diag = diag * np.conj(diag)
         dims = get_dims(op_list)
-        implem = get_implem(op_list) #If any freqdiag is halide, solve with halide
+        implem = get_implem(op_list)  # If any freqdiag is halide, solve with halide
 
         if verbose:
             dimstr = (' with dimensionality %d' % dims) if dims != None else ''

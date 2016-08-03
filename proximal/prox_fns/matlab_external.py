@@ -21,7 +21,7 @@ class matlab_external(ProxFn):
         """
         assert it is not None
 
-        #Run external matlab method
+        # Run external matlab method
         proxmethod = getattr(self.matengine, self.proxfunc)
 
         vmat = matlab.double(v.tolist())

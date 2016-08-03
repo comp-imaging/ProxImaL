@@ -31,12 +31,12 @@ class Problem(object):
                  lin_solver="cg", solver="pc"):
         self.prox_fns = prox_fns
         self.implem = implem
-        self.try_diagonalize = try_diagonalize # Auto diagonalize?
-        self.try_split = try_split # Auto partition?
-        self.try_fast_norm = try_fast_norm # Fast upper bound on ||K||?
-        self.scale = scale # Auto scale problem?
-        self.absorb = absorb # Absorb lin ops into prox fns?
-        self.merge = merge # Merge prox fns?
+        self.try_diagonalize = try_diagonalize  # Auto diagonalize?
+        self.try_split = try_split  # Auto partition?
+        self.try_fast_norm = try_fast_norm  # Fast upper bound on ||K||?
+        self.scale = scale  # Auto scale problem?
+        self.absorb = absorb  # Absorb lin ops into prox fns?
+        self.merge = merge  # Merge prox fns?
 
         # Defaults for psi and omega fns.
         # Should have psi_fns + omega_fns == prox_fns

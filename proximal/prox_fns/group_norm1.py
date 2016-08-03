@@ -17,7 +17,7 @@ class group_norm1(ProxFn):
         self.group_dims = group_dims
         self.v_group_norm = np.zeros(lin_op.shape, dtype=float)
 
-        #Temp array for halide
+        # Temp array for halide
         self.tmpout = None
         if len(lin_op.shape) in [3, 4] and lin_op.shape[-1] == 2 and self.group_dims == [len(lin_op.shape) - 1]:
             self.tmpout = np.zeros((lin_op.shape[0], lin_op.shape[1],
@@ -33,29 +33,29 @@ class group_norm1(ProxFn):
         if self.implementation == Impl['halide'] and \
            len(self.lin_op.shape) in [3, 4] and self.lin_op.shape[-1] == 2 and self.group_dims == [len(self.lin_op.shape) - 1]:
 
-            #Halide implementation
+            # Halide implementation
             if len(self.lin_op.shape) == 3:
                 tmpin = np.asfortranarray(np.reshape(v, (self.lin_op.shape[0], self.lin_op.shape[1], 1, 2)).astype(np.float32))
             else:
                 tmpin = np.asfortranarray(v.astype(np.float32))
 
-            Halide('prox_IsoL1.cpp').prox_IsoL1(tmpin, 1.0 / rho, self.tmpout) #Call
+            Halide('prox_IsoL1.cpp').prox_IsoL1(tmpin, 1.0 / rho, self.tmpout)  # Call
             np.copyto(v, np.reshape(self.tmpout, self.lin_op.shape))
 
         else:
 
-            #Numpy implementation
+            # Numpy implementation
             np.multiply(v, v, self.v_group_norm)
 
-            #Sum along dimensions and keep dimensions
+            # Sum along dimensions and keep dimensions
             orig_s = v.shape
             for d in self.group_dims:
                 self.v_group_norm = np.sum(self.v_group_norm, axis=d, keepdims=True)
 
-            #Sqrt
+            # Sqrt
             np.sqrt(self.v_group_norm, self.v_group_norm)
 
-            #Replicate
+            # Replicate
             tiles = ()
             for d in range(len(orig_s)):
                 if d in self.group_dims:
@@ -65,11 +65,11 @@ class group_norm1(ProxFn):
 
             self.v_group_norm = np.tile(self.v_group_norm, tiles)
 
-            #Thresholded group norm
+            # Thresholded group norm
             with np.errstate(divide='ignore'):
                 np.maximum(0.0, 1.0 - (1.0 / rho) * (1.0 / self.v_group_norm), self.v_group_norm)
 
-            #Mult
+            # Mult
             v *= self.v_group_norm
 
         return v
@@ -78,19 +78,19 @@ class group_norm1(ProxFn):
         """Evaluate the function on v (ignoring parameters).
         """
 
-        #Square
+        # Square
         vsum = v.copy();
         np.multiply(v, v, vsum)
 
-        #Sum along dimensions and keep dimensions
+        # Sum along dimensions and keep dimensions
         orig_s = v.shape
         for d in self.group_dims:
             vsum = np.sum(vsum, axis=d, keepdims=True)
 
-        #Sqrt
+        # Sqrt
         np.sqrt(vsum, vsum)
 
-        #L1 norm is then sum of norms
+        # L1 norm is then sum of norms
         return np.sum(vsum)
 
     def get_data(self):
@@ -115,18 +115,18 @@ class weighted_group_norm1(group_norm1):
         """x = v *  (1 - (|W|/rho) * /||x||_g )_+
         """
 
-        #Square
+        # Square
         np.multiply(v, v, self.v_group_norm)
 
-        #Sum along dimensions and keep dimensions
+        # Sum along dimensions and keep dimensions
         orig_s = v.shape
         for d in self.group_dims:
             self.v_group_norm = np.sum(self.v_group_norm, axis=d, keepdims=True)
 
-        #Sqrt
+        # Sqrt
         np.sqrt(self.v_group_norm, self.v_group_norm)
 
-        #Replicate
+        # Replicate
         tiles = ()
         for d in range(len(orig_s)):
             if d in self.group_dims:
@@ -136,11 +136,11 @@ class weighted_group_norm1(group_norm1):
 
         self.v_group_norm = np.tile(self.v_group_norm, tiles)
 
-        #Thresholded group norm
+        # Thresholded group norm
         with np.errstate(divide='ignore'):
             np.maximum(0.0, 1.0 - (np.absolute(self.weight) / rho) * (1.0 / self.v_group_norm), self.v_group_norm)
 
-        #Mult
+        # Mult
         idxs = self.weight == 0
         np.copyto(v, v_tmp)
         v *= self.v_group_norm

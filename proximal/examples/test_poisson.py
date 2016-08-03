@@ -1,4 +1,4 @@
-#Proximal
+# Proximal
 import sys
 sys.path.append('../../')
 
@@ -18,26 +18,26 @@ import cv2
 
 ############################################################
 
-#Load image
+# Load image
 img = Image.open('./data/angela.jpg')  # opens the file using Pillow - it's not an array yet
 x = np.asfortranarray(im2nparray(img))
 x = np.mean(x, axis=2)
 
-#Scale
+# Scale
 scale = 1.
 x = np.maximum(x, 0.0) * scale
 
-#Kernel
+# Kernel
 K = Image.open('./data/kernel_snake.png')  # opens the file using Pillow - it's not an array yet
 K = np.mean(np.asfortranarray(im2nparray(K)), axis=2)
 K = np.maximum(cv2.resize(K, (15, 15), interpolation=cv2.INTER_LINEAR), 0)
 K /= np.sum(K)
 
-#Generate observation
+# Generate observation
 sigma_noise = 0.01
 b = ndimage.convolve(x, K, mode='wrap') + sigma_noise * np.random.randn(*x.shape)
 
-#Display data
+# Display data
 plt.ion()
 plt.figure()
 imgplot = plt.imshow(x / scale, interpolation="nearest", clim=(0.0, 1.0))
@@ -63,11 +63,11 @@ lambda_data = 4000.0
 
 x = Variable(x.shape)
 prox_fns = [poisson_norm(conv(K, x), b, alpha=lambda_data), \
-                        group_norm1(grad(x, dims=2), [2], alpha=lambda_tv)] #Isotropic
+                        group_norm1(grad(x, dims=2), [2], alpha=lambda_tv)]  # Isotropic
 quad_funcs = []
 
 
-#Method options
+# Method options
 method = 'lin-admm'
 diag = True
 verbose = 1
@@ -108,5 +108,5 @@ plt.colorbar()
 plt.title('Results from Scipy')
 plt.show()
 
-#Wait until done
+# Wait until done
 raw_input("Press Enter to continue...")

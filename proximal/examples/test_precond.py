@@ -1,4 +1,4 @@
-#Proximal
+# Proximal
 import sys
 sys.path.append('../../')
 
@@ -19,23 +19,23 @@ import matplotlib.pyplot as plt
 from PIL import Image
 import cv2
 
-#Load image
+# Load image
 img = Image.open('./data/angela.jpg')  # opens the file using Pillow - it's not an array yet
 x = np.asfortranarray(im2nparray(img))
 x = np.mean(x, axis=2)
 x = np.maximum(x, 0.0)
 
-#Kernel
+# Kernel
 K = Image.open('./data/kernel_snake.png')  # opens the file using Pillow - it's not an array yet
 K = np.mean(np.asfortranarray(im2nparray(K)), axis=2)
 K = np.maximum(cv2.resize(K, (15, 15), interpolation=cv2.INTER_LINEAR), 0)
 K /= np.sum(K)
 
-#Generate observation
+# Generate observation
 sigma_noise = 0.01
 b = ndimage.convolve(x, K, mode='wrap') + sigma_noise * np.random.randn(*x.shape)
 
-#Display data
+# Display data
 plt.ion()
 plt.figure()
 imgplot = plt.imshow(x, interpolation="nearest", clim=(0.0, 1.0))
@@ -55,7 +55,7 @@ imgplot.set_cmap('gray')
 plt.title('Observation')
 plt.show()
 
-#Setup problem
+# Setup problem
 lambda_tv = 1.0
 lambda_data = 500.0
 
@@ -79,8 +79,8 @@ stacked_ops = vstack([op1, op2])
 equil_iters = 100
 d, e = equil(CompGraph(stacked_ops), equil_iters, 1e-1, 5)
 
-op1_d = np.reshape(d[:op1.size], op1.shape)#/wrand1
-op2_d = np.reshape(d[op1.size:], op2.shape)#/wrand2
+op1_d = np.reshape(d[:op1.size], op1.shape)  # /wrand1
+op2_d = np.reshape(d[op1.size:], op2.shape)  # /wrand2
 
 new_x = mul_elemwise(e, x)
 shaped_x = reshape(new_x, I.shape)
@@ -96,7 +96,7 @@ op2 = mul_elemwise(op2_d, op2)
 stacked_ops = vstack([op1, op2])
 L = est_CompGraph_norm(CompGraph(stacked_ops))
 print "||K||_2 = ", L
-#Quadratic or non quadratic splitting
+# Quadratic or non quadratic splitting
 print 'Splitting quadratics'
 
 # print np.linalg.norm(new_x.weight)
@@ -105,7 +105,7 @@ print 'Splitting quadratics'
 # e /= np.sqrt(L)
 # print np.linalg.norm(new_x.weight)
 
-nonquad_fns = [weighted_norm1(1 / op1_d, op1, alpha=lambda_tv)] #Anisotropic
+nonquad_fns = [weighted_norm1(1 / op1_d, op1, alpha=lambda_tv)]  # Anisotropic
 # nonquad_fns = [group_norm1( grad(x, dims = 2), [2], alpha = lambda_tv )] #Isotropic
 quad_funcs = [weighted_sum_squares(1 / op2_d, op2, b=op2_d * b, alpha=lambda_data)]
 
@@ -127,7 +127,7 @@ quad_funcs = [weighted_sum_squares(1 / op2_d, op2, b=op2_d * b, alpha=lambda_dat
 # 100: 75537.9407767
 # 0/perfect: 87258.0455795
 
-#Prox functions are the union
+# Prox functions are the union
 prox_fns = nonquad_fns + quad_funcs
 
 method = 'pc'
@@ -163,7 +163,7 @@ elif method == 'admm':
 
 elif method == 'hqs':
 
-    #Need high accuracy when quadratics are not splitted
+    # Need high accuracy when quadratics are not splitted
     options = cg_options(tol=1e-5, num_iters=100, verbose=True)
     hqs(prox_fns, lin_solver="cg", lin_solver_options=options,
                                     eps_rel=1e-6, max_iters=10, max_inner_iters=10, x0=b,
@@ -182,5 +182,5 @@ plt.colorbar()
 plt.title('Result')
 plt.show()
 
-#Wait until done
+# Wait until done
 raw_input("Press Enter to continue...")

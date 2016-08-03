@@ -1,6 +1,6 @@
 
 
-#Proximal
+# Proximal
 import sys
 sys.path.append('../../')
 
@@ -17,11 +17,11 @@ from scipy.misc import lena
 
 ############################################################
 
-#Load image
+# Load image
 img = Image.open('./data/angela.jpg')  # opens the file using Pillow - it's not an array yet
 
 np_img = np.asfortranarray(im2nparray(img))
-#print 'Type ', np_img.dtype , 'Shape', np_img.shape
+# print 'Type ', np_img.dtype , 'Shape', np_img.shape
 
 plt.figure()
 imgplot = plt.imshow(np_img, interpolation="nearest", clim=(0.0, 1.0))
@@ -49,5 +49,5 @@ plt.show()
 
 plt.savefig('color.png')
 
-#Wait until done
+# Wait until done
 raw_input("Press Enter to continue...")

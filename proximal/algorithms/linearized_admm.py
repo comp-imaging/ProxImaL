@@ -53,7 +53,7 @@ def solve(psi_fns, omega_fns, lmb=1.0, mu=None, quad_funcs=None,
     prox_fns = psi_fns + omega_fns
     stacked_ops = vstack([fn.lin_op for fn in psi_fns])
     K = CompGraph(stacked_ops)
-    #Select optimal parameters if wanted
+    # Select optimal parameters if wanted
     if lmb is None or mu is None:
         lmb, mu = est_params_lin_admm(K, lmb, verbose, scaled, try_fast_norm)
 
@@ -76,7 +76,7 @@ def solve(psi_fns, omega_fns, lmb=1.0, mu=None, quad_funcs=None,
     prox_log = TimingsLog(prox_fns)
     # Time iterations.
     iter_timing = TimingsEntry("LIN-ADMM iteration")
-    #Convergence log for initial iterate
+    # Convergence log for initial iterate
     if convlog != None:
         K.update_vars(v)
         objval = sum([fn.value for fn in prox_fns])
@@ -124,22 +124,22 @@ def solve(psi_fns, omega_fns, lmb=1.0, mu=None, quad_funcs=None,
         eps_pri = np.sqrt(K.output_size) * eps_abs + eps_rel * max([np.linalg.norm(Kv), np.linalg.norm(z)])
         eps_dual = np.sqrt(K.input_size) * eps_abs + eps_rel * np.linalg.norm(KTu) / (1.0 / lmb)
 
-        #Convergence log
+        # Convergence log
         if convlog != None:
             convlog.toc()
             K.update_vars(v)
             objval = sum([fn.value for fn in prox_fns])
             convlog.record_objective(objval)
 
-        #Show progess
+        # Show progess
         if verbose > 0:
-            #Evaluate objective only if required (expensive !)
+            # Evaluate objective only if required (expensive !)
             objstr = ''
             if verbose == 2:
                 K.update_vars(v)
                 objstr = ", obj_val = %02.03e" % sum([fn.value for fn in prox_fns])
 
-            #Evaluate metric potentially
+            # Evaluate metric potentially
             metstr = '' if metric is None else ", {}".format(metric.message(v))
             print "iter %d: ||r||_2 = %.3f, eps_pri = %.3f, ||s||_2 = %.3f, eps_dual = %.3f%s%s" % (
                 i, np.linalg.norm(r), eps_pri, np.linalg.norm(s), eps_dual, objstr, metstr)
@@ -167,14 +167,14 @@ def solve(psi_fns, omega_fns, lmb=1.0, mu=None, quad_funcs=None,
 
 def est_params_lin_admm(K, lmb=None, verbose=True, scaled=False, try_fast_norm=False):
 
-    #Select lambda
+    # Select lambda
     lmb = 1.0 if lmb is None else np.maximum(lmb, 1e-5)
 
-    #Warn user
+    # Warn user
     if lmb > 1.0:
         warnings.warn("Large lambda value given by user.")
 
-    #Estimate Lipschitz constant and comput tau
+    # Estimate Lipschitz constant and comput tau
     if scaled:
         L = 1
     else:

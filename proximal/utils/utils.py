@@ -1,6 +1,6 @@
 from __future__ import print_function, division
 
-#Imports
+# Imports
 from PIL import Image
 import numpy as np
 from numpy.fft import fftn, ifftn, fft2, ifft2
@@ -9,13 +9,13 @@ import timeit
 import sys
 
 ###############################################################################
-## Implementations supported
+# Implementations supported
 ###############################################################################
 
 Impl = {'numpy': 0, 'halide': 1}
 
 ###############################################################################
-## TODO: DIRTY HACK FOR BACKWARDS COMPATIBILITY!
+# TODO: DIRTY HACK FOR BACKWARDS COMPATIBILITY!
 ###############################################################################
 
 try:
@@ -45,7 +45,7 @@ except:
     np.stack = _stack
 
 ###############################################################################
-## Image utils
+# Image utils
 ###############################################################################
 
 
@@ -60,10 +60,10 @@ def im2nparray(img, datatype=np.float32):
     return np_img
 
 ###############################################################################
-## Timing utils
+# Timing utils
 ###############################################################################
 
-#Store last time stamp globally
+# Store last time stamp globally
 global lastticstamp
 lastticstamp = []
 
@@ -88,7 +88,7 @@ def toc(t=[]):
 
     global lastticstamp
 
-    #Last tic
+    # Last tic
     if not t:
         if lastticstamp:
             t = lastticstamp
@@ -96,18 +96,18 @@ def toc(t=[]):
             print('Error: Call to toc did never call tic before.', file=sys.stderr)
             return 0.0
 
-    #Measure time in ms
-    elapsed = (timeit.default_timer() - t) * 1000.0  #in ms
+    # Measure time in ms
+    elapsed = (timeit.default_timer() - t) * 1000.0  # in ms
     return elapsed
 
 ###############################################################################
-## FFT utils
+# FFT utils
 ###############################################################################
 
 
 def fftd(I, dims=None):
 
-    #Compute fft
+    # Compute fft
     if dims is None:
         X = fftn(I)
     elif dims == 2:
@@ -120,7 +120,7 @@ def fftd(I, dims=None):
 
 def ifftd(I, dims=None):
 
-    #Compute fft
+    # Compute fft
     if dims is None:
         X = ifftn(I)
     elif dims == 2:
@@ -141,25 +141,25 @@ def circshift(x, shifts):
 
 def psf2otf(K, outsize, dims=None):
 
-    #Size
+    # Size
     sK = K.shape
     assert len(sK) == len(outsize)
 
-    #Pad to large size and circshift
+    # Pad to large size and circshift
     padfull = []
     for j in range(len(sK)):
         padfull.append((0, outsize[j] - sK[j]))
 
     Kfull = np.pad(K, padfull, mode='constant', constant_values=0.0)
 
-    #Circular shift
+    # Circular shift
     shifts = -np.floor_divide(np.array(sK), 2)
     if dims is not None and dims < len(sK):
         shifts = shifts[0:dims]
 
     Kfull = circshift(Kfull, shifts)
 
-    #Compute otf
+    # Compute otf
     otf = fftd(Kfull, dims)
 
     # Estimate the rough number of operations involved in the computation of the FFT.
@@ -180,17 +180,17 @@ def psf2otf(K, outsize, dims=None):
     return otf
 
 ###############################################################################
-## Image metrics
+# Image metrics
 ###############################################################################
 
 
 def psnr(x, ref, pad=None, maxval=1.0):
 
-    #Sheck size
+    # Sheck size
     if ref.shape != x.shape:
         raise Exception("Wrong size in PSNR evaluation.")
 
-    #Remove padding if necessary
+    # Remove padding if necessary
     if pad is not None:
 
         ss = x.shape
@@ -206,43 +206,43 @@ def psnr(x, ref, pad=None, maxval=1.0):
     else:
         mse = np.mean((x - ref)**2)
 
-    #MSE
+    # MSE
     if mse > np.finfo(float).eps:
         return 10.0 * np.log10(maxval**2 / mse)
     else:
         return np.inf
 
 ###############################################################################
-## Noise estimation
+# Noise estimation
 ###############################################################################
 
-#Currently only implements one method
+# Currently only implements one method
 NoiseEstMethod = {'daub_reflect': 0, 'daub_replicate': 1}
 
 
 def estimate_std(z, method='daub_reflect'):
-    #Estimates noise standard deviation assuming additive gaussian noise
+    # Estimates noise standard deviation assuming additive gaussian noise
 
-    #Check method
+    # Check method
     if (method not in NoiseEstMethod.values()) and (method in NoiseEstMethod.keys()):
         method = NoiseEstMethod[method]
     else:
         raise Exception("Invalid noise estimation method.")
 
-    #Check shape
+    # Check shape
     if len(z.shape) == 2:
         z = z[..., np.newaxis]
     elif len(z.shape) != 3:
         raise Exception("Supports only up to 3D images.")
 
-    #Run on multichannel image
+    # Run on multichannel image
     channels = z.shape[2]
     dev = np.zeros(channels)
 
-    #Iterate over channels
+    # Iterate over channels
     for ch in range(channels):
 
-        #Daubechies denoising method
+        # Daubechies denoising method
         if method == NoiseEstMethod['daub_reflect'] or method == NoiseEstMethod['daub_replicate']:
             daub6kern = np.array([0.03522629188571, 0.08544127388203, -0.13501102001025, \
                                 -0.45987750211849, 0.80689150931109, -0.33267055295008], \
@@ -255,5 +255,5 @@ def estimate_std(z, method='daub_reflect'):
 
             dev[ch] = np.median(np.absolute(wav_det)) / 0.6745
 
-    #Return standard deviation
+    # Return standard deviation
     return dev
