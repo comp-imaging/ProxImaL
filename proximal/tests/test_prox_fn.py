@@ -2,7 +2,7 @@ from proximal.tests.base_test import BaseTest
 from proximal.prox_fns import (norm1, sum_squares, sum_entries, nonneg, weighted_norm1,
                                weighted_nonneg, diff_fn)
 from proximal.lin_ops import Variable
-from proximal.halide.halide import Halide
+from proximal.halide.halide import Halide, halide_installed
 from proximal.utils.utils import im2nparray, tic, toc
 import cvxpy as cvx
 import numpy as np
@@ -134,100 +134,100 @@ class TestProxFn(BaseTest):
     def test_norm1_halide(self):
         """Halide Norm 1 test
         """
+        if halide_installed():
+            # Load image
+            testimg_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                            'data', 'angela.jpg')
+            img = Image.open(testimg_filename)  # opens the file using Pillow - it's not an array yet
+            np_img = np.asfortranarray(im2nparray(img))
 
-        # Load image
-        testimg_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                        'data', 'angela.jpg')
-        img = Image.open(testimg_filename)  # opens the file using Pillow - it's not an array yet
-        np_img = np.asfortranarray(im2nparray(img))
+            # Convert to gray
+            np_img = np.mean(np_img, axis=2)
 
-        # Convert to gray
-        np_img = np.mean(np_img, axis=2)
+            # Test problem
+            v = np_img
+            theta = 0.5
 
-        # Test problem
-        v = np_img
-        theta = 0.5
+            # Output
+            output = np.zeros_like(np_img)
+            Halide('prox_L1.cpp').prox_L1(v, theta, output)  # Call
 
-        # Output
-        output = np.zeros_like(np_img)
-        Halide('prox_L1.cpp').prox_L1(v, theta, output)  # Call
+            # Reference
+            output_ref = np.maximum(0.0, v - theta) - np.maximum(0.0, -v - theta)
 
-        # Reference
-        output_ref = np.maximum(0.0, v - theta) - np.maximum(0.0, -v - theta)
-
-        self.assertItemsAlmostEqual(output, output_ref)
+            self.assertItemsAlmostEqual(output, output_ref)
 
     def test_isonorm1_halide(self):
         """Halide Norm 1 test
         """
+        if halide_installed():
+            # Load image
+            testimg_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                            'data', 'angela.jpg')
+            img = Image.open(testimg_filename)
+            np_img = np.asfortranarray(im2nparray(img))
 
-        # Load image
-        testimg_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                        'data', 'angela.jpg')
-        img = Image.open(testimg_filename)
-        np_img = np.asfortranarray(im2nparray(img))
+            # Convert to gray
+            np_img = np.mean(np_img, axis=2)
 
-        # Convert to gray
-        np_img = np.mean(np_img, axis=2)
+            # Test problem
+            theta = 0.5
 
-        # Test problem
-        theta = 0.5
+            f = np_img
+            if len(np_img.shape) == 2:
+                f = f[..., np.newaxis]
 
-        f = np_img
-        if len(np_img.shape) == 2:
-            f = f[..., np.newaxis]
+            ss = f.shape
+            fx = f[:, np.r_[1:ss[1], ss[1] - 1], :] - f
+            fy = f[np.r_[1:ss[0], ss[0] - 1], :, :] - f
+            v = np.asfortranarray(np.stack((fx, fy), axis=-1))
 
-        ss = f.shape
-        fx = f[:, np.r_[1:ss[1], ss[1] - 1], :] - f
-        fy = f[np.r_[1:ss[0], ss[0] - 1], :, :] - f
-        v = np.asfortranarray(np.stack((fx, fy), axis=-1))
+            # Output
+            output = np.zeros_like(v)
+            Halide('prox_IsoL1.cpp').prox_IsoL1(v, theta, output)  # Call
 
-        # Output
-        output = np.zeros_like(v)
-        Halide('prox_IsoL1.cpp').prox_IsoL1(v, theta, output)  # Call
+            # Reference
+            normv = np.sqrt(np.multiply(v[:, :, :, 0], v[:, :, :, 0]) +
+                            np.multiply(v[:, :, :, 1], v[:, :, :, 1]))
+            normv = np.stack((normv, normv), axis=-1)
+            with np.errstate(divide='ignore'):
+                output_ref = np.maximum(0.0, 1.0 - theta / normv) * v
 
-        # Reference
-        normv = np.sqrt(np.multiply(v[:, :, :, 0], v[:, :, :, 0]) +
-                        np.multiply(v[:, :, :, 1], v[:, :, :, 1]))
-        normv = np.stack((normv, normv), axis=-1)
-        with np.errstate(divide='ignore'):
-            output_ref = np.maximum(0.0, 1.0 - theta / normv) * v
-
-        self.assertItemsAlmostEqual(output, output_ref)
+            self.assertItemsAlmostEqual(output, output_ref)
 
     def test_poisson_halide(self):
         """Halide Poisson norm test
         """
+        if halide_installed():
+            # Load image
+            testimg_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                            'data', 'angela.jpg')
+            img = Image.open(testimg_filename)
+            np_img = np.asfortranarray(im2nparray(img))
 
-        # Load image
-        testimg_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                        'data', 'angela.jpg')
-        img = Image.open(testimg_filename)
-        np_img = np.asfortranarray(im2nparray(img))
+            # Convert to gray
+            np_img = np.mean(np_img, axis=2)
 
-        # Convert to gray
-        np_img = np.mean(np_img, axis=2)
+            # Test problem
+            v = np_img
+            theta = 0.5
 
-        # Test problem
-        v = np_img
-        theta = 0.5
+            mask = np.asfortranarray(np.random.randn(*list(np_img.shape)).astype(np.float32))
+            mask = np.maximum(mask, 0.)
+            b = np_img * np_img
 
-        mask = np.asfortranarray(np.random.randn(*list(np_img.shape)).astype(np.float32))
-        mask = np.maximum(mask, 0.)
-        b = np_img * np_img
+            # Output
+            output = np.zeros_like(v)
 
-        # Output
-        output = np.zeros_like(v)
+            tic()
+            Halide('prox_Poisson.cpp').prox_Poisson(v, mask, b, theta, output)  # Call
+            print('Running took: {0:.1f}ms'.format(toc()))
 
-        tic()
-        Halide('prox_Poisson.cpp').prox_Poisson(v, mask, b, theta, output)  # Call
-        print('Running took: {0:.1f}ms'.format(toc()))
+            # Reference
+            output_ref = 0.5 * (v - theta + np.sqrt((v - theta) * (v - theta) + 4 * theta * b))
+            output_ref[mask <= 0.5] = v[mask <= 0.5]
 
-        # Reference
-        output_ref = 0.5 * (v - theta + np.sqrt((v - theta) * (v - theta) + 4 * theta * b))
-        output_ref[mask <= 0.5] = v[mask <= 0.5]
-
-        self.assertItemsAlmostEqual(output, output_ref)
+            self.assertItemsAlmostEqual(output, output_ref)
 
     def test_diff_fn(self):
         """Test generic differentiable function operator.

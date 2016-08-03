@@ -9,6 +9,12 @@ import sys
 import numpy as np
 
 
+def halide_installed():
+    """Returns whether Halide is installed.
+    """
+    return 'HALIDE_PATH' in os.environ
+
+
 class Halide(object):
 
     def __init__(self, generator_source=[], func=[],

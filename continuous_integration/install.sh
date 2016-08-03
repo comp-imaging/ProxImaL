@@ -12,6 +12,7 @@ if [[ "$DISTRIB" == "conda" ]]; then
     # conda-based environment instead
     deactivate
 
+    export ATLAS="/usr/lib/atlas-base/libatlas.so"
     # Use the miniconda installer for faster download / install of conda
     # itself
     wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh \
@@ -22,10 +23,11 @@ if [[ "$DISTRIB" == "conda" ]]; then
 
     # Configure the conda environment and put it in the path using the
     # provided versions
-    conda create -n testenv --yes python=$PYTHON_VERSION pip nose \
-        numpy=$NUMPY_VERSION scipy=$SCIPY_VERSION pil
+    conda create -n testenv --yes python=$PYTHON_VERSION nomkl pip nose \
+        numpy scipy pillow opencv
     source activate testenv
-
+    pip install flake8
+    pip install cvxpy
     # if [[ "$INSTALL_MKL" == "true" ]]; then
     #     # Make sure that MKL is used
     #     conda install --yes mkl

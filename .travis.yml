@@ -15,3 +15,10 @@ after_success:
     - if [[ "$COVERAGE" == "true" ]]; then coveralls; fi
 notifications:
   email: false
+cache: apt
+addons:
+  apt:
+    packages:
+    - gfortran
+    - libgfortran3
+    - g++
