@@ -1,7 +1,7 @@
 from .prox_fn import ProxFn
 import numpy as np
-from proximal.utils.utils import *
-from proximal.halide.halide import *
+from proximal.utils.utils import Impl
+from proximal.halide.halide import Halide
 
 
 class group_norm1(ProxFn):
@@ -19,7 +19,8 @@ class group_norm1(ProxFn):
 
         # Temp array for halide
         self.tmpout = None
-        if len(lin_op.shape) in [3, 4] and lin_op.shape[-1] == 2 and self.group_dims == [len(lin_op.shape) - 1]:
+        if len(lin_op.shape) in [3, 4] and lin_op.shape[-1] == 2 and \
+           self.group_dims == [len(lin_op.shape) - 1]:
             self.tmpout = np.zeros((lin_op.shape[0], lin_op.shape[1],
                                     lin_op.shape[2] if (len(lin_op.shape) > 3) else 1, 2),
                                    dtype=np.float32, order='FORTRAN')
@@ -31,7 +32,8 @@ class group_norm1(ProxFn):
         """
 
         if self.implementation == Impl['halide'] and \
-           len(self.lin_op.shape) in [3, 4] and self.lin_op.shape[-1] == 2 and self.group_dims == [len(self.lin_op.shape) - 1]:
+           len(self.lin_op.shape) in [3, 4] and self.lin_op.shape[-1] == 2 and \
+           self.group_dims == [len(self.lin_op.shape) - 1]:
 
             # Halide implementation
             if len(self.lin_op.shape) == 3:
@@ -84,7 +86,6 @@ class group_norm1(ProxFn):
         np.multiply(v, v, vsum)
 
         # Sum along dimensions and keep dimensions
-        orig_s = v.shape
         for d in self.group_dims:
             vsum = np.sum(vsum, axis=d, keepdims=True)
 
@@ -139,14 +140,12 @@ class weighted_group_norm1(group_norm1):
 
         # Thresholded group norm
         with np.errstate(divide='ignore'):
-            np.maximum(0.0, 1.0 - (np.absolute(self.weight) / rho) * \
+            np.maximum(0.0, 1.0 - (np.absolute(self.weight) / rho) *
                        (1.0 / self.v_group_norm), self.v_group_norm)
 
         # Mult
-        idxs = self.weight == 0
-        np.copyto(v, v_tmp)
-        v *= self.v_group_norm
-        v[idxs] = v_tmp[idxs]
+        idxs = self.weight != 0
+        v[idxs] *= self.v_group_norm[idxs]
         return v
 
     def _eval(self, v):

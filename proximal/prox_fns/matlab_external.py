@@ -16,7 +16,7 @@ class matlab_external(ProxFn):
 
         super(matlab_external, self).__init__(lin_op, **kwargs)
 
-    def _prox(self, rho, v, *args, **kwargs):
+    def _prox(self, rho, v, it, *args, **kwargs):
         """ calls matlab proximal function on v
         """
         assert it is not None

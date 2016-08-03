@@ -1,9 +1,9 @@
 from .prox_fn import ProxFn
-from proximal.lin_ops import CompGraph, vstack, mul_elemwise
+from proximal.lin_ops import CompGraph, mul_elemwise
 import numpy as np
-from proximal.utils.utils import *
+from proximal.utils.utils import Impl, fftd, ifftd
 from scipy.sparse.linalg import lsqr, LinearOperator
-from proximal.halide.halide import *
+from proximal.halide.halide import Halide
 
 
 class sum_squares(ProxFn):
@@ -45,7 +45,7 @@ class weighted_sum_squares(sum_squares):
         new_lin_op = mul_elemwise(self.weight, self.lin_op)
         new_b = mul_elemwise(self.weight, self.b).value
         return sum_squares(new_lin_op, alpha=self.alpha,
-                           beta=new_beta, b=new_b, c=self.c, gamma=self.gamma).absorb_params()
+                           beta=self.beta, b=new_b, c=self.c, gamma=self.gamma).absorb_params()
 
     def _prox(self, rho, v, *args, **kwargs):
         """x = (rho/weight)/(2+(rho/weight))*v.
@@ -93,7 +93,8 @@ class least_squares(sum_squares):
             self.freq_shape = self.K.orig_end.variables()[0].shape
             self.freq_diag = np.reshape(self.freq_diag, self.freq_shape)
             if implem == Impl['halide'] and \
-                    (len(self.freq_shape) == 2 or (len(self.freq_shape) == 2 and self.freq_dims == 2)):
+                    (len(self.freq_shape) == 2 or (len(self.freq_shape) == 2 and
+                                                   self.freq_dims == 2)):
                 print "hello"
                 # TODO: FIX REAL TO IMAG
                 hsize = self.freq_shape if len(self.freq_shape) == 3 else (
@@ -103,7 +104,8 @@ class least_squares(sum_squares):
                 self.hsizehalide = hsizehalide
                 self.ftmp_halide = np.zeros(hsizehalide, dtype=np.float32, order='F')
                 self.ftmp_halide_out = np.zeros(hsize, dtype=np.float32, order='F')
-                self.freq_diag = np.reshape(self.freq_diag[0:hsizehalide[0], ...], hsizehalide[0:3])
+                self.freq_diag = np.reshape(self.freq_diag[0:hsizehalide[0], ...],
+                                            hsizehalide[0:3])
 
         super(least_squares, self).__init__(lin_op, implem=implem, **kwargs)
 
@@ -153,7 +155,8 @@ class least_squares(sum_squares):
 
             # Frequency inversion
             if self.implementation == Impl['halide'] and \
-                    (len(self.freq_shape) == 2 or (len(self.freq_shape) == 2 and self.freq_dims == 2)):
+                    (len(self.freq_shape) == 2 or
+                     (len(self.freq_shape) == 2 and self.freq_dims == 2)):
 
                 Halide('fft2_r2c.cpp').fft2_r2c(np.asfortranarray(np.reshape(
                     Ktb.astype(np.float32), self.freq_shape)), 0, 0, self.ftmp_halide)
@@ -235,8 +238,9 @@ class least_squares(sum_squares):
             return input_data
 
         # Define linear operator
-        matvecComp = lambda x: matvec(x, output_data)
-        rmatvecComp = lambda y: rmatvec(y, input_data)
+        def matvecComp(x): return matvec(x, output_data)
+
+        def rmatvecComp(y): return rmatvec(y, input_data)
 
         K = LinearOperator((self.K.output_size + sizev, self.K.input_size),
                            matvecComp, rmatvecComp)
@@ -248,7 +252,8 @@ class least_squares(sum_squares):
         else:
             if not isinstance(options, lsqr_options):
                 raise Exception("Invalid LSQR options.")
-            return lsqr(K, b, atol=options.atol, btol=options.btol, show=options.show, iter_lim=options.iter_lim)[0]
+            return lsqr(K, b, atol=options.atol, btol=options.btol,
+                        show=options.show, iter_lim=options.iter_lim)[0]
 
     def solve_cg(self, b, rho=None, v=None, x_init=None, options=None):
         """Solve ||K*x - b||^2_2 + (rho/2)||x-v||_2^2.
@@ -275,7 +280,8 @@ class least_squares(sum_squares):
         elif not isinstance(options, cg_options):
             raise Exception("Invalid CG options.")
 
-        return cg(KtK, Ktb, options.tol, options.num_iters, options.verbose, x_init, self.implementation)
+        return cg(KtK, Ktb, options.tol, options.num_iters,
+                  options.verbose, x_init, self.implementation)
 
 
 class lsqr_options:
@@ -339,6 +345,7 @@ def cg(KtKfun, b, tol, num_iters, verbose, x_init=None, implem=Impl['numpy']):
         cg_tol = tol * np.linalg.norm(b.ravel(), 2)  # Relative tol
 
     # CG iteration
+    gamma_1 = p = None
     cg_iter = np.minimum(num_iters, np.prod(b.shape))
     for iter in range(cg_iter):
         # Check for convergence

@@ -2,8 +2,8 @@ from .lin_op import LinOp
 import numpy as np
 import cv2
 
-from proximal.halide.halide import *
-from proximal.utils.utils import *
+from proximal.halide.halide import Halide
+from proximal.utils.utils import Impl
 
 
 class warp(LinOp):
@@ -35,7 +35,9 @@ class warp(LinOp):
             shape += (H.shape[2],)
 
         # Temp array for halide
-        self.tmpfwd = np.zeros((shape[0], shape[1], shape[2] if (len(shape) > 2) else 1, H.shape[2] if (len(H.shape) > 2) else 1),
+        self.tmpfwd = np.zeros((shape[0], shape[1],
+                                shape[2] if (len(shape) > 2) else 1,
+                                H.shape[2] if (len(H.shape) > 2) else 1),
                                dtype=np.float32, order='FORTRAN')
         self.tmpadj = np.zeros((shape[0], shape[1], shape[2] if (
             len(shape) > 2) else 1), dtype=np.float32, order='FORTRAN')
@@ -70,15 +72,20 @@ class warp(LinOp):
             # CV2 version
             inimg = inputs[0]
             if len(self.H.shape) == 2:
-
-                warpedInput = cv2.warpPerspective(np.asfortranarray(inimg), self.H.T, inimg.shape[1::-1], flags=cv2.INTER_LINEAR,
-                                                  borderMode=cv2.BORDER_CONSTANT, borderValue=0.)  # Necessary due to array layout in opencv
+                warpedInput = cv2.warpPerspective(np.asfortranarray(inimg), self.H.T,
+                                                  inimg.shape[1::-1], flags=cv2.INTER_LINEAR,
+                                                  borderMode=cv2.BORDER_CONSTANT, borderValue=0.)
+                # Necessary due to array layout in opencv
                 np.copyto(outputs[0], warpedInput)
 
             else:
                 for j in range(self.H.shape[2]):
-                    warpedInput = cv2.warpPerspective(np.asfortranarray(inimg), self.H[:, :, j].T, inimg.shape[1::-1], flags=cv2.INTER_LINEAR,
-                                                      borderMode=cv2.BORDER_CONSTANT, borderValue=0.)  # Necessary due to array layout in opencv
+                    warpedInput = cv2.warpPerspective(np.asfortranarray(inimg),
+                                                      self.H[:, :, j].T, inimg.shape[1::-1],
+                                                      flags=cv2.INTER_LINEAR,
+                                                      borderMode=cv2.BORDER_CONSTANT,
+                                                      borderValue=0.)
+                    # Necessary due to array layout in opencv
 
                     np.copyto(outputs[0][:, :, :, j], warpedInput)
 
@@ -105,15 +112,20 @@ class warp(LinOp):
             inimg = inputs[0]
             if len(self.H.shape) == 2:
                 # + cv2.WARP_INVERSE_MAP
-                warpedInput = cv2.warpPerspective(np.asfortranarray(inimg), self.Hinv.T, inimg.shape[1::-1], flags=cv2.INTER_LINEAR,
+                warpedInput = cv2.warpPerspective(np.asfortranarray(inimg), self.Hinv.T,
+                                                  inimg.shape[1::-1], flags=cv2.INTER_LINEAR,
                                                   borderMode=cv2.BORDER_CONSTANT, borderValue=0.)
                 np.copyto(outputs[0], warpedInput)
 
             else:
                 outputs[0][:] = 0.0
                 for j in range(self.H.shape[2]):
-                    warpedInput = cv2.warpPerspective(np.asfortranarray(inimg[:, :, :, j]), self.Hinv[:, :, j].T, inimg.shape[1::-1], flags=cv2.INTER_LINEAR,
-                                                      borderMode=cv2.BORDER_CONSTANT, borderValue=0.)  # Necessary due to array layout in opencv
+                    warpedInput = cv2.warpPerspective(np.asfortranarray(inimg[:, :, :, j]),
+                                                      self.Hinv[:, :, j].T, inimg.shape[1::-1],
+                                                      flags=cv2.INTER_LINEAR,
+                                                      borderMode=cv2.BORDER_CONSTANT,
+                                                      borderValue=0.)
+                    # Necessary due to array layout in opencv
                     outputs[0] += warpedInput
 
     # TODO what is the spectral norm of a warp?

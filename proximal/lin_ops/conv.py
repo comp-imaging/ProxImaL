@@ -1,7 +1,7 @@
 from .lin_op import LinOp
 import numpy as np
-from proximal.utils.utils import *
-from proximal.halide.halide import *
+from proximal.utils.utils import Impl, psf2otf, fftd, ifftd
+from proximal.halide.halide import Halide
 
 
 class conv(LinOp):

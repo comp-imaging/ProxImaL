@@ -7,7 +7,7 @@ from proximal.utils.timings_log import TimingsLog
 import copy as cp
 from collections import defaultdict
 import numpy as np
-from scipy.sparse.linalg import lsqr, LinearOperator, eigs
+from scipy.sparse.linalg import LinearOperator, eigs
 
 
 class CompGraph(object):

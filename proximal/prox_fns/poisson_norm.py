@@ -1,7 +1,7 @@
 from .prox_fn import ProxFn
 import numpy as np
-from proximal.utils.utils import *
-from proximal.halide.halide import *
+from proximal.utils.utils import Impl
+from proximal.halide.halide import Halide
 
 
 class poisson_norm(ProxFn):
@@ -31,7 +31,7 @@ class poisson_norm(ProxFn):
                 tmpin, self.maskh, self.bph, 1. / rho, self.tmpout)
             np.copyto(v, self.tmpout)
         else:
-            v = 0.5 * (v - 1. / rho + np.sqrt((v - 1. / rho) * \
+            v = 0.5 * (v - 1. / rho + np.sqrt((v - 1. / rho) *
                        (v - 1. / rho) + 4. * 1. / rho * self.bp))
 
         return v
@@ -70,7 +70,8 @@ class weighted_poisson_norm(poisson_norm):
     def _prox(self, rho, v, *args, **kwargs):
         """x = 1/2* ( v - |W|/rho + sqrt( ||v - |W|/rho||^2 + 4 * 1./rho * b ) )
         """
-        output = 0.5 * (v - np.absolute(self.weight) / rho + np.sqrt((v - np.absolute(self.weight) / rho)
+        output = 0.5 * (v - np.absolute(self.weight) / rho +
+                        np.sqrt((v - np.absolute(self.weight) / rho)
                         * (v - np.absolute(self.weight) / rho) + 4. * 1. / rho * self.bp))
 
         # Reference

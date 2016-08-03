@@ -26,8 +26,12 @@ class diff_fn(ProxFn):
         """Use L-BFGS
         """
         # Derivative of augmented function.
-        prox_func = lambda x: self.func(x) + (rho / 2.0) * np.square(x.ravel() - v.ravel()).sum()
-        prox_fprime = lambda x: self.fprime(x).ravel() + rho * (x.ravel() - v.ravel())
+        def prox_func(x):
+            return self.func(x) + (rho / 2.0) * np.square(x.ravel() - v.ravel()).sum()
+
+        def prox_fprime(x):
+            return self.fprime(x).ravel() + rho * (x.ravel() - v.ravel())
+
         x, f, d = fmin_l_bfgs_b(prox_func, v, prox_fprime,
                                 bounds=self.bounds, factr=self.factr)
         return np.reshape(x, self.lin_op.shape)

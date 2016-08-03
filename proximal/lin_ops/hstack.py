@@ -1,6 +1,5 @@
 from .lin_op import LinOp
 import numpy as np
-import copy
 
 
 class hstack(LinOp):
@@ -17,7 +16,6 @@ class hstack(LinOp):
 
         Reads from inputs and writes to outputs.
         """
-        offset = 0
         for idx, input_data in enumerate(inputs):
             outputs[0][:, idx] = input_data.flatten()
 
@@ -27,7 +25,6 @@ class hstack(LinOp):
         Reads from inputs and writes to outputs.
         """
         for idx, output_data in enumerate(outputs):
-            size = output_data.size
             data = inputs[0][:, idx]
             output_data[:] = np.reshape(data, output_data.shape)
 

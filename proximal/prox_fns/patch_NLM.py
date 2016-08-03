@@ -1,7 +1,7 @@
 from .prox_fn import ProxFn
 import numpy as np
-from proximal.utils.utils import *
-from proximal.halide.halide import *
+from proximal.utils.utils import Impl
+from proximal.halide.halide import Halide
 import cv2
 
 
@@ -31,8 +31,9 @@ class patch_NLM(ProxFn):
         # Halide
         if len(lin_op.shape) == 3 and lin_op.shape[2] == 3:
             self.tmpout = np.zeros(lin_op.shape, dtype=np.float32, order='F')
-            self.paramsh = np.asfortranarray(np.array([self.sigma_fixed, 1.0, self.sigma_scale, self.prior],
-                                                      dtype=np.float32)[..., np.newaxis])
+            self.paramsh = np.asfortranarray(
+                np.array([self.sigma_fixed, 1.0, self.sigma_scale, self.prior],
+                         dtype=np.float32)[..., np.newaxis])
 
         super(patch_NLM, self).__init__(lin_op, **kwargs)
 
@@ -40,7 +41,8 @@ class patch_NLM(ProxFn):
         """x = denoise_gaussian_NLM( tonemap(v), sqrt(1/rho))
         """
 
-        if self.implementation == Impl['halide'] and len(self.lin_op.shape) == 3 and self.lin_op.shape[2] == 3:
+        if self.implementation == Impl['halide'] and \
+           len(self.lin_op.shape) == 3 and self.lin_op.shape[2] == 3:
 
             # Halide implementation
             tmpin = np.asfortranarray(v.astype(np.float32))
@@ -58,7 +60,8 @@ class patch_NLM(ProxFn):
                 sigma_estim = self.sigma_fixed / 30.0 * self.sigma_scale
 
             # Params
-            print "Prox NLM params are: [sigma ={0} prior={1} sigma_scale={2}]".format(sigma_estim, self.prior, self.sigma_scale)
+            print("Prox NLM params are: [sigma ={0} prior={1} sigma_scale={2}]".format(
+                sigma_estim, self.prior, self.sigma_scale))
 
             # Scale d
             v = v.copy()
@@ -89,16 +92,18 @@ class patch_NLM(ProxFn):
 
                 vdstuint = cv2.fastNlMeansDenoising(vuint, None,
                                                     sigma_luma * 255.0,
-                                                    self.templateWindowSizeNLM, self.searchWindowSizeNLM)
+                                                    self.templateWindowSizeNLM,
+                                                    self.searchWindowSizeNLM)
             else:
 
                 vdstuint = cv2.fastNlMeansDenoisingColored(vuint, None,
                                                            sigma_luma * 255.0, sigma_color * 255.,
-                                                           self.templateWindowSizeNLM, self.searchWindowSizeNLM)
+                                                           self.templateWindowSizeNLM,
+                                                           self.searchWindowSizeNLM)
 
             # Convert to float and inverse scale
             if self.gamma_trans != 1.0:
-                dst = ((vdstuint.astype(np.float32) / 255.0)**
+                dst = ((vdstuint.astype(np.float32) / 255.0) **
                        (1.0 / self.gamma_trans)) * (v_max - v_min) + v_min
             else:
                 dst = vdstuint.astype(np.float32) / 255.0 * (v_max - v_min) + v_min
