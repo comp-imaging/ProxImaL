@@ -149,7 +149,7 @@ html_theme_options = {
     'github_repo': 'ProxImaL',
     'github_banner': True,
     'github_type': 'star',
-    # 'travis_button': True,
+    'travis_button': True,
     'analytics_id': 'UA-50248335-1',
 }
 
