@@ -61,7 +61,7 @@ print( 'Running halide (second) took: {0:.1f}ms'.format( toc() ) )
 #Compute comparison
 f = np_img
 if len(np_img.shape) == 2:
- 	f = f[..., np.newaxis]
+    f = f[..., np.newaxis]
 
 tic()
 

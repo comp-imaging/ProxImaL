@@ -47,7 +47,7 @@ hl_2D = Halide('A_norm_L2.cpp', generator_name="normL2Img", recompile=True, verb
 hl_1D = Halide('A_norm_L2.cpp', generator_name="normL2_1DImg", func="A_norm_L2_1D", recompile=True, verbose=False, cleansource=True) #Force recompile in local dir
 hl_norm2 = hl_2D.A_norm_L2
 if np_img.shape[1] < 8:
-	hl_norm2 = hl_1D.A_norm_L2_1D
+    hl_norm2 = hl_1D.A_norm_L2_1D
 
 hl_norm2(np_img, output) #Dummy call (to load dll?)
 
@@ -55,14 +55,14 @@ timeNorm2_halide = 0.0
 timeNorm2_numpy = 0.0
 for x in range(0, numIterations):
 #print "x %d" % (x)
-	tic()
-	hl_norm2(np_img, output) #Call
-	timeNorm2_halide += toc()
+    tic()
+    hl_norm2(np_img, output) #Call
+    timeNorm2_halide += toc()
 
-	#run numpy reference
-	tic()
-	output_ref = np.linalg.norm(np_img.ravel(),2)
-	timeNorm2_numpy += toc()
+    #run numpy reference
+    tic()
+    output_ref = np.linalg.norm(np_img.ravel(),2)
+    timeNorm2_numpy += toc()
 
 timeNorm2_halide /= numIterations
 timeNorm2_numpy /= numIterations
@@ -83,7 +83,7 @@ hl_2D = Halide('A_dot_prod.cpp', generator_name="dotImg", recompile=True, verbos
 hl_1D = Halide('A_dot_prod.cpp', generator_name="dot_1DImg", func="A_dot_1D", recompile=True, verbose=False, cleansource=True) #Force recompile in local dir
 hl_dot = hl_2D.A_dot_prod
 if np_img.shape[1] < 8:
-	hl_dot = hl_1D.A_dot_1D
+    hl_dot = hl_1D.A_dot_1D
 
 hl_dot(np_img0, np_img1, output) #Dummy call (to load dll?)
 
@@ -91,13 +91,13 @@ timeDot_halide = 0.0
 timeDot_numpy = 0.0
 for x in range(0, numIterations):
 #print "x %d" % (x)
-	tic()
-	hl_dot(np_img0, np_img1, output) #Call
-	timeDot_halide += toc()
+    tic()
+    hl_dot(np_img0, np_img1, output) #Call
+    timeDot_halide += toc()
 
-	#run numpy reference
-	output_ref = np.dot(np_img0.ravel(),np_img1.ravel())
-	timeDot_numpy += toc()
+    #run numpy reference
+    output_ref = np.dot(np_img0.ravel(),np_img1.ravel())
+    timeDot_numpy += toc()
 
 timeDot_halide /= numIterations
 timeDot_numpy /= numIterations

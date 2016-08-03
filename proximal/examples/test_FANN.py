@@ -51,14 +51,14 @@ plt.show()
 #Compile
 compile = False
 if compile :
-	make_process = subprocess.Popen(["make"], stderr=subprocess.STDOUT, cwd="../libs/FastANN/cinterface")
-	if make_process.wait() != 0:
-	     raise Exception("Could not build FastANN.")
+    make_process = subprocess.Popen(["make"], stderr=subprocess.STDOUT, cwd="../libs/FastANN/cinterface")
+    if make_process.wait() != 0:
+        raise Exception("Could not build FastANN.")
 
-	#Compile halide
-	ext_libs = '-L../libs/FastANN', '-I../libs/FastANN', '-L/usr/local/cuda-7.5/lib64', '-ldenoise', '-lcudart'
-	ext_srcs = ['external/external_FANN.cpp']
-	Halide('prox_FANN.cpp', external_source=ext_srcs, external_libs=ext_libs, recompile=True, verbose=False, cleansource=True) #Compile
+    #Compile halide
+    ext_libs = '-L../libs/FastANN', '-I../libs/FastANN', '-L/usr/local/cuda-7.5/lib64', '-ldenoise', '-lcudart'
+    ext_srcs = ['external/external_FANN.cpp']
+    Halide('prox_FANN.cpp', external_source=ext_srcs, external_libs=ext_libs, recompile=True, verbose=False, cleansource=True) #Compile
 
 # Parameters - [Algorithm, Format, (BlockSize, TileSize, NumCandidates, ClusterSize)];
 # Algorithm" (0 - SlidingDCT, 1 - NlmAverage, 2 - NlmWeightedAverage, 3 - BM3D, 4 - BM3D Wiener)

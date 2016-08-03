@@ -73,7 +73,7 @@ tic()
 options = cg_options(tol=1e-5, num_iters=100, verbose=False)
 pc(prox_fns, quad_funcs = quad_funcs, sigma=10.0, max_iters=200,
       eps=5e-1, lin_solver="cg", lin_solver_options=options,
-		try_diagonalize = False, verbose=True)
+                try_diagonalize = False, verbose=True)
 sdcgtime = toc()/1000
 
 plt.figure()
@@ -87,7 +87,7 @@ plt.show()
 tic()
 pc(prox_fns, quad_funcs = quad_funcs, sigma=10.0, max_iters=200,
       eps=5e-1, lin_solver="cg", lin_solver_options=options,
-		try_diagonalize = True, verbose=True)
+                try_diagonalize = True, verbose=True)
 fdtime = toc()/1000
 
 plt.figure()

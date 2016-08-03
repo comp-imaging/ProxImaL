@@ -16,17 +16,17 @@ from numpy.fft import fftn, ifftn
 import cv2
 
 def complex_mult(a, b):
-	""" Complex array multiplication for plane array a and b """
+    """ Complex array multiplication for plane array a and b """
 
-	c = np.zeros_like(a)
+    c = np.zeros_like(a)
 
-	#re(a) * re(b) - im(a) * im(b),
-	c[...,0] = a[...,0] * b[...,0] - a[...,1] * b[...,1]
+    #re(a) * re(b) - im(a) * im(b),
+    c[...,0] = a[...,0] * b[...,0] - a[...,1] * b[...,1]
 
-	#re(a) * im(b) + im(a) * re(b)
-	c[...,1] = a[...,0] * b[...,1] + a[...,1] * b[...,0]
+    #re(a) * im(b) + im(a) * re(b)
+    c[...,1] = a[...,0] * b[...,1] + a[...,1] * b[...,0]
 
-	return c
+    return c
 
 #Load image
 img = Image.open('./data/angela_large.jpg')  # opens the file using Pillow - it's not an array yet
@@ -62,7 +62,7 @@ plt.show()
 
 #Pad K if necessary
 if len(K.shape) < len(np_img.shape):
-	K = np.asfortranarray( np.stack( (K,) * np_img.shape[2], axis=-1 ) )
+    K = np.asfortranarray( np.stack( (K,) * np_img.shape[2], axis=-1 ) )
 
 #Convolve reference
 tic()
@@ -77,10 +77,10 @@ print( 'Running Numpy fft convolution took: {0:.1f}ms'.format( toc() ) )
 Kx_ref = np.zeros_like(np_img)
 tic()
 if len(np_img.shape) > 2:
-	for c in range(np_img.shape[2]):
-		Kx_ref[:,:,c] = signal.convolve2d(np_img[:,:,c],K[:,:,c], mode='same', boundary='wrap')
+    for c in range(np_img.shape[2]):
+        Kx_ref[:,:,c] = signal.convolve2d(np_img[:,:,c],K[:,:,c], mode='same', boundary='wrap')
 else:
-	Kx_ref = signal.convolve2d(np_img,K, mode='same', boundary='wrap')
+    Kx_ref = signal.convolve2d(np_img,K, mode='same', boundary='wrap')
 
 print( 'Running Scipy.convolve2d took: {0:.1f}ms'.format( toc() ) )
 
@@ -112,9 +112,9 @@ plt.show()
 #Check for low length
 pad = False
 if len(np_img.shape) == 2:
-	pad = True
-	np_img = np.asfortranarray( np_img[..., np.newaxis] )
-	K = np.asfortranarray( K[..., np.newaxis] )
+    pad = True
+    np_img = np.asfortranarray( np_img[..., np.newaxis] )
+    K = np.asfortranarray( K[..., np.newaxis] )
 
 hsize = np_img.shape
 output_fft = np.zeros( ((hsize[0] + 1)/2 + 1, hsize[1],hsize[2], 2), dtype=np.float32, order='F' );
@@ -146,8 +146,8 @@ Halide('ifft2_c2r.cpp', compile_flags=hflags).ifft2_c2r(Khat,output_Kf) #Call
 print( 'Running Halide FFT took: {0:.1f}ms'.format( toc() ) )
 
 if pad:
-	np_img = np_img[:,:,0]
-	output_Kf = output_Kf[:,:,0]
+    np_img = np_img[:,:,0]
+    output_Kf = output_Kf[:,:,0]
 
 plt.figure()
 imgplot = plt.imshow(output_Kf , interpolation="nearest", clim=(0.0, 1.0))

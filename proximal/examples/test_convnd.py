@@ -47,7 +47,7 @@ K[:,:,2] = np.fliplr(K[:,:,2])
 output_scipy = np.zeros(np_img.shape, dtype=np.float32, order='F')
 tic()
 for j in range(K.shape[2]):
-	output_scipy[:,:,j] = ndimage.convolve(np_img[:,:,j],K[:,:,j], mode='wrap')
+    output_scipy[:,:,j] = ndimage.convolve(np_img[:,:,j],K[:,:,j], mode='wrap')
 print( 'Running Scipy.convolve2d took: {0:.1f}ms'.format( toc() ) )
 
 fn = conv( K, Variable(np_img.shape), dims = 2, implem = 'numpy' )

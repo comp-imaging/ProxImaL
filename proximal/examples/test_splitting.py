@@ -50,7 +50,7 @@ args.convolutional = args.convolutional != 0
 diag = args.diagonalize != 0
 verbose = args.verbose
 print "\n<<<RUNNING method=%s, using quadratics=%d, using convolutional grad=%d, trying to diagonalize=%d, verbose = %d >>>\n\n" % (args.method,
-		args.quadratics, args.convolutional, diag, verbose)
+                args.quadratics, args.convolutional, diag, verbose)
 
 ############################################################
 
@@ -106,29 +106,29 @@ x = Variable( I.shape )
 #Quadratic or non quadratic splitting
 if args.quadratics:
 
-	if not args.convolutional:
-		print 'Splitting quadratics'
-		#nonquad_fns = [norm1( grad(x, dims = 2), alpha = lambda_tv )] #Anisotropic
-		nonquad_fns = [group_norm1( grad(x, dims = 2), [2], alpha = lambda_tv )] #Isotropic
-		quad_funcs = [sum_squares(conv(K, x), b=b, alpha = lambda_data)]
-	else:
-		print 'Splitting quadratics and convolutional gradient'
-		# Sparse gradient deconvolution with quadratic definition using deconvolution
-		quad_funcs = [sum_squares(conv(K, x), b=b, alpha = 400.0)]
-		nonquad_fns = [norm1(conv(dx, x), alpha = lambda_tv), norm1(conv(dy, x), alpha = lambda_tv)] #Isotropic
+    if not args.convolutional:
+        print 'Splitting quadratics'
+        #nonquad_fns = [norm1( grad(x, dims = 2), alpha = lambda_tv )] #Anisotropic
+        nonquad_fns = [group_norm1( grad(x, dims = 2), [2], alpha = lambda_tv )] #Isotropic
+        quad_funcs = [sum_squares(conv(K, x), b=b, alpha = lambda_data)]
+    else:
+        print 'Splitting quadratics and convolutional gradient'
+        # Sparse gradient deconvolution with quadratic definition using deconvolution
+        quad_funcs = [sum_squares(conv(K, x), b=b, alpha = 400.0)]
+        nonquad_fns = [norm1(conv(dx, x), alpha = lambda_tv), norm1(conv(dy, x), alpha = lambda_tv)] #Isotropic
 
 else:
 
-	if not args.convolutional:
-		print 'No splitting'
-		#nonquad_fns = [sum_squares(conv(K, x), b=b, alpha = 400), norm1( grad(x, dims = 2), alpha = lambda_tv ) ] #Anisotropic
-		nonquad_fns = [sum_squares(conv(K, x), b=b, alpha = 400), group_norm1( grad(x, dims = 2), [2] ) ] #Isotropic
-		quad_funcs = []
-	else:
-		print 'No splitting and convolutional gradient'
-		# Sparse gradient deconvolution with quadratic definition using deconvolution
-		nonquad_fns= [sum_squares(conv(K, x), b=b, alpha = 400.0),norm1(conv(dx, x), alpha = lambda_tv), norm1(conv(dy, x), alpha = lambda_tv)]
-		quad_funcs = []
+    if not args.convolutional:
+        print 'No splitting'
+        #nonquad_fns = [sum_squares(conv(K, x), b=b, alpha = 400), norm1( grad(x, dims = 2), alpha = lambda_tv ) ] #Anisotropic
+        nonquad_fns = [sum_squares(conv(K, x), b=b, alpha = 400), group_norm1( grad(x, dims = 2), [2] ) ] #Isotropic
+        quad_funcs = []
+    else:
+        print 'No splitting and convolutional gradient'
+        # Sparse gradient deconvolution with quadratic definition using deconvolution
+        nonquad_fns= [sum_squares(conv(K, x), b=b, alpha = 400.0),norm1(conv(dx, x), alpha = lambda_tv), norm1(conv(dy, x), alpha = lambda_tv)]
+        quad_funcs = []
 
 #Prox functions are the union
 prox_fns = nonquad_fns + quad_funcs
@@ -138,45 +138,45 @@ print prox_fns
 tic()
 if args.method == 'pc':
 
-	options = cg_options(tol=1e-5, num_iters=100, verbose=False)
-	#options = lsqr_options(atol=1e-5, btol=1e-5, num_iters=100, verbose=False)
-	pc(prox_fns, quad_funcs = quad_funcs, tau=None, sigma=10.0, theta=None, max_iters=300,
-	      eps_abs=1e-4, eps_rel=1e-4, lin_solver="cg", lin_solver_options=options,
-			try_diagonalize = diag, metric=psnrval, verbose=verbose)
+    options = cg_options(tol=1e-5, num_iters=100, verbose=False)
+    #options = lsqr_options(atol=1e-5, btol=1e-5, num_iters=100, verbose=False)
+    pc(prox_fns, quad_funcs = quad_funcs, tau=None, sigma=10.0, theta=None, max_iters=300,
+          eps_abs=1e-4, eps_rel=1e-4, lin_solver="cg", lin_solver_options=options,
+                    try_diagonalize = diag, metric=psnrval, verbose=verbose)
 
 
 elif args.method == 'lin-admm':
 
-	options = cg_options(tol=1e-5, num_iters=100, verbose=False)
-	lin_admm(prox_fns, quad_funcs = quad_funcs, lmb=0.1, max_iters=300,
-	         eps_abs=1e-4, eps_rel=1e-4, lin_solver="cg", lin_solver_options=options,
-	         try_diagonalize = diag, metric=psnrval, verbose=verbose)
+    options = cg_options(tol=1e-5, num_iters=100, verbose=False)
+    lin_admm(prox_fns, quad_funcs = quad_funcs, lmb=0.1, max_iters=300,
+             eps_abs=1e-4, eps_rel=1e-4, lin_solver="cg", lin_solver_options=options,
+             try_diagonalize = diag, metric=psnrval, verbose=verbose)
 
 elif args.method == 'admm':
 
-	options = cg_options(tol=1e-5, num_iters=100, verbose=False)
-	admm(prox_fns, quad_funcs = quad_funcs, rho=10, max_iters=300,
-	         eps_abs=1e-4, eps_rel=1e-4, lin_solver="cg", lin_solver_options=options,
-	         try_diagonalize = diag, metric=psnrval, verbose=verbose)
+    options = cg_options(tol=1e-5, num_iters=100, verbose=False)
+    admm(prox_fns, quad_funcs = quad_funcs, rho=10, max_iters=300,
+             eps_abs=1e-4, eps_rel=1e-4, lin_solver="cg", lin_solver_options=options,
+             try_diagonalize = diag, metric=psnrval, verbose=verbose)
 
 elif args.method == 'hqs':
 
-	# Sparse gradient deconvolution without quadratic
-	if not args.quadratics:
+    # Sparse gradient deconvolution without quadratic
+    if not args.quadratics:
 
-		#Need high accuracy when quadratics are not splitted
-		options = cg_options(tol=1e-5, num_iters=50, verbose=False)
-		hqs(prox_fns, lin_solver="cg", lin_solver_options = options,
-						eps_rel=1e-6, max_iters = 10, max_inner_iters = 10, x0 = b,
-						try_diagonalize = diag, metric=psnrval, verbose=verbose)
+        #Need high accuracy when quadratics are not splitted
+        options = cg_options(tol=1e-5, num_iters=50, verbose=False)
+        hqs(prox_fns, lin_solver="cg", lin_solver_options = options,
+                                        eps_rel=1e-6, max_iters = 10, max_inner_iters = 10, x0 = b,
+                                        try_diagonalize = diag, metric=psnrval, verbose=verbose)
 
-	else:
+    else:
 
-		#Krishnan and Fergus schedule
-		options = cg_options(tol=1e-3, num_iters=100, verbose=False)
-		hqs(prox_fns, quad_funcs=quad_funcs, lin_solver="cg", lin_solver_options = options,
-					eps_rel=1e-3, max_iters = 10, max_inner_iters = 10, x0 = b,
-					try_diagonalize = diag,  metric=psnrval, verbose=verbose)
+        #Krishnan and Fergus schedule
+        options = cg_options(tol=1e-3, num_iters=100, verbose=False)
+        hqs(prox_fns, quad_funcs=quad_funcs, lin_solver="cg", lin_solver_options = options,
+                                eps_rel=1e-3, max_iters = 10, max_inner_iters = 10, x0 = b,
+                                try_diagonalize = diag,  metric=psnrval, verbose=verbose)
 
 
 print( 'Running took: {0:.1f}s'.format( toc()/1000.0 ) )

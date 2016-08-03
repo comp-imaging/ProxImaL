@@ -139,35 +139,35 @@ convlog = ConvergenceLog()
 tic()
 if method == 'pc':
 
-	options = cg_options(tol=1e-5, num_iters=100, verbose=True)
-	#options = lsqr_options(atol=1e-5, btol=1e-5, num_iters=100, verbose=False)
-	pc(prox_fns, quad_funcs = [], tau=1/L, sigma=1/L, theta=1, max_iters=1000 - equil_iters,
-	      eps_rel=1e-5, eps_abs=1e-5, lin_solver="cg", lin_solver_options=options,
-	      try_split=False, try_diagonalize = diag,
-	      metric=psnrval, verbose=verbose, convlog=None)
+    options = cg_options(tol=1e-5, num_iters=100, verbose=True)
+    #options = lsqr_options(atol=1e-5, btol=1e-5, num_iters=100, verbose=False)
+    pc(prox_fns, quad_funcs = [], tau=1/L, sigma=1/L, theta=1, max_iters=1000 - equil_iters,
+          eps_rel=1e-5, eps_abs=1e-5, lin_solver="cg", lin_solver_options=options,
+          try_split=False, try_diagonalize = diag,
+          metric=psnrval, verbose=verbose, convlog=None)
 
 
 elif method == 'lin-admm':
 
-	options = cg_options(tol=1e-5, num_iters=100, verbose=True)
-	lin_admm(prox_fns, quad_funcs = quad_funcs, lmb=0.1, max_iters=300,
-	         eps_abs=1e-4, eps_rel=1e-4, lin_solver="cg", lin_solver_options=options,
-	         try_diagonalize = diag, metric=psnrval, verbose=verbose)
+    options = cg_options(tol=1e-5, num_iters=100, verbose=True)
+    lin_admm(prox_fns, quad_funcs = quad_funcs, lmb=0.1, max_iters=300,
+             eps_abs=1e-4, eps_rel=1e-4, lin_solver="cg", lin_solver_options=options,
+             try_diagonalize = diag, metric=psnrval, verbose=verbose)
 
 elif method == 'admm':
 
-	options = cg_options(tol=1e-5, num_iters=100, verbose=True)
-	admm(prox_fns, quad_funcs = [], rho=10, max_iters=300,
-	         eps_abs=1e-4, eps_rel=1e-4, lin_solver="cg", lin_solver_options=options,
-	         try_diagonalize = diag, metric=psnrval, verbose=verbose)
+    options = cg_options(tol=1e-5, num_iters=100, verbose=True)
+    admm(prox_fns, quad_funcs = [], rho=10, max_iters=300,
+             eps_abs=1e-4, eps_rel=1e-4, lin_solver="cg", lin_solver_options=options,
+             try_diagonalize = diag, metric=psnrval, verbose=verbose)
 
 elif method == 'hqs':
 
-	#Need high accuracy when quadratics are not splitted
-	options = cg_options(tol=1e-5, num_iters=100, verbose=True)
-	hqs(prox_fns, lin_solver="cg", lin_solver_options = options,
-					eps_rel=1e-6, max_iters = 10, max_inner_iters = 10, x0 = b,
-					try_diagonalize = diag, metric=psnrval, verbose=verbose)
+    #Need high accuracy when quadratics are not splitted
+    options = cg_options(tol=1e-5, num_iters=100, verbose=True)
+    hqs(prox_fns, lin_solver="cg", lin_solver_options = options,
+                                    eps_rel=1e-6, max_iters = 10, max_inner_iters = 10, x0 = b,
+                                    try_diagonalize = diag, metric=psnrval, verbose=verbose)
 
 print convlog.objective_val
 

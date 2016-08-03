@@ -89,7 +89,7 @@ print('Maximum error L1 {0}'.format( np.amax( np.abs( output_ref - output ) ) ) 
 #Compute gradient for fun
 f = np_img
 if len(np_img.shape) == 2:
-	f = f[..., np.newaxis]
+    f = f[..., np.newaxis]
 
 ss = f.shape;
 fx = f[ :, np.r_[1:ss[1],ss[1] - 1],:] - f;
@@ -116,7 +116,7 @@ print( 'Running Halide (second) took: {0:.1f}ms'.format( toc() ) )
 normv = np.sqrt( np.multiply(v[:,:,:,0], v[:,:,:,0]) + np.multiply(v[:,:,:,1], v[:,:,:,1]) )
 normv = np.stack((normv,normv), axis =-1)
 with np.errstate(divide='ignore'):
-	output_ref = np.maximum( 0.0, 1.0 - theta / normv ) * v
+    output_ref = np.maximum( 0.0, 1.0 - theta / normv ) * v
 
  # No modifiers.
 tmp = Variable(v.shape)

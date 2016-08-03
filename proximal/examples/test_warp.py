@@ -42,8 +42,8 @@ plt.savefig('mask1.png')
 #Generate transform
 theta_rad = 5.0 * np.pi / 180.0;
 H = np.array([[np.cos(theta_rad),-np.sin(theta_rad), 0.0001 ],\
-			  [np.sin(theta_rad), np.cos(theta_rad), 0.0003 ],\
-			  [0.  		  ,	0. 			 , 1.    ] ], dtype=np.float32, order='F')
+                          [np.sin(theta_rad), np.cos(theta_rad), 0.0003 ],\
+                          [0.  		  ,	0. 			 , 1.    ] ], dtype=np.float32, order='F')
 
 
 

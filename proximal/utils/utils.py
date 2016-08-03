@@ -87,11 +87,11 @@ def toc(t = []):
 
     #Last tic
     if not t:
-      if lastticstamp:
-        t = lastticstamp
-      else:
-        print('Error: Call to toc did never call tic before.', file=sys.stderr)
-        return 0.0
+        if lastticstamp:
+            t = lastticstamp
+        else:
+            print('Error: Call to toc did never call tic before.', file=sys.stderr)
+            return 0.0
 
     #Measure time in ms
     elapsed = (timeit.default_timer() - t) * 1000.0  #in ms

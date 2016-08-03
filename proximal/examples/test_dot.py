@@ -48,7 +48,7 @@ hl_2D = Halide(halide_src, generator_name="dotImg", recompile=True, verbose=Fals
 hl_1D = Halide(halide_src, generator_name="dot_1DImg", func="A_dot_1D", recompile=True, verbose=False, cleansource=True) #Force recompile in local dir
 hl_dot = hl_2D.A_dot_prod
 if np_img.shape[1] < 8:
-	hl_dot = hl_1D.A_dot_1D
+    hl_dot = hl_1D.A_dot_1D
 print( 'Compilation took: {0:.1f}ms'.format( toc() ) )
 
 tic()

@@ -42,7 +42,7 @@ plt.show()
 ext_libs = '-lopencv_core', '-lopencv_imgproc', '-lopencv_cudaarithm', '-lopencv_cudev', '-lopencv_photo', '-lm'
 ext_srcs = ['external/external_NLM.cpp']
 Halide('prox_NLM.cpp', external_source=ext_srcs, external_libs=ext_libs,
- 					 recompile=True, verbose=False, cleansource=True) #Compile
+                                         recompile=True, verbose=False, cleansource=True) #Compile
 
 #Works currently on color image
 v = np_img_color

@@ -135,8 +135,8 @@ html_theme_path = [alabaster.get_path(), "../themes"]
 extensions += ['alabaster']
 html_theme = 'cvxpy_alabaster'
 html_sidebars = {
-   '**': [
-       'about.html', 'navigation.html', 'searchbox.html',
+    '**': [
+        'about.html', 'navigation.html', 'searchbox.html',
    ]
 }
 
@@ -144,12 +144,12 @@ html_sidebars = {
 # further.  For a list of options available for each theme, see the
 # documentation.
 html_theme_options = {
-   'github_user': 'comp-imaging',
-   'github_repo': 'ProxImaL',
-   'github_banner': True,
-   'github_type': 'star',
-  # 'travis_button': True,
-   'analytics_id': 'UA-50248335-1',
+    'github_user': 'comp-imaging',
+    'github_repo': 'ProxImaL',
+    'github_banner': True,
+    'github_type': 'star',
+    # 'travis_button': True,
+    'analytics_id': 'UA-50248335-1',
 }
 
 # Add any paths that contain custom themes here, relative to this directory.
@@ -237,7 +237,7 @@ latex_elements = {
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index', 'proximal.tex', u'ProxImaL Documentation',
+    ('index', 'proximal.tex', u'ProxImaL Documentation',
    u'Felix Heide and Steven Diamond', 'manual'),
 ]
 
@@ -281,7 +281,7 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  ('index', 'proximal', u'ProxImaL Documentation',
+    ('index', 'proximal', u'ProxImaL Documentation',
    u'Felix Heide and Steven Diamond', 'ProxImaL',
    'A domain-specific language for image optimization.',
    'Miscellaneous'),
