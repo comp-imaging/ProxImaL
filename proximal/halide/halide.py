@@ -17,20 +17,20 @@ class Halide(object):
                  external_source=[], external_libs=[],
                  compile_flags=[], cleansource=True, verbose=False):
         """ Compiles and runs a halide pipeline defined in a generator file ``filepath``
-            If recompile is not enabled, first, the library is searched and then loaded. 
+            If recompile is not enabled, first, the library is searched and then loaded.
             Otherwise it is recompiled and a new library is defined.
 
         Example:
 
-            #Only compiles the source --> generates conv.so file 
+            #Only compiles the source --> generates conv.so file
             Halide('conv.cpp')
 
             #Compiles the source and runs function generator conv --> result is in
             numpy array output
 
-            Halide('conv.cpp').run(A,K,output) 
+            Halide('conv.cpp').run(A,K,output)
 
-            or 
+            or
 
             Halide('conv.cpp').conv(A,K,output) --> calls run
 
@@ -422,7 +422,7 @@ def generate_launcher_arguments(params):
 
 
 def generate_launcher(header_file, function_name, function_name_c, params):
-    """ Generates launcher glue code that runs generator from c-interface. 
+    """ Generates launcher glue code that runs generator from c-interface.
         Similar to matlab runtime in halide. """
 
     # Header
