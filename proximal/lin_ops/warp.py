@@ -23,7 +23,8 @@ class warp(LinOp):
 
         # Check for the shape
         if len(H.shape) < 2 or len(H.shape) > 3:
-            raise Exception('Error, warp supports only up to 4d inputs (expects first 3 to be image).')
+            raise Exception(
+                'Error, warp supports only up to 4d inputs (expects first 3 to be image).')
 
         # Has to have third dimension
         if len(arg.shape) != 3:
@@ -35,13 +36,16 @@ class warp(LinOp):
 
         # Temp array for halide
         self.tmpfwd = np.zeros((shape[0], shape[1], shape[2] if (len(shape) > 2) else 1, H.shape[2] if (len(H.shape) > 2) else 1),
-                                dtype=np.float32, order='FORTRAN');
-        self.tmpadj = np.zeros((shape[0], shape[1], shape[2] if (len(shape) > 2) else 1), dtype=np.float32, order='FORTRAN');
+                               dtype=np.float32, order='FORTRAN')
+        self.tmpadj = np.zeros((shape[0], shape[1], shape[2] if (
+            len(shape) > 2) else 1), dtype=np.float32, order='FORTRAN')
 
         # Halide homographies
         if len(H.shape) == 2:
-            self.Hf = np.asfortranarray(H[..., np.newaxis].astype(np.float32))  # Third axis for halide
-            self.Hinvf = np.asfortranarray(self.Hinv[..., np.newaxis].astype(np.float32))  # Third axis for halide
+            self.Hf = np.asfortranarray(H[..., np.newaxis].astype(
+                np.float32))  # Third axis for halide
+            self.Hinvf = np.asfortranarray(
+                self.Hinv[..., np.newaxis].astype(np.float32))  # Third axis for halide
         else:
             self.Hf = np.asfortranarray(H.astype(np.float32))
             self.Hinvf = np.asfortranarray(self.Hinv.astype(np.float32))

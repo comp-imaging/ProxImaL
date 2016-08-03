@@ -121,7 +121,8 @@ def solve(psi_fns, omega_fns, lmb=1.0, mu=None, quad_funcs=None,
         # Check convergence.
         r = Kv - z
         K.adjoint((1.0 / lmb) * (z - z_prev), s)
-        eps_pri = np.sqrt(K.output_size) * eps_abs + eps_rel * max([np.linalg.norm(Kv), np.linalg.norm(z)])
+        eps_pri = np.sqrt(K.output_size) * eps_abs + eps_rel * \
+                          max([np.linalg.norm(Kv), np.linalg.norm(z)])
         eps_dual = np.sqrt(K.input_size) * eps_abs + eps_rel * np.linalg.norm(KTu) / (1.0 / lmb)
 
         # Convergence log

@@ -93,10 +93,11 @@ class least_squares(sum_squares):
             self.freq_shape = self.K.orig_end.variables()[0].shape
             self.freq_diag = np.reshape(self.freq_diag, self.freq_shape)
             if implem == Impl['halide'] and \
-                (len(self.freq_shape) == 2 or (len(self.freq_shape) == 2 and self.freq_dims == 2)):
+                    (len(self.freq_shape) == 2 or (len(self.freq_shape) == 2 and self.freq_dims == 2)):
                 print "hello"
                 # TODO: FIX REAL TO IMAG
-                hsize = self.freq_shape if len(self.freq_shape) == 3 else (self.freq_shape[0], self.freq_shape[1], 1)
+                hsize = self.freq_shape if len(self.freq_shape) == 3 else (
+                    self.freq_shape[0], self.freq_shape[1], 1)
                 hsizehalide = ((hsize[0] + 1) / 2 + 1, hsize[1], hsize[2], 2)
 
                 self.hsizehalide = hsizehalide
@@ -152,9 +153,10 @@ class least_squares(sum_squares):
 
             # Frequency inversion
             if self.implementation == Impl['halide'] and \
-                (len(self.freq_shape) == 2 or (len(self.freq_shape) == 2 and self.freq_dims == 2)):
+                    (len(self.freq_shape) == 2 or (len(self.freq_shape) == 2 and self.freq_dims == 2)):
 
-                Halide('fft2_r2c.cpp').fft2_r2c(np.asfortranarray(np.reshape(Ktb.astype(np.float32), self.freq_shape)), 0, 0, self.ftmp_halide)
+                Halide('fft2_r2c.cpp').fft2_r2c(np.asfortranarray(np.reshape(
+                    Ktb.astype(np.float32), self.freq_shape)), 0, 0, self.ftmp_halide)
 
                 Ktb = 1j * self.ftmp_halide[..., 1]
                 Ktb += self.ftmp_halide[..., 0]
@@ -162,7 +164,8 @@ class least_squares(sum_squares):
                 if rho is None:
                     Ktb /= self.freq_diag
                 else:
-                    Halide('fft2_r2c.cpp').fft2_r2c(np.asfortranarray(np.reshape(v.astype(np.float32), self.freq_shape)), 0, 0, self.ftmp_halide)
+                    Halide('fft2_r2c.cpp').fft2_r2c(np.asfortranarray(np.reshape(
+                        v.astype(np.float32), self.freq_shape)), 0, 0, self.ftmp_halide)
 
                     vhat = self.ftmp_halide[..., 0] + 1j * self.ftmp_halide[..., 1]
                     Ktb *= 1.0 / rho
@@ -236,7 +239,7 @@ class least_squares(sum_squares):
         rmatvecComp = lambda y: rmatvec(y, input_data)
 
         K = LinearOperator((self.K.output_size + sizev, self.K.input_size),
-                            matvecComp, rmatvecComp)
+                           matvecComp, rmatvecComp)
 
         # Options
         if options is None:
@@ -302,7 +305,8 @@ def cg(KtKfun, b, tol, num_iters, verbose, x_init=None, implem=Impl['numpy']):
 
     if implem == Impl['halide']:
         output = np.array([0.0], dtype=np.float32)
-        hl_norm2 = Halide('A_norm_L2.cpp', generator_name="normL2_1DImg", func="A_norm_L2_1D").A_norm_L2_1D
+        hl_norm2 = Halide('A_norm_L2.cpp', generator_name="normL2_1DImg",
+                          func="A_norm_L2_1D").A_norm_L2_1D
         hl_dot = Halide('A_dot_prod.cpp', generator_name="dot_1DImg", func="A_dot_1D").A_dot_1D
 
         # Temp vars
@@ -359,10 +363,10 @@ def cg(KtKfun, b, tol, num_iters, verbose, x_init=None, implem=Impl['numpy']):
 
         # direction vector
         if iter > 0:
-            beta = gamma / gamma_1;
-            p = r + beta * p;
+            beta = gamma / gamma_1
+            p = r + beta * p
         else:
-            p = r;
+            p = r
 
         # Compute Ap
         KtKfun(p, Ap)

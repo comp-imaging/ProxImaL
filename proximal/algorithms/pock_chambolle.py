@@ -65,7 +65,7 @@ def solve(psi_fns, omega_fns, tau=None, sigma=None, theta=None,
 
     if x0 is not None:
         x[:] = np.reshape(x0, K.input_size)
-        K.forward(x, y);
+        K.forward(x, y)
         xbar[:] = x
 
     # Buffers.
@@ -160,7 +160,8 @@ def solve(psi_fns, omega_fns, tau=None, sigma=None, theta=None,
             # Check convergence
             r = prev_Kx - z
             K.adjoint(sigma * (z - prev_z), s)
-            eps_pri = np.sqrt(K.output_size) * eps_abs + eps_rel * max([np.linalg.norm(prev_Kx), np.linalg.norm(z)])
+            eps_pri = np.sqrt(K.output_size) * eps_abs + eps_rel * \
+                              max([np.linalg.norm(prev_Kx), np.linalg.norm(z)])
 
             K.adjoint(u, KTu)
             eps_dual = np.sqrt(K.input_size) * eps_abs + eps_rel * np.linalg.norm(KTu) / sigma

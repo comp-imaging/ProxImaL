@@ -43,8 +43,10 @@ print 'Type ', output.dtype, 'Shape', output.shape
 output_ref_reordered = sqrt(np.sum(np.sum(np_img * np_img, 1)))
 print('ref reordered: ', output_ref_reordered)
 
-hl_2D = Halide('A_norm_L2.cpp', generator_name="normL2Img", recompile=True, verbose=False, cleansource=True)  # Force recompile in local dir
-hl_1D = Halide('A_norm_L2.cpp', generator_name="normL2_1DImg", func="A_norm_L2_1D", recompile=True, verbose=False, cleansource=True)  # Force recompile in local dir
+hl_2D = Halide('A_norm_L2.cpp', generator_name="normL2Img", recompile=True,
+               verbose=False, cleansource=True)  # Force recompile in local dir
+hl_1D = Halide('A_norm_L2.cpp', generator_name="normL2_1DImg", func="A_norm_L2_1D",
+               recompile=True, verbose=False, cleansource=True)  # Force recompile in local dir
 hl_norm2 = hl_2D.A_norm_L2
 if np_img.shape[1] < 8:
     hl_norm2 = hl_1D.A_norm_L2_1D
@@ -79,8 +81,10 @@ np_img1 = np_img0
 output_ref_reordered = np.sum(np.sum(np_img0 * np_img1, 1))
 print('ref reordered: ', output_ref_reordered)
 
-hl_2D = Halide('A_dot_prod.cpp', generator_name="dotImg", recompile=True, verbose=False, cleansource=True)  # Force recompile in local dir
-hl_1D = Halide('A_dot_prod.cpp', generator_name="dot_1DImg", func="A_dot_1D", recompile=True, verbose=False, cleansource=True)  # Force recompile in local dir
+hl_2D = Halide('A_dot_prod.cpp', generator_name="dotImg", recompile=True,
+               verbose=False, cleansource=True)  # Force recompile in local dir
+hl_1D = Halide('A_dot_prod.cpp', generator_name="dot_1DImg", func="A_dot_1D",
+               recompile=True, verbose=False, cleansource=True)  # Force recompile in local dir
 hl_dot = hl_2D.A_dot_prod
 if np_img.shape[1] < 8:
     hl_dot = hl_1D.A_dot_1D

@@ -29,14 +29,15 @@ plt.title('Numpy')
 plt.show()
 
 tic()
-Halide('A_conv.cpp', recompile=True, verbose=False, cleansource=True)  # Force recompile in local dir
+Halide('A_conv.cpp', recompile=True, verbose=False,
+       cleansource=True)  # Force recompile in local dir
 print('Compilation took: {0:.1f}ms'.format(toc()))
 
 # Test the runner
-output = np.zeros_like(np_img);
+output = np.zeros_like(np_img)
 kimg = Image.open('./data/kernel_snake.png')  # opens the file using Pillow - it's not an array yet
 kimg = np.asfortranarray(im2nparray(kimg))
-K = np.asfortranarray(kimg);  # K[2:-2,:] )
+K = np.asfortranarray(kimg)  # K[2:-2,:] )
 K[:, :, 0] /= np.sum(K[:, :, 0])
 K[:, :, 1] /= np.sum(K[:, :, 1])
 K[:, :, 2] /= np.sum(K[:, :, 2])

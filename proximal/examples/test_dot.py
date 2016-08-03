@@ -27,7 +27,8 @@ halide_src = 'A_dot_prod.cpp'
 
 # Load image
 img = Image.open('./data/largeimage.png')  # opens the file using Pillow - it's not an array yet
-# img = Image.open('./data/largeimage_pow2.png')  # opens the file using Pillow - it's not an array yet
+# img = Image.open('./data/largeimage_pow2.png')  # opens the file using
+# Pillow - it's not an array yet
 img = Image.new("RGB", (1, 10000000), "white")
 
 np_img = np.asfortranarray(im2nparray(img))
@@ -43,9 +44,12 @@ output_ref_reordered = np.sum(np.sum(np_img0 * np_img1, 1))
 print('ref reordered: ', output_ref_reordered)
 
 tic()
-# hl = Halide(halide_src, recompile=True, verbose=False, cleansource=True) #Force recompile in local dir
-hl_2D = Halide(halide_src, generator_name="dotImg", recompile=True, verbose=False, cleansource=True)  # Force recompile in local dir
-hl_1D = Halide(halide_src, generator_name="dot_1DImg", func="A_dot_1D", recompile=True, verbose=False, cleansource=True)  # Force recompile in local dir
+# hl = Halide(halide_src, recompile=True, verbose=False, cleansource=True)
+# #Force recompile in local dir
+hl_2D = Halide(halide_src, generator_name="dotImg", recompile=True,
+               verbose=False, cleansource=True)  # Force recompile in local dir
+hl_1D = Halide(halide_src, generator_name="dot_1DImg", func="A_dot_1D", recompile=True,
+               verbose=False, cleansource=True)  # Force recompile in local dir
 hl_dot = hl_2D.A_dot_prod
 if np_img.shape[1] < 8:
     hl_dot = hl_1D.A_dot_1D

@@ -27,10 +27,12 @@ class poisson_norm(ProxFn):
 
             # Halide implementation
             tmpin = np.asfortranarray(v)
-            Halide('prox_Poisson.cpp').prox_Poisson(tmpin, self.maskh, self.bph, 1. / rho, self.tmpout)
+            Halide('prox_Poisson.cpp').prox_Poisson(
+                tmpin, self.maskh, self.bph, 1. / rho, self.tmpout)
             np.copyto(v, self.tmpout)
         else:
-            v = 0.5 * (v - 1. / rho + np.sqrt((v - 1. / rho) * (v - 1. / rho) + 4. * 1. / rho * self.bp))
+            v = 0.5 * (v - 1. / rho + np.sqrt((v - 1. / rho) * \
+                       (v - 1. / rho) + 4. * 1. / rho * self.bp))
 
         return v
 
@@ -43,7 +45,7 @@ class poisson_norm(ProxFn):
             return np.inf
 
         # Other penalties
-        vsum = v.copy();
+        vsum = v.copy()
         vsum -= self.bp * np.log(np.maximum(v, 1e-9))
         return vsum.sum()
 
@@ -68,7 +70,8 @@ class weighted_poisson_norm(poisson_norm):
     def _prox(self, rho, v, *args, **kwargs):
         """x = 1/2* ( v - |W|/rho + sqrt( ||v - |W|/rho||^2 + 4 * 1./rho * b ) )
         """
-        output = 0.5 * (v - np.absolute(self.weight) / rho + np.sqrt((v - np.absolute(self.weight) / rho) * (v - np.absolute(self.weight) / rho) + 4. * 1. / rho * self.bp))
+        output = 0.5 * (v - np.absolute(self.weight) / rho + np.sqrt((v - np.absolute(self.weight) / rho)
+                        * (v - np.absolute(self.weight) / rho) + 4. * 1. / rho * self.bp))
 
         # Reference
         idxs = self.weight == 0

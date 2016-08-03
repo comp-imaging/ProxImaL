@@ -28,8 +28,8 @@ class TestProblem(BaseTest):
         prob.solve(solver="pc")
         self.assertItemsAlmostEqual(X.value, true_X, places=2)
         prob.solve(solver="hqs", eps_rel=1e-6,
-                     rho_0=1.0, rho_scale=np.sqrt(2.0) * 2.0, rho_max=2**16,
-                    max_iters=20, max_inner_iters=500, verbose=False)
+                   rho_0=1.0, rho_scale=np.sqrt(2.0) * 2.0, rho_max=2**16,
+                   max_iters=20, max_inner_iters=500, verbose=False)
         self.assertItemsAlmostEqual(X.value, true_X, places=2)
 
         # CG
@@ -38,8 +38,8 @@ class TestProblem(BaseTest):
         prob.solve(solver="admm")
         self.assertItemsAlmostEqual(X.value, true_X, places=2)
         prob.solve(solver="hqs", eps_rel=1e-6,
-                     rho_0=1.0, rho_scale=np.sqrt(2.0) * 2.0, rho_max=2**16,
-                    max_iters=20, max_inner_iters=500, verbose=False)
+                   rho_0=1.0, rho_scale=np.sqrt(2.0) * 2.0, rho_max=2**16,
+                   max_iters=20, max_inner_iters=500, verbose=False)
         self.assertItemsAlmostEqual(X.value, true_X, places=2)
 
         # Quad funcs.

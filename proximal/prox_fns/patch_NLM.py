@@ -55,7 +55,7 @@ class patch_NLM(ProxFn):
             # Fixed sigma if wanted
             sigma_estim = sigma
             if self.sigma_fixed > 0.0:
-                sigma_estim = self.sigma_fixed / 30.0 * self.sigma_scale;
+                sigma_estim = self.sigma_fixed / 30.0 * self.sigma_scale
 
             # Params
             print "Prox NLM params are: [sigma ={0} prior={1} sigma_scale={2}]".format(sigma_estim, self.prior, self.sigma_scale)
@@ -79,15 +79,17 @@ class patch_NLM(ProxFn):
 
             # Transform
             if self.gamma_trans != 1.0:
-                vuint = np.uint8(np.clip(v**self.gamma_trans * 255.0, 0, 255))  # Quadratic tranform to account for gamma
+                vuint = np.uint8(np.clip(v**self.gamma_trans * 255.0, 0, 255)
+                                 )  # Quadratic tranform to account for gamma
             else:
-                vuint = np.uint8(np.clip(v * 255.0, 0.0, 255.0))  # Quadratic tranform to account for gamma
+                # Quadratic tranform to account for gamma
+                vuint = np.uint8(np.clip(v * 255.0, 0.0, 255.0))
 
             if self.prior <= 0.5:
 
                 vdstuint = cv2.fastNlMeansDenoising(vuint, None,
-                                                        sigma_luma * 255.0,
-                                                        self.templateWindowSizeNLM, self.searchWindowSizeNLM)
+                                                    sigma_luma * 255.0,
+                                                    self.templateWindowSizeNLM, self.searchWindowSizeNLM)
             else:
 
                 vdstuint = cv2.fastNlMeansDenoisingColored(vuint, None,
@@ -96,7 +98,8 @@ class patch_NLM(ProxFn):
 
             # Convert to float and inverse scale
             if self.gamma_trans != 1.0:
-                dst = ((vdstuint.astype(np.float32) / 255.0)**(1.0 / self.gamma_trans)) * (v_max - v_min) + v_min
+                dst = ((vdstuint.astype(np.float32) / 255.0)**
+                       (1.0 / self.gamma_trans)) * (v_max - v_min) + v_min
             else:
                 dst = vdstuint.astype(np.float32) / 255.0 * (v_max - v_min) + v_min
             np.copyto(v, dst)

@@ -21,8 +21,8 @@ class group_norm1(ProxFn):
         self.tmpout = None
         if len(lin_op.shape) in [3, 4] and lin_op.shape[-1] == 2 and self.group_dims == [len(lin_op.shape) - 1]:
             self.tmpout = np.zeros((lin_op.shape[0], lin_op.shape[1],
-                                     lin_op.shape[2] if (len(lin_op.shape) > 3) else 1, 2),
-                                    dtype=np.float32, order='FORTRAN');
+                                    lin_op.shape[2] if (len(lin_op.shape) > 3) else 1, 2),
+                                   dtype=np.float32, order='FORTRAN')
 
         super(group_norm1, self).__init__(lin_op, **kwargs)
 
@@ -35,7 +35,8 @@ class group_norm1(ProxFn):
 
             # Halide implementation
             if len(self.lin_op.shape) == 3:
-                tmpin = np.asfortranarray(np.reshape(v, (self.lin_op.shape[0], self.lin_op.shape[1], 1, 2)).astype(np.float32))
+                tmpin = np.asfortranarray(np.reshape(
+                    v, (self.lin_op.shape[0], self.lin_op.shape[1], 1, 2)).astype(np.float32))
             else:
                 tmpin = np.asfortranarray(v.astype(np.float32))
 
@@ -79,7 +80,7 @@ class group_norm1(ProxFn):
         """
 
         # Square
-        vsum = v.copy();
+        vsum = v.copy()
         np.multiply(v, v, vsum)
 
         # Sum along dimensions and keep dimensions
@@ -138,7 +139,8 @@ class weighted_group_norm1(group_norm1):
 
         # Thresholded group norm
         with np.errstate(divide='ignore'):
-            np.maximum(0.0, 1.0 - (np.absolute(self.weight) / rho) * (1.0 / self.v_group_norm), self.v_group_norm)
+            np.maximum(0.0, 1.0 - (np.absolute(self.weight) / rho) * \
+                       (1.0 / self.v_group_norm), self.v_group_norm)
 
         # Mult
         idxs = self.weight == 0

@@ -62,8 +62,8 @@ lambda_tv = 0.15
 lambda_data = 4000.0
 
 x = Variable(x.shape)
-prox_fns = [poisson_norm(conv(K, x), b, alpha=lambda_data), \
-                        group_norm1(grad(x, dims=2), [2], alpha=lambda_tv)]  # Isotropic
+prox_fns = [poisson_norm(conv(K, x), b, alpha=lambda_data),
+            group_norm1(grad(x, dims=2), [2], alpha=lambda_tv)]  # Isotropic
 quad_funcs = []
 
 
@@ -77,8 +77,8 @@ tic()
 if method == 'pc':
 
     pc(prox_fns, quad_funcs=quad_funcs, tau=None, sigma=None, theta=None, max_iters=100,
-          eps=1e-2, lin_solver="cg", lin_solver_options=options,
-                    try_diagonalize=diag, verbose=verbose)
+       eps=1e-2, lin_solver="cg", lin_solver_options=options,
+       try_diagonalize=diag, verbose=verbose)
 
 elif method == 'lin-admm':
 
@@ -89,14 +89,14 @@ elif method == 'lin-admm':
 elif method == 'admm':
 
     admm(prox_fns, quad_funcs=quad_funcs, rho=1, max_iters=100,
-             eps_abs=1e-4, eps_rel=1e-4, lin_solver="cg", lin_solver_options=options,
-             try_diagonalize=diag, verbose=verbose)
+         eps_abs=1e-4, eps_rel=1e-4, lin_solver="cg", lin_solver_options=options,
+         try_diagonalize=diag, verbose=verbose)
 
 elif method == 'hqs':
 
     hqs(prox_fns, lin_solver="cg", lin_solver_options=options,
-                                    eps_rel=1e-6, max_iters=10, max_inner_iters=10, x0=b,
-                                    try_diagonalize=diag, verbose=verbose)
+        eps_rel=1e-6, max_iters=10, max_inner_iters=10, x0=b,
+        try_diagonalize=diag, verbose=verbose)
 
 print('Running took: {0:.1f}s'.format(toc() / 1000.0))
 

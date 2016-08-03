@@ -98,7 +98,7 @@ class ProxFn(object):
         """Evaluate the function on v.
         """
         return self.alpha * self._eval(self.beta * v - self.b) + \
-        np.sum(self.c * v) + self.gamma * np.square(v).sum() + self.d
+            np.sum(self.c * v) + self.gamma * np.square(v).sum() + self.d
 
     @property
     def value(self):

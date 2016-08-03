@@ -42,9 +42,11 @@ output_ref_reordered = sqrt(np.sum(np.sum(np_img * np_img, 1)))
 print('ref reordered: ', output_ref_reordered)
 
 tic()
-hl_2D = Halide(halide_src, generator_name="normL2Img", recompile=True, verbose=False, cleansource=True)  # Force recompile in local dir
+hl_2D = Halide(halide_src, generator_name="normL2Img", recompile=True,
+               verbose=False, cleansource=True)  # Force recompile in local dir
 # hl_1D = Halide(halide_src, generator_name="normL2_1DImg", func="A_norm_L2_1D", recompile=True, verbose=False, cleansource=True) #Force recompile in local dir
-# hl = Halide(halide_src, recompile=True, verbose=False, cleansource=True) #Force recompile in local dir
+# hl = Halide(halide_src, recompile=True, verbose=False, cleansource=True)
+# #Force recompile in local dir
 hl_norm2 = hl_2D.A_norm_L2
 # if np_img.shape[1] < 8:
 #	hl_norm2 = hl_1D.A_norm_L2_1D

@@ -40,10 +40,10 @@ plt.savefig('warp0.png')
 plt.savefig('mask1.png')
 
 # Generate transform
-theta_rad = 5.0 * np.pi / 180.0;
-H = np.array([[np.cos(theta_rad), -np.sin(theta_rad), 0.0001 ],\
-                          [np.sin(theta_rad), np.cos(theta_rad), 0.0003 ],\
-                          [0., 0., 1.]], dtype=np.float32, order='F')
+theta_rad = 5.0 * np.pi / 180.0
+H = np.array([[np.cos(theta_rad), -np.sin(theta_rad), 0.0001],
+              [np.sin(theta_rad), np.cos(theta_rad), 0.0003],
+              [0., 0., 1.]], dtype=np.float32, order='F')
 
 
 tic()
@@ -64,7 +64,7 @@ plt.title('Output from CV2')
 plt.savefig('warp1.png')
 
 # Test halide interface
-output = np.zeros_like(np_img);
+output = np.zeros_like(np_img)
 Hc = np.asfortranarray(np.linalg.pinv(H)[..., np.newaxis])  # Third axis for halide
 
 # Compile
@@ -89,7 +89,7 @@ print('Maximum error {0}'.format(np.amax(np.abs(output_ref - output))))
 # Check correlation
 ############################################################################
 
-output_trans = np.zeros_like(np_img);
+output_trans = np.zeros_like(np_img)
 Hinvc = np.asfortranarray(H[..., np.newaxis])  # Third axis for halide
 
 Halide('At_warp.cpp', recompile=True, cleansource=False)  # Force recompile

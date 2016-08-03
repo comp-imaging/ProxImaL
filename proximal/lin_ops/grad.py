@@ -24,12 +24,12 @@ class grad(LinOp):
         self.tmpadj = None
         if len(arg.shape) in [2, 3] and self.dims == 2:
             self.tmpfwd = np.zeros((arg.shape[0], arg.shape[1],
-                                     arg.shape[2] if (len(arg.shape) > 2) else 1, 2),
-                                    dtype=np.float32, order='FORTRAN');
+                                    arg.shape[2] if (len(arg.shape) > 2) else 1, 2),
+                                   dtype=np.float32, order='FORTRAN')
 
             self.tmpadj = np.zeros((arg.shape[0], arg.shape[1],
-                                     arg.shape[2] if (len(arg.shape) > 2) else 1),
-                                    dtype=np.float32, order='FORTRAN');
+                                    arg.shape[2] if (len(arg.shape) > 2) else 1),
+                                   dtype=np.float32, order='FORTRAN')
 
         super(grad, self).__init__([arg], shape, implem)
 
@@ -40,7 +40,7 @@ class grad(LinOp):
         """
 
         if self.implementation == Impl['halide'] and \
-            (len(self.shape) == 3 or len(self.shape) == 4) and self.dims == 2:
+                (len(self.shape) == 3 or len(self.shape) == 4) and self.dims == 2:
             # Halide implementation
             if len(self.shape) == 3:
                 tmpin = np.asfortranarray((inputs[0][..., np.newaxis]).astype(np.float32))
@@ -56,7 +56,7 @@ class grad(LinOp):
             f = inputs[0]
 
             # Build up index for shifted array
-            ss = f.shape;
+            ss = f.shape
             stack_arr = ()
             for j in range(self.dims):
 
@@ -68,7 +68,7 @@ class grad(LinOp):
                     else:
                         il += np.index_exp[:]
 
-                fgrad_j = f[il] - f;
+                fgrad_j = f[il] - f
                 stack_arr += (fgrad_j,)
 
             # Stack all grads as new dimension
@@ -81,7 +81,7 @@ class grad(LinOp):
         """
 
         if self.implementation == Impl['halide'] and \
-            (len(self.shape) == 3 or len(self.shape) == 4) and self.dims == 2:
+                (len(self.shape) == 3 or len(self.shape) == 4) and self.dims == 2:
 
             # Halide implementation
             if len(self.shape) == 3:

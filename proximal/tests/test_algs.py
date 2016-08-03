@@ -50,7 +50,7 @@ class TestAlgs(BaseTest):
 
         cvx_X = cvx.Variable(10, 5)
         cost = 0.1 * cvx.sum_squares(2 * cvx_X - B) + cvx.sum_squares(cvx_X) + \
-               cvx.norm(cvx_X, 1) + cvx.trace(B.T * cvx_X)
+            cvx.norm(cvx_X, 1) + cvx.trace(B.T * cvx_X)
         prob = cvx.Problem(cvx.Minimize(cost))
         prob.solve()
         self.assertItemsAlmostEqual(X.value, cvx_X.value, places=2)
@@ -276,11 +276,11 @@ class TestAlgs(BaseTest):
         tmp = d * wl * kernel_mat * wr * e
         u, v = np.log(d), np.log(e)
         obj_val = np.square(tmp).sum() / 2 - u.sum() - v.sum() + \
-        gamma * (np.linalg.norm(v)**2 + np.linalg.norm(u)**2)
+            gamma * (np.linalg.norm(v)**2 + np.linalg.norm(u)**2)
 
         d, e = newton_equil(wl * kernel_mat * wr, gamma, 100)
         tmp = d * wl * kernel_mat * wr * e
         u, v = np.log(d), np.log(e)
         sltn_val = np.square(tmp).sum() / 2 - u.sum() - v.sum() + \
-        gamma * (np.linalg.norm(v)**2 + np.linalg.norm(u)**2)
+            gamma * (np.linalg.norm(v)**2 + np.linalg.norm(u)**2)
         self.assertAlmostEqual((obj_val - sltn_val) / sltn_val, 0, places=3)

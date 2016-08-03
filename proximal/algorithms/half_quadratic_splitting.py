@@ -142,7 +142,7 @@ def solve(psi_fns, omega_fns,
                 print "iter [%02d (rho=%2.1e) || %02d]:" \
                       "||w - w_prev||_2 = %02.02e (eps=%02.03e)" \
                       "||x - x_prev||_2 = %02.02e (eps=%02.03e)%s%s" \
-                        % (i, rho, ii, r_x, eps_x, r_w, eps_w, objstr, metstr)
+                    % (i, rho, ii, r_x, eps_x, r_w, eps_w, objstr, metstr)
 
             inner_iter_timing.toc()
             if r_x < eps_x and r_w < eps_w:

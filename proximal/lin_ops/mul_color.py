@@ -26,9 +26,11 @@ class mul_color(LinOp):
 
             # Check for predefined transforms
             if mode == 'opp':
-                self.TC = np.array([[1. / 3., 1. / 3., 1. / 3.], [0.5, 0.0, -0.5], [0.25, -0.5, 0.25]], dtype=np.float32, order='F')
+                self.TC = np.array([[1. / 3., 1. / 3., 1. / 3.], [0.5, 0.0, -0.5],
+                                   [0.25, -0.5, 0.25]], dtype=np.float32, order='F')
             elif mode == 'yuv':
-                self.TC = np.array([[0.299, 0.587, 0.114], [-0.16873660714285, -0.33126339285715, 0.5], [0.5, -0.4186875, -0.0813125]], dtype=np.float32, order='F')
+                self.TC = np.array([[0.299, 0.587, 0.114], [-0.16873660714285, -0.33126339285715,
+                                   0.5], [0.5, -0.4186875, -0.0813125]], dtype=np.float32, order='F')
             else:
                 print >> sys.stderr, "Error, unsupported color mode."
                 sys.exit(1)

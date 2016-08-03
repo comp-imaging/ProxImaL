@@ -27,13 +27,14 @@ print 'Type ', np_img.dtype, 'Shape', np_img.shape
 
 plt.ion()
 plt.figure()
-imgplot = plt.imshow(np.reshape(np_img, (np_img.shape[0], np_img.shape[1] * np_img.shape[2] * np_img.shape[3]), order='F'), interpolation="nearest", clim=(0.0, 1.0))
+imgplot = plt.imshow(np.reshape(np_img, (np_img.shape[0], np_img.shape[
+                     1] * np_img.shape[2] * np_img.shape[3]), order='F'), interpolation="nearest", clim=(0.0, 1.0))
 imgplot.set_cmap('gray')
 plt.title('Numpy')
 plt.show()
 
 # Test the runner
-output = np.zeros_like(np_img);
+output = np.zeros_like(np_img)
 mask = np.asfortranarray(np.random.randn(*list(np_img.shape[0:3])).astype(np.float32))
 mask = np.maximum(mask, 0.)
 #mask[mask < 0.5] = 0.
@@ -45,13 +46,14 @@ print 'Type ', mask.dtype, 'Shape mask', mask.shape
 
 tic()
 for k in range(np_img.shape[3]):
-    Halide('A_mask.cpp').A_mask(np.asfortranarray(np_img[:, :, :, k]), mask, output[:, :, :, k])  # Call
+    Halide('A_mask.cpp').A_mask(np.asfortranarray(
+        np_img[:, :, :, k]), mask, output[:, :, :, k])  # Call
 
 print('Running took: {0:.1f}ms'.format(toc()))
 
 
 tic()
-output_ref = np.zeros_like(np_img);
+output_ref = np.zeros_like(np_img)
 for k in range(np_img.shape[3]):
     output_ref[:, :, :, k] = mask * np_img[:, :, :, k]
 

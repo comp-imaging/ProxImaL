@@ -108,7 +108,8 @@ lambda_data = 500.0
 x = Variable(I.shape)
 #quad_funcs = [sum_squares(mul_elemwise(mask, conv(K, x)), b=b, alpha = lambda_data)]
 quad_funcs = [sum_squares(conv(K, x, implem='numpy', dims=2), b=b, alpha=lambda_data)]
-nonquad_fns = [group_norm1(grad(x, dims=2, implem='numpy'), [2], alpha=lambda_tv, implem='numpy')]  # Isotropic
+nonquad_fns = [group_norm1(grad(x, dims=2, implem='numpy'), [2],
+                           alpha=lambda_tv, implem='numpy')]  # Isotropic
 
 # quad_funcs = [group_norm1( grad(x, dims = 2), [2], alpha = lambda_tv ), sum_squares(conv(K, x), b=b, alpha = lambda_data)] #Isotropic
 #nonquad_fns = []
@@ -124,7 +125,7 @@ options = cg_options(tol=1e-5, num_iters=100, verbose=False)
 tic()
 
 pc(prox_fns, quad_funcs=quad_funcs, tau=0.088, sigma=1.000, theta=1.000, max_iters=100,
-       eps=1e-2, lin_solver="cg", lin_solver_options=options, metric=None, verbose=1)
+   eps=1e-2, lin_solver="cg", lin_solver_options=options, metric=None, verbose=1)
 
 print('Overall solver took: {0:.1f}ms'.format(toc()))
 

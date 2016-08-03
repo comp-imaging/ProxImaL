@@ -26,7 +26,7 @@ class TestHalide(BaseTest):
         np_img = np.asfortranarray(np.tile(np_img[..., np.newaxis], (1, 1, 1, 3)))
 
         # Test problem
-        output = np.zeros_like(np_img);
+        output = np.zeros_like(np_img)
         mask = np.asfortranarray(np.random.randn(*list(np_img.shape[0:3])).astype(np.float32))
         mask = np.maximum(mask, 0.)
 
@@ -34,7 +34,7 @@ class TestHalide(BaseTest):
             Halide('A_mask.cpp').A_mask(np.asfortranarray(np_img[:, :, :, k]),
                                         mask, output[:, :, :, k])  # Call
 
-        output_ref = np.zeros_like(np_img);
+        output_ref = np.zeros_like(np_img)
         for k in range(np_img.shape[3]):
             output_ref[:, :, :, k] = mask * np_img[:, :, :, k]
 

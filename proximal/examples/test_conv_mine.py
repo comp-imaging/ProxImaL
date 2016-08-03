@@ -41,11 +41,12 @@ plt.title('Numpy')
 plt.savefig('conv0.png')
 
 tic()
-Halide('A_conv.cpp', recompile=True, verbose=False, cleansource=True)  # Force recompile in local dir
+Halide('A_conv.cpp', recompile=True, verbose=False,
+       cleansource=True)  # Force recompile in local dir
 print('Compilation took: {0:.1f}ms'.format(toc()))
 
 # Test the runner
-output = np.zeros_like(np_img);
+output = np.zeros_like(np_img)
 kimg = Image.open('./data/kernel_snake.png')  # opens the file using Pillow - it's not an array yet
 kimg = np.asfortranarray(im2nparray(kimg))
 K = np.mean(kimg, axis=2)
@@ -92,9 +93,10 @@ plt.savefig('conv2.png')
 # Check correlation
 ############################################################################
 
-Halide('At_conv.cpp', recompile=True, verbose=False, cleansource=True)  # Force recompile in local dir
+Halide('At_conv.cpp', recompile=True, verbose=False,
+       cleansource=True)  # Force recompile in local dir
 
-output_corr = np.zeros_like(np_img);
+output_corr = np.zeros_like(np_img)
 tic()
 Halide('At_conv.cpp').At_conv(np_img, K, output_corr)  # Call
 print('Running correlation took: {0:.1f}ms'.format(toc()))

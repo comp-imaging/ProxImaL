@@ -38,7 +38,7 @@ plt.title('Numpy')
 plt.savefig('mask0.png')
 
 # Test the runner
-output = np.zeros_like(np_img);
+output = np.zeros_like(np_img)
 mask = np.asfortranarray(np.random.randn(*list(np_img.shape)).astype(np.float32))
 mask = np.maximum(mask, 0.)
 #mask[mask < 0.5] = 0.
@@ -85,7 +85,7 @@ plt.savefig('mask2.png')
 # Check transpose
 ############################################################################
 
-output_trans = np.zeros_like(np_img);
+output_trans = np.zeros_like(np_img)
 
 tic()
 hl = Halide('At_mask.cpp', recompile=True, verbose=False, cleansource=True)  # Force recompile

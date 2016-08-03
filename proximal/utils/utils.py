@@ -248,9 +248,11 @@ def estimate_std(z, method='daub_reflect'):
                                  dtype=np.float32, order='F')
 
             if method == NoiseEstMethod['daub_reflect']:
-                wav_det = cv2.sepFilter2D(z, -1, daub6kern, daub6kern, borderType=cv2.BORDER_REFLECT_101)
+                wav_det = cv2.sepFilter2D(z, -1, daub6kern, daub6kern,
+                                          borderType=cv2.BORDER_REFLECT_101)
             else:
-                wav_det = cv2.sepFilter2D(z, -1, daub6kern, daub6kern, borderType=cv2.BORDER_REPLICATE)
+                wav_det = cv2.sepFilter2D(z, -1, daub6kern, daub6kern,
+                                          borderType=cv2.BORDER_REPLICATE)
 
             dev[ch] = np.median(np.absolute(wav_det)) / 0.6745
 

@@ -42,7 +42,8 @@ plt.show()
 #print( 'Compilation took: {0:.1f}ms'.format( toc() ) )
 
 # Test the runner
-output = np.zeros((np_img.shape[0], np_img.shape[1], np_img.shape[2] if (len(np_img.shape) > 2) else 1, 2), dtype=np.float32, order='FORTRAN');
+output = np.zeros((np_img.shape[0], np_img.shape[1], np_img.shape[2] if (
+    len(np_img.shape) > 2) else 1, 2), dtype=np.float32, order='FORTRAN')
 print 'Out Type ', output.dtype, 'Shape', output.shape
 
 tic()
@@ -109,7 +110,7 @@ tic()
 hl = Halide('At_grad.cpp', recompile=True, verbose=False, cleansource=True)  # Force recompile
 print('Compilation took: {0:.1f}ms'.format(toc()))
 
-output_t = np.zeros(f.shape, dtype=np.float32, order='F');
+output_t = np.zeros(f.shape, dtype=np.float32, order='F')
 tic()
 hl.At_grad(Kfh, output_t)  # Call
 print('Running trans halid (first) took: {0:.1f}ms'.format(toc()))
@@ -120,7 +121,7 @@ print('Running trans halid (second) took: {0:.1f}ms'.format(toc()))
 
 
 # Compute comparison (Negative divergence)
-f = Kf;
+f = Kf
 
 tic()
 

@@ -160,14 +160,14 @@ class TestLinOps(BaseTest):
         testimg_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                         'data', 'angela.jpg')
         # opens the file using Pillow - it's not an array yet
-        img = Image.open(testimg_filename) 
+        img = Image.open(testimg_filename)
         np_img = np.asfortranarray(im2nparray(img))
 
         # Convert to gray
         np_img = np.mean(np_img, axis=2)
 
         # Test problem
-        output = np.zeros_like(np_img);
+        output = np.zeros_like(np_img)
         K = np.ones((11, 11), dtype=np.float32, order='FORTRAN')
         K /= np.prod(K.shape)
 
@@ -178,7 +178,7 @@ class TestLinOps(BaseTest):
         output_ref = signal.convolve2d(np_img, K, mode='same', boundary='wrap')
 
         # Transpose
-        output_corr = np.zeros_like(np_img);
+        output_corr = np.zeros_like(np_img)
         Halide('At_conv.cpp').At_conv(np_img, K, output_corr)  # Call
 
         output_corr_ref = signal.convolve2d(np_img, np.flipud(np.fliplr(K)),
@@ -394,11 +394,11 @@ class TestLinOps(BaseTest):
         testimg_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                         'data', 'angela.jpg')
         # opens the file using Pillow - it's not an array yet
-        img = Image.open(testimg_filename) 
+        img = Image.open(testimg_filename)
         np_img = np.asfortranarray(im2nparray(img))
 
         # Test problem
-        output = np.zeros_like(np_img);
+        output = np.zeros_like(np_img)
         mask = np.asfortranarray(np.random.randn(*list(np_img.shape)).astype(np.float32))
         mask = np.maximum(mask, 0.)
 
@@ -406,7 +406,7 @@ class TestLinOps(BaseTest):
         output_ref = mask * np_img
 
         # Transpose
-        output_trans = np.zeros_like(np_img);
+        output_trans = np.zeros_like(np_img)
         Halide('At_mask.cpp').At_mask(np_img, mask, output_trans)  # Call
 
         self.assertItemsAlmostEqual(output, output_ref)
@@ -419,7 +419,7 @@ class TestLinOps(BaseTest):
         # Load image
         testimg_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                         'data', 'angela.jpg')
-        img = Image.open(testimg_filename) 
+        img = Image.open(testimg_filename)
         np_img = np.asfortranarray(im2nparray(img))
 
         # Convert to gray
@@ -428,7 +428,7 @@ class TestLinOps(BaseTest):
         # Test problem
         output = np.zeros((np_img.shape[0], np_img.shape[1],
                            np_img.shape[2] if (len(np_img.shape) > 2) else 1, 2),
-                          dtype=np.float32, order='FORTRAN');
+                          dtype=np.float32, order='FORTRAN')
 
         #Gradient in halide
         Halide('A_grad.cpp').A_grad(np_img, output)  # Call
@@ -438,26 +438,26 @@ class TestLinOps(BaseTest):
         if len(np_img.shape) == 2:
             f = f[..., np.newaxis]
 
-        ss = f.shape;
-        fx = f[:, np.r_[1:ss[1], ss[1] - 1], :] - f;
-        fy = f[np.r_[1:ss[0], ss[0] - 1], :, :] - f;
+        ss = f.shape
+        fx = f[:, np.r_[1:ss[1], ss[1] - 1], :] - f
+        fy = f[np.r_[1:ss[0], ss[0] - 1], :, :] - f
         Kf = np.asfortranarray(np.stack((fy, fx), axis=-1))
 
         # Transpose
-        output_trans = np.zeros(f.shape, dtype=np.float32, order='F');
+        output_trans = np.zeros(f.shape, dtype=np.float32, order='F')
         Halide('At_grad.cpp').At_grad(Kf, output_trans)  # Call
 
         # Compute comparison (Negative divergence)
         Kfy = Kf[:, :, :, 0]
-        fy = Kfy - Kfy[np.r_[0, 0:ss[0] - 1], :, :];
-        fy[0, :, :] = Kfy[0, :, :];
-        fy[-1, :, :] = -Kfy[-2, :, :];
+        fy = Kfy - Kfy[np.r_[0, 0:ss[0] - 1], :, :]
+        fy[0, :, :] = Kfy[0, :, :]
+        fy[-1, :, :] = -Kfy[-2, :, :]
 
         Kfx = Kf[:, :, :, 1]
         ss = Kfx.shape
         fx = Kfx - Kfx[:, np.r_[0, 0:ss[1] - 1], :]
-        fx[:, 0, :] = Kfx[:, 0, :];
-        fx[:, -1, :] = -Kfx[:, -2, :];
+        fx[:, 0, :] = Kfx[:, 0, :]
+        fx[:, -1, :] = -Kfx[:, -2, :]
 
         # TODO are these wrong?
         # KtKf = -fx - fy
@@ -478,9 +478,9 @@ class TestLinOps(BaseTest):
         np_img = np.mean(np_img, axis=2)
 
         # Generate problem
-        theta_rad = 5.0 * np.pi / 180.0;
-        H = np.array([[np.cos(theta_rad), -np.sin(theta_rad), 0.0001 ],\
-                      [np.sin(theta_rad), np.cos(theta_rad), 0.0003 ],\
+        theta_rad = 5.0 * np.pi / 180.0
+        H = np.array([[np.cos(theta_rad), -np.sin(theta_rad), 0.0001],
+                      [np.sin(theta_rad), np.cos(theta_rad), 0.0003],
                       [0., 0., 1.]], dtype=np.float32, order='F')
 
         # Reference
@@ -488,12 +488,12 @@ class TestLinOps(BaseTest):
                                          borderMode=cv2.BORDER_CONSTANT, borderValue=0.)
 
         # Halide
-        output = np.zeros_like(np_img);
+        output = np.zeros_like(np_img)
         Hc = np.asfortranarray(np.linalg.pinv(H)[..., np.newaxis])  # Third axis for halide
         Halide('A_warp.cpp').A_warp(np_img, Hc, output)  # Call
 
         # Transpose
-        output_trans = np.zeros_like(np_img);
+        output_trans = np.zeros_like(np_img)
         Hinvc = np.asfortranarray(H[..., np.newaxis])  # Third axis for halide
         Halide('At_warp.cpp').At_warp(output, Hinvc, output_trans)  # Call
 

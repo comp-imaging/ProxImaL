@@ -91,9 +91,9 @@ f = np_img
 if len(np_img.shape) == 2:
     f = f[..., np.newaxis]
 
-ss = f.shape;
-fx = f[:, np.r_[1:ss[1], ss[1] - 1], :] - f;
-fy = f[np.r_[1:ss[0], ss[0] - 1], :, :] - f;
+ss = f.shape
+fx = f[:, np.r_[1:ss[1], ss[1] - 1], :] - f
+fy = f[np.r_[1:ss[0], ss[0] - 1], :, :] - f
 v = np.asfortranarray(np.stack((fx, fy), axis=-1))
 
 # Output
@@ -113,7 +113,8 @@ print('Running Halide (second) took: {0:.1f}ms'.format(toc()))
 
 
 # Reference
-normv = np.sqrt(np.multiply(v[:, :, :, 0], v[:, :, :, 0]) + np.multiply(v[:, :, :, 1], v[:, :, :, 1]))
+normv = np.sqrt(np.multiply(v[:, :, :, 0], v[:, :, :, 0]) + \
+                np.multiply(v[:, :, :, 1], v[:, :, :, 1]))
 normv = np.stack((normv, normv), axis=-1)
 with np.errstate(divide='ignore'):
     output_ref = np.maximum(0.0, 1.0 - theta / normv) * v
@@ -174,7 +175,8 @@ print('Maximum error Poisson {0}'.format(np.amax(np.abs(output_ref - output))))
 # #Compile
 ext_libs = '-lopencv_core', '-lopencv_imgproc', '-lopencv_cudaarithm', '-lopencv_cudev', '-lopencv_photo', '-lm'
 ext_srcs = ['external/external_NLM.cpp']
-Halide('prox_NLM.cpp', external_source=ext_srcs, external_libs=ext_libs, recompile=True, verbose=False, cleansource=True)  # Compile
+Halide('prox_NLM.cpp', external_source=ext_srcs, external_libs=ext_libs,
+       recompile=True, verbose=False, cleansource=True)  # Compile
 
 # Works currently on color image
 v = np_img_color
@@ -182,7 +184,8 @@ sigma_fixed = 0.6
 lambda_prior = 0.5
 sigma_scale = 1.5 * 1
 prior = 1.0
-params = np.asfortranarray(np.array([sigma_fixed, lambda_prior, sigma_scale, prior], dtype=np.float32)[..., np.newaxis])
+params = np.asfortranarray(
+    np.array([sigma_fixed, lambda_prior, sigma_scale, prior], dtype=np.float32)[..., np.newaxis])
 theta = 0.5
 
 # #Output

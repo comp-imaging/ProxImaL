@@ -21,19 +21,19 @@ class TestTransforms(BaseTest):
         rho = 2
         new_prox = absorb_lin_op(fn)[0]
         x = new_prox.prox(rho, v.copy())
-        self.assertItemsAlmostEqual(x, np.sign(v) * np.maximum(np.abs(v) - 5. * \
+        self.assertItemsAlmostEqual(x, np.sign(v) * np.maximum(np.abs(v) - 5. *
                                                                np.abs(v) / rho, 0))
 
         fn = norm1(mul_elemwise(-v, mul_elemwise(2 * v, tmp)), alpha=5.)
         rho = 2
         new_prox = absorb_lin_op(fn)[0]
         x = new_prox.prox(rho, v.copy())
-        self.assertItemsAlmostEqual(x, np.sign(v) * np.maximum(np.abs(v) - 5. * \
+        self.assertItemsAlmostEqual(x, np.sign(v) * np.maximum(np.abs(v) - 5. *
                                                                np.abs(v) / rho, 0))
         new_prox = absorb_lin_op(new_prox)[0]
         x = new_prox.prox(rho, v.copy())
         new_v = 2 * v * v
-        self.assertItemsAlmostEqual(x, np.sign(new_v) * \
+        self.assertItemsAlmostEqual(x, np.sign(new_v) *
                                     np.maximum(np.abs(new_v) - 5. * np.abs(new_v) / rho, 0))
 
         # nonneg.
@@ -58,9 +58,10 @@ class TestTransforms(BaseTest):
         x = new_prox.prox(rho, v.copy())
 
         cvx_x = cvx.Variable(10)
-        prob = cvx.Problem(cvx.Minimize(cvx.sum_squares(cvx_x - v) * (rho / 2) + \
-                                        5 * cvx.sum_squares(cvx.mul_elemwise(-v, cvx_x)) + (val * -v).T * cvx_x
-        ))
+        prob = cvx.Problem(cvx.Minimize(cvx.sum_squares(cvx_x - v) * (rho / 2) +
+                                        5 * cvx.sum_squares(cvx.mul_elemwise(-v,
+                                                            cvx_x)) + (val * -v).T * cvx_x
+                                        ))
         prob.solve()
         self.assertItemsAlmostEqual(x, cvx_x.value, places=3)
 
@@ -83,9 +84,10 @@ class TestTransforms(BaseTest):
         new_prox = absorb_lin_op(fn)[0]
         x = new_prox.prox(rho, v.copy())
         cvx_x = cvx.Variable(10)
-        prob = cvx.Problem(cvx.Minimize(cvx.sum_squares(cvx_x - v) + \
-                                        cvx.norm(10 * cvx_x - val, 1) + 10 * val.T * cvx_x + cvx.sum_squares(cvx_x)
-        ))
+        prob = cvx.Problem(cvx.Minimize(cvx.sum_squares(cvx_x - v) +
+                                        cvx.norm(10 * cvx_x - val, 1) + 10 * val.T * \
+                                                 cvx_x + cvx.sum_squares(cvx_x)
+                                        ))
         prob.solve()
         self.assertItemsAlmostEqual(x, cvx_x.value, places=2)
 

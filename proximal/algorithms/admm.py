@@ -59,7 +59,7 @@ def solve(psi_fns, omega_fns, rho=1.0,
     # Initialize
     if x0 is not None:
         v[:] = np.reshape(x0, K.input_size)
-        K.forward(v, z);
+        K.forward(v, z)
 
     # Buffers.
     Kv = np.zeros(K.output_size)
@@ -107,7 +107,8 @@ def solve(psi_fns, omega_fns, rho=1.0,
         # Check convergence.
         r = Kv - z
         K.adjoint(rho * (z - z_prev), s)
-        eps_pri = np.sqrt(K.output_size) * eps_abs + eps_rel * max([np.linalg.norm(Kv), np.linalg.norm(z)])
+        eps_pri = np.sqrt(K.output_size) * eps_abs + eps_rel * \
+                          max([np.linalg.norm(Kv), np.linalg.norm(z)])
         eps_dual = np.sqrt(K.input_size) * eps_abs + eps_rel * np.linalg.norm(KTu) / rho
 
         # Convergence log

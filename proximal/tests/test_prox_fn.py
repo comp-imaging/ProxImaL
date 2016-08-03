@@ -41,8 +41,8 @@ class TestProxFn(BaseTest):
         # xhat = fn.prox(rho_hat, vhat)
         x_var = cvx.Variable(10)
         cost = 2 * cvx.sum_squares(-x_var - np.ones(10)) + \
-               np.ones(10).T * x_var + cvx.sum_squares(x_var) + \
-               (rho / 2) * cvx.sum_squares(x_var - v)
+            np.ones(10).T * x_var + cvx.sum_squares(x_var) + \
+            (rho / 2) * cvx.sum_squares(x_var - v)
         prob = cvx.Problem(cvx.Minimize(cost))
         prob.solve()
 
@@ -76,7 +76,7 @@ class TestProxFn(BaseTest):
         # xhat = fn.prox(rho_hat, vhat)
         x_var = cvx.Variable(10)
         cost = 0.1 * cvx.norm1(5 * x_var + np.ones(10)) + np.ones(10).T * x_var + \
-               4 * cvx.sum_squares(x_var) + (rho / 2) * cvx.sum_squares(x_var - v)
+            4 * cvx.sum_squares(x_var) + (rho / 2) * cvx.sum_squares(x_var - v)
         prob = cvx.Problem(cvx.Minimize(cost))
         prob.solve()
 
@@ -88,7 +88,7 @@ class TestProxFn(BaseTest):
         fn = weighted_norm1(tmp, -v + 1)
         rho = 2
         x = fn.prox(rho, v)
-        self.assertItemsAlmostEqual(x, np.sign(v) * \
+        self.assertItemsAlmostEqual(x, np.sign(v) *
                                     np.maximum(np.abs(v) - np.abs(-v + 1) / rho, 0))
 
     def test_nonneg(self):
@@ -164,7 +164,7 @@ class TestProxFn(BaseTest):
         # Load image
         testimg_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                         'data', 'angela.jpg')
-        img = Image.open(testimg_filename) 
+        img = Image.open(testimg_filename)
         np_img = np.asfortranarray(im2nparray(img))
 
         # Convert to gray
@@ -177,9 +177,9 @@ class TestProxFn(BaseTest):
         if len(np_img.shape) == 2:
             f = f[..., np.newaxis]
 
-        ss = f.shape;
-        fx = f[:, np.r_[1:ss[1], ss[1] - 1], :] - f;
-        fy = f[np.r_[1:ss[0], ss[0] - 1], :, :] - f;
+        ss = f.shape
+        fx = f[:, np.r_[1:ss[1], ss[1] - 1], :] - f
+        fy = f[np.r_[1:ss[0], ss[0] - 1], :, :] - f
         v = np.asfortranarray(np.stack((fx, fy), axis=-1))
 
         # Output
@@ -187,7 +187,7 @@ class TestProxFn(BaseTest):
         Halide('prox_IsoL1.cpp').prox_IsoL1(v, theta, output)  # Call
 
         # Reference
-        normv = np.sqrt(np.multiply(v[:, :, :, 0], v[:, :, :, 0]) + \
+        normv = np.sqrt(np.multiply(v[:, :, :, 0], v[:, :, :, 0]) +
                         np.multiply(v[:, :, :, 1], v[:, :, :, 1]))
         normv = np.stack((normv, normv), axis=-1)
         with np.errstate(divide='ignore'):

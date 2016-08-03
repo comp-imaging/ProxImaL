@@ -79,7 +79,8 @@ Kx_ref = np.zeros_like(np_img)
 tic()
 if len(np_img.shape) > 2:
     for c in range(np_img.shape[2]):
-        Kx_ref[:, :, c] = signal.convolve2d(np_img[:, :, c], K[:, :, c], mode='same', boundary='wrap')
+        Kx_ref[:, :, c] = signal.convolve2d(
+            np_img[:, :, c], K[:, :, c], mode='same', boundary='wrap')
 else:
     Kx_ref = signal.convolve2d(np_img, K, mode='same', boundary='wrap')
 
@@ -118,9 +119,9 @@ if len(np_img.shape) == 2:
     K = np.asfortranarray(K[..., np.newaxis])
 
 hsize = np_img.shape
-output_fft = np.zeros(((hsize[0] + 1) / 2 + 1, hsize[1], hsize[2], 2), dtype=np.float32, order='F');
+output_fft = np.zeros(((hsize[0] + 1) / 2 + 1, hsize[1], hsize[2], 2), dtype=np.float32, order='F')
 output_kfft = np.zeros_like(output_fft)
-output_Kf = np.zeros_like(np_img);
+output_Kf = np.zeros_like(np_img)
 hflags = ['-DWTARGET={0} -DHTARGET={1}'.format(hsize[1], hsize[0])]
 
 # Recompile
@@ -129,7 +130,8 @@ hflags = ['-DWTARGET={0} -DHTARGET={1}'.format(hsize[1], hsize[0])]
 
 tic()
 Halide('fft2_r2c.cpp', compile_flags=hflags).fft2_r2c(np_img, 0, 0, output_fft)  # Call
-Halide('fft2_r2c.cpp', compile_flags=hflags).fft2_r2c(K, K.shape[1] / 2, K.shape[0] / 2, output_kfft)  # Call
+Halide('fft2_r2c.cpp', compile_flags=hflags).fft2_r2c(
+    K, K.shape[1] / 2, K.shape[0] / 2, output_kfft)  # Call
 
 
 np_imghat = 1j * output_fft[..., 1]

@@ -57,7 +57,8 @@ class Halide(object):
         self.verbose = verbose
 
         # Output names that our halide compilation produces
-        function_name, function_name_c, output_lib = output_names(self.func, self.generator_source, self.builddir)
+        function_name, function_name_c, output_lib = output_names(
+            self.func, self.generator_source, self.builddir)
 
         # Recompile if necessary
         if not os.path.exists(output_lib) or self.recompile:
@@ -70,15 +71,16 @@ class Halide(object):
 
         # Generate the new code (exits on fail)
         gengen(self.generator_source, self.builddir,
-                self.target, self.generator_name, self.func, self.generator_param,
-                self.external_source, self.external_libs, self.compile_flags,
-                self.cleansource, self.verbose)
+               self.target, self.generator_name, self.func, self.generator_param,
+               self.external_source, self.external_libs, self.compile_flags,
+               self.cleansource, self.verbose)
 
     def run(self, *args):
         """ Execute Halide code that was compiled before. """
 
         # Output names that our halide compilation produces
-        function_name, function_name_c, output_lib = output_names(self.func, self.generator_source, self.builddir)
+        function_name, function_name_c, output_lib = output_names(
+            self.func, self.generator_source, self.builddir)
 
         # Run
         args_ctype = convert_to_ctypes(args, function_name_c)
@@ -138,16 +140,17 @@ def find_source(source):
             source_found = os.path.join(halide_dir, 'src', source)
 
             if not os.path.exists(source_found):
-                print('Error: Could not find source {0} in {1} or in {2}'.format(sourcebase, sourcedir, halide_dir), file=sys.stderr)
+                print('Error: Could not find source {0} in {1} or in {2}'.format(
+                    sourcebase, sourcedir, halide_dir), file=sys.stderr)
                 exit()
 
     return source_found
 
 
 def gengen(generator_source, builddir='./build',
-            target='host', generator_name=[], function_name=[], generator_param=[],
-            external_source=[], external_libs=[], compile_flags=[],
-            cleansource=True, verbose=True):
+           target='host', generator_name=[], function_name=[], generator_param=[],
+           external_source=[], external_libs=[], compile_flags=[],
+           cleansource=True, verbose=True):
     """ Will take .cpp containing one (or more) Generators, compile them, link them with libHalide, and run
         the resulting executable to produce a .o/.h expressing the Generator's
         function. Function name is the C function name for the result """
@@ -165,7 +168,8 @@ def gengen(generator_source, builddir='./build',
     generator_main = '${HALIDE_PATH}/tools/GenGen.cpp'
 
     # Define output names
-    function_name, function_name_c, output_lib = output_names(function_name, generator_source, builddir)
+    function_name, function_name_c, output_lib = output_names(
+        function_name, generator_source, builddir)
 
     # It's OK for GENERATOR_NAME and FUNCTION_NAME to be empty
     # if the source we're compiling has only one generator registered,
@@ -200,7 +204,8 @@ def gengen(generator_source, builddir='./build',
         subprocess.call(cmd, shell=True)
 
         # Run generator
-        cmd = '{0} {1} {2} -o {3} {4}'.format(generator, generator_flag, function_flag, builddir, target_flags)
+        cmd = '{0} {1} {2} -o {3} {4}'.format(generator,
+                                              generator_flag, function_flag, builddir, target_flags)
         if verbose:
             print('Calling generator')
             print('\t' + cmd)
@@ -216,7 +221,8 @@ def gengen(generator_source, builddir='./build',
 
         # Generate launcher cpp and write
         launcher_file = os.path.join(builddir, function_name + '.cpp')
-        launcher_body, argument_names = generate_launcher(header_file, function_name, function_name_c, params)
+        launcher_body, argument_names = generate_launcher(
+            header_file, function_name, function_name_c, params)
         with open(launcher_file, 'w') as fp:
             fp.write(launcher_body)
 
@@ -261,7 +267,7 @@ def convert_to_ctypes(args, func):
     """ Converts an argument list to a ctype compatible list for our launcher function """
 
     # pass numpy buffers using ctypes
-    cargs = [];
+    cargs = []
     try:
 
         # Iterate over the args and convert
@@ -272,16 +278,19 @@ def convert_to_ctypes(args, func):
 
                 # Check for the array type
                 if not arg.dtype == np.float32:
-                    raise ValueError('Input array of type {0} detected, Not supported.'.format(arg.dtype))
+                    raise ValueError(
+                        'Input array of type {0} detected, Not supported.'.format(arg.dtype))
 
                 # Otherwise add the bounds
                 if len(arg.shape) > 4:
-                    raise ValueError('Detected {0} dimensions. Halide supports only up to 4.'.format(len(arg.shape)))
+                    raise ValueError(
+                        'Detected {0} dimensions. Halide supports only up to 4.'.format(len(arg.shape)))
 
                 # Check if fortran array
                 if len(arg.shape) > 1 and not np.isfortran(arg):
                     print('Arg ', arg)
-                    raise ValueError('Currently supports only Fortran order')  # Much faster and more natural halide code
+                    # Much faster and more natural halide code
+                    raise ValueError('Currently supports only Fortran order')
 
                 # Add ctype
                 cargs.append(arg.ctypes.data_as(ctypes.c_void_p))
@@ -327,7 +336,8 @@ def scan_params(header_file, function_name, verbose=True):
         print('Signature found: {}'.format(signature))
 
     # Find the argumetn list from the signature
-    # Assumes halide checks internally if the arguments are correct (e.g. buffer_t with wrong elem size)
+    # Assumes halide checks internally if the arguments are correct (e.g.
+    # buffer_t with wrong elem size)
     arglist = []
     for arg_string in signature.split(","):
         if 'buffer_t *' in arg_string:
@@ -341,7 +351,8 @@ def scan_params(header_file, function_name, verbose=True):
 
     # Check for buffer count
     if arglist.count(Params.ImageParam_Float32) == 0:
-        print('Error: No input buffers in halide generated header {0}'.format(header_file), file=sys.stderr)
+        print('Error: No input buffers in halide generated header {0}'.format(
+            header_file), file=sys.stderr)
 
     return arglist
 
@@ -353,10 +364,10 @@ def generate_launcher_arguments(params):
     # buffer_t b_input = {0, (uint8_t*)input, {width,height}, {1,width}, {0}, sizeof(float),};
 
     # The parameters are just numbered
-    buffer_defs = [];
-    argument_defs = [];
-    argument_names = [];
-    call_names = [];
+    buffer_defs = []
+    argument_defs = []
+    argument_names = []
+    call_names = []
     for id, param in enumerate(params):
 
         # Name of current argument
@@ -370,10 +381,13 @@ def generate_launcher_arguments(params):
             bbody += ' = {{0, (uint8_t*){0}, '.format(argname)  # Float pointer
 
             # Linear strides
-            # bbody += '{{ {0}w,{0}h,{0}s,{0}t }}, {{ 1, {0}w, {0}w * {0}h, {0}w * {0}h * {0}s }}, '.format(argname) #Extent and stride
+            # bbody += '{{ {0}w,{0}h,{0}s,{0}t }}, {{ 1, {0}w, {0}w * {0}h, {0}w *
+            # {0}h * {0}s }}, '.format(argname) #Extent and stride
 
             # Flip first two axis for natural buffer access (numpy like)
-            bbody += '{{ {0}w,{0}h,{0}s,{0}t }}, {{ {0}h, 1, {0}w * {0}h, {0}w * {0}h * {0}s }}, '.format(argname)  # Extent and stride
+            # Extent and stride
+            bbody += '{{ {0}w,{0}h,{0}s,{0}t }}, {{ {0}h, 1, {0}w * {0}h, {0}w * {0}h * {0}s }}, '.format(
+                argname)
 
             bbody += '{0}, sizeof(float),};'
 
@@ -381,7 +395,8 @@ def generate_launcher_arguments(params):
             buffer_defs.append(bbody)
 
             # Add argument and bounds
-            argument_defs.append('float* {0}, int {0}w, int {0}h, int {0}s, int {0}t'.format(argname))
+            argument_defs.append(
+                'float* {0}, int {0}w, int {0}h, int {0}s, int {0}t'.format(argname))
             call_names.append('&{0}'.format(buffer_name))
 
         elif param == Params.Param_Float32:
@@ -404,10 +419,11 @@ def generate_launcher(header_file, function_name, function_name_c, params):
 
     # Header
     body = '// Launcher code for generator of function: {0}\n'.format(function_name)
-    body += """#include <stdio.h>\n#include <stdlib.h>\n#include "{0}.h"\n\n#define LIBRARY_API extern "C"\n\n""".format(function_name)
+    body += """#include <stdio.h>\n#include <stdlib.h>\n#include "{0}.h"\n\n#define LIBRARY_API extern "C"\n\n""".format(
+        function_name)
 
     # Generate arguments
-    argument_names, argument_defs, buffer_defs, call_names = generate_launcher_arguments(params);
+    argument_names, argument_defs, buffer_defs, call_names = generate_launcher_arguments(params)
 
     # Method signature
     function_def = 'LIBRARY_API int {0}('.format(function_name_c)
@@ -432,7 +448,7 @@ def generate_launcher(header_file, function_name, function_name_c, params):
     # Arguments for the call
     call_argument = ''
     for cid, cn in enumerate(call_names):
-        call_argument += cn;
+        call_argument += cn
         call_argument += ', ' if cid < len(call_names) - 1 else ''  # Trailing comma
 
     # Call the function

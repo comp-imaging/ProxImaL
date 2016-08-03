@@ -13,7 +13,7 @@ setup(
               'proximal.tests.data'],
     package_dir={'proximal': 'proximal'},
     package_data={'proximal.tests.data': ['angela.jpg'],
-                    'proximal.halide': ['src/*.cpp', 'src/core/*', 'src/external/*', 'src/fft/*']},
+                  'proximal.halide': ['src/*.cpp', 'src/core/*', 'src/external/*', 'src/fft/*']},
     install_requires=["numpy >= 1.9",
                       "scipy >= 0.15",
                       "Pillow"],
