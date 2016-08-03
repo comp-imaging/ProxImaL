@@ -58,12 +58,12 @@ for x in range(0, numIterations):
 	tic()
 	hl_norm2(np_img, output) #Call
 	timeNorm2_halide += toc()
-	
+
 	#run numpy reference
 	tic()
 	output_ref = np.linalg.norm(np_img.ravel(),2)
 	timeNorm2_numpy += toc()
-	
+
 timeNorm2_halide /= numIterations
 timeNorm2_numpy /= numIterations
 print( 'Running time norm2_halide took: {0:.1f}ms'.format( timeNorm2_halide ) )
@@ -94,11 +94,11 @@ for x in range(0, numIterations):
 	tic()
 	hl_dot(np_img0, np_img1, output) #Call
 	timeDot_halide += toc()
-	
+
 	#run numpy reference
 	output_ref = np.dot(np_img0.ravel(),np_img1.ravel())
 	timeDot_numpy += toc()
-	
+
 timeDot_halide /= numIterations
 timeDot_numpy /= numIterations
 print( 'Running time dot_halide took: {0:.1f}ms'.format( timeDot_halide ) )

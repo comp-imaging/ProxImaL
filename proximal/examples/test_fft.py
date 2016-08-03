@@ -60,7 +60,7 @@ plt.show()
 # NUMPY FFT
 ######################################################################
 
-#Pad K if necessary 
+#Pad K if necessary
 if len(K.shape) < len(np_img.shape):
 	K = np.asfortranarray( np.stack( (K,) * np_img.shape[2], axis=-1 ) )
 
@@ -84,7 +84,7 @@ else:
 
 print( 'Running Scipy.convolve2d took: {0:.1f}ms'.format( toc() ) )
 
-#print('Maximum error {0}'.format( np.amax( np.abs( Kx_ref - Kx_fft_ref ) ) ) ) 
+#print('Maximum error {0}'.format( np.amax( np.abs( Kx_ref - Kx_fft_ref ) ) ) )
 
 ######################################################################
 # Halide spatial convolution
@@ -103,7 +103,7 @@ plt.title('Kx_ref')
 plt.colorbar()
 plt.show()
 
-#print('Maximum Halide spatial error {0}'.format( np.amax( np.abs( output - Kx_fft_ref ) ) ) ) 
+#print('Maximum Halide spatial error {0}'.format( np.amax( np.abs( output - Kx_fft_ref ) ) ) )
 
 ######################################################################
 # #Test the fft in halide
@@ -156,7 +156,7 @@ plt.title('output_Kf')
 plt.colorbar()
 plt.show()
 
-print('Maximum Halide FFT error {0}'.format( np.amax( np.abs( output_Kf - Kx_fft_ref ) ) ) ) 
+print('Maximum Halide FFT error {0}'.format( np.amax( np.abs( output_Kf - Kx_fft_ref ) ) ) )
 
 ######################################################################
 # #Test the monlithic fft convolution in halide
@@ -169,8 +169,8 @@ print('Maximum Halide FFT error {0}'.format( np.amax( np.abs( output_Kf - Kx_fft
 # print( 'Running full Halide FFT took: {0:.1f}ms'.format( toc() ) )
 
 # #Error
-# print('Maximum error fft and spatial {0}'.format( np.amax( np.abs( Kx_fft_ref - output_fft ) ) ) ) 
-# # print('Maximum error fft and halide fft {0}'.format( np.amax( np.abs( Kx_fft_ref - output_fft ) ) ) ) 
+# print('Maximum error fft and spatial {0}'.format( np.amax( np.abs( Kx_fft_ref - output_fft ) ) ) )
+# # print('Maximum error fft and halide fft {0}'.format( np.amax( np.abs( Kx_fft_ref - output_fft ) ) ) )
 
 # plt.figure()
 # imgplot = plt.imshow(output_fft , interpolation="nearest", clim=(0.0, 1.0))

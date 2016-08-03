@@ -47,7 +47,7 @@ imgplot = plt.imshow(K / np.amax(K), interpolation="nearest", clim=(0.0, 1.0))
 imgplot.set_cmap('gray')
 plt.title('K')
 plt.show()
-           
+
 plt.figure()
 imgplot = plt.imshow(b , interpolation="nearest", clim=(0.0, 1.0))
 imgplot.set_cmap('gray')
@@ -65,14 +65,14 @@ prox_fns = [group_norm1( grad(x, dims = 2), [2], alpha = lambda_tv )] #Isotropic
 tic()
 # options = lsqr_options(atol=1e-5, btol=1e-5, num_iters=100, verbose=False)
 # pc(prox_fns, quad_funcs = quad_funcs, tau=None, sigma=None, theta=None, max_iters=100,
-#       eps=1e-2, lin_solver="lsqr", lin_solver_options=options, 
+#       eps=1e-2, lin_solver="lsqr", lin_solver_options=options,
 # 		try_diagonalize = False, verbose=True)
 sdlsqrtime = toc()/1000
 
 tic()
 options = cg_options(tol=1e-5, num_iters=100, verbose=False)
 pc(prox_fns, quad_funcs = quad_funcs, sigma=10.0, max_iters=200,
-      eps=5e-1, lin_solver="cg", lin_solver_options=options, 
+      eps=5e-1, lin_solver="cg", lin_solver_options=options,
 		try_diagonalize = False, verbose=True)
 sdcgtime = toc()/1000
 
@@ -86,7 +86,7 @@ plt.show()
 # Sparse gradient deconvolution with quadratic definition
 tic()
 pc(prox_fns, quad_funcs = quad_funcs, sigma=10.0, max_iters=200,
-      eps=5e-1, lin_solver="cg", lin_solver_options=options, 
+      eps=5e-1, lin_solver="cg", lin_solver_options=options,
 		try_diagonalize = True, verbose=True)
 fdtime = toc()/1000
 

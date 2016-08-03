@@ -49,7 +49,7 @@ args.quadratics = args.quadratics != 0
 args.convolutional = args.convolutional != 0
 diag = args.diagonalize != 0
 verbose = args.verbose
-print "\n<<<RUNNING method=%s, using quadratics=%d, using convolutional grad=%d, trying to diagonalize=%d, verbose = %d >>>\n\n" % (args.method, 
+print "\n<<<RUNNING method=%s, using quadratics=%d, using convolutional grad=%d, trying to diagonalize=%d, verbose = %d >>>\n\n" % (args.method,
 		args.quadratics, args.convolutional, diag, verbose)
 
 ############################################################
@@ -83,7 +83,7 @@ imgplot = plt.imshow(K / np.amax(K), interpolation="nearest", clim=(0.0, 1.0))
 imgplot.set_cmap('gray')
 plt.title('K')
 #plt.show()
-           
+
 plt.figure()
 imgplot = plt.imshow(b , interpolation="nearest", clim=(0.0, 1.0))
 imgplot.set_cmap('gray')
@@ -106,7 +106,7 @@ x = Variable( I.shape )
 #Quadratic or non quadratic splitting
 if args.quadratics:
 
-	if not args.convolutional: 
+	if not args.convolutional:
 		print 'Splitting quadratics'
 		#nonquad_fns = [norm1( grad(x, dims = 2), alpha = lambda_tv )] #Anisotropic
 		nonquad_fns = [group_norm1( grad(x, dims = 2), [2], alpha = lambda_tv )] #Isotropic
@@ -119,7 +119,7 @@ if args.quadratics:
 
 else:
 
-	if not args.convolutional: 
+	if not args.convolutional:
 		print 'No splitting'
 		#nonquad_fns = [sum_squares(conv(K, x), b=b, alpha = 400), norm1( grad(x, dims = 2), alpha = lambda_tv ) ] #Anisotropic
 		nonquad_fns = [sum_squares(conv(K, x), b=b, alpha = 400), group_norm1( grad(x, dims = 2), [2] ) ] #Isotropic
@@ -141,7 +141,7 @@ if args.method == 'pc':
 	options = cg_options(tol=1e-5, num_iters=100, verbose=False)
 	#options = lsqr_options(atol=1e-5, btol=1e-5, num_iters=100, verbose=False)
 	pc(prox_fns, quad_funcs = quad_funcs, tau=None, sigma=10.0, theta=None, max_iters=300,
-	      eps_abs=1e-4, eps_rel=1e-4, lin_solver="cg", lin_solver_options=options, 
+	      eps_abs=1e-4, eps_rel=1e-4, lin_solver="cg", lin_solver_options=options,
 			try_diagonalize = diag, metric=psnrval, verbose=verbose)
 
 
@@ -164,7 +164,7 @@ elif args.method == 'hqs':
 	# Sparse gradient deconvolution without quadratic
 	if not args.quadratics:
 
-		#Need high accuracy when quadratics are not splitted 
+		#Need high accuracy when quadratics are not splitted
 		options = cg_options(tol=1e-5, num_iters=50, verbose=False)
 		hqs(prox_fns, lin_solver="cg", lin_solver_options = options,
 						eps_rel=1e-6, max_iters = 10, max_inner_iters = 10, x0 = b,

@@ -189,7 +189,7 @@ def psnr(x, ref, pad=None, maxval = 1.0):
         il = ()
         for j in range(len(ss)):
             if len(pad) >= j + 1 and pad[j] > 0:
-                currpad = pad[j] 
+                currpad = pad[j]
                 il += np.index_exp[ currpad:-currpad ]
             else:
                 il += np.index_exp[:]
@@ -241,10 +241,10 @@ def estimate_std(z, method = 'daub_reflect'):
 
             if method == NoiseEstMethod['daub_reflect']:
                 wav_det = cv2.sepFilter2D(z, -1, daub6kern, daub6kern, borderType=cv2.BORDER_REFLECT_101)
-            else: 
+            else:
                 wav_det = cv2.sepFilter2D(z, -1, daub6kern, daub6kern, borderType=cv2.BORDER_REPLICATE)
 
             dev[ch] = np.median( np.absolute(wav_det) ) / 0.6745
-        
+
     #Return standard deviation
     return dev

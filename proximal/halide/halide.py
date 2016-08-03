@@ -12,9 +12,9 @@ import numpy as np
 class Halide(object):
 
     def __init__(self, generator_source = [], func=[],
-                builddir=[], recompile=False, target='host', 
-                generator_name=[], generator_param=[], 
-                external_source =[], external_libs=[], 
+                builddir=[], recompile=False, target='host',
+                generator_name=[], generator_param=[],
+                external_source =[], external_libs=[],
                 compile_flags=[], cleansource=True, verbose=False):
 
         """ Compiles and runs a halide pipeline defined in a generator file ``filepath``
@@ -41,7 +41,7 @@ class Halide(object):
         #Use script location/build as default build directory
         if not builddir:
             builddir = os.path.join( os.path.dirname(os.path.realpath(__file__)), 'build' )
-        
+
         #Save arguments
         self.generator_source = find_source(generator_source) #Try to find source file
         self.func = func
@@ -69,11 +69,11 @@ class Halide(object):
     def compile(self):
 
         #Generate the new code (exits on fail)
-        gengen( self.generator_source, self.builddir, 
-                self.target, self.generator_name, self.func, self.generator_param, 
+        gengen( self.generator_source, self.builddir,
+                self.target, self.generator_name, self.func, self.generator_param,
                 self.external_source, self.external_libs, self.compile_flags,
                 self.cleansource, self.verbose )
-            
+
     def run(self, *args):
         """ Execute Halide code that was compiled before. """
 
@@ -136,15 +136,15 @@ def find_source( source ):
 
             if not os.path.exists(source_found):
                 print('Error: Could not find source {0} in {1} or in {2}'.format(sourcebase,  sourcedir, halide_dir), file=sys.stderr)
-                exit()  
+                exit()
 
     return source_found
 
 def gengen( generator_source, builddir='./build',
-            target='host', generator_name=[], function_name=[], generator_param=[], 
+            target='host', generator_name=[], function_name=[], generator_param=[],
             external_source =[], external_libs=[], compile_flags = [],
             cleansource=True, verbose=True):
-    
+
     """ Will take .cpp containing one (or more) Generators, compile them, link them with libHalide, and run
         the resulting executable to produce a .o/.h expressing the Generator's
         function. Function name is the C function name for the result """
@@ -170,13 +170,13 @@ def gengen( generator_source, builddir='./build',
     generator_flag = ""
     if generator_name:
         generator_flag = "-g " + generator_name
-        
+
     #Function flag
     function_flag = "-f " + function_name
 
     #Target flags
     target_flags = "target=" + target
-    
+
     launcher_file = ''
 
     try:
@@ -208,7 +208,7 @@ def gengen( generator_source, builddir='./build',
         object_file = os.path.join(builddir, function_name + '.o')
         params = scan_params(header_file, function_name, verbose)
         if verbose:
-            print('Found {0} buffers and {1} float params and {2} int params'.format( 
+            print('Found {0} buffers and {1} float params and {2} int params'.format(
                 params.count(Params.ImageParam_Float32), params.count(Params.Param_Float32), params.count(Params.Param_Int32) ))
 
         #Generate launcher cpp and write
@@ -231,8 +231,8 @@ def gengen( generator_source, builddir='./build',
         if external_libs:
             for el in external_libs:
                 external_libs_str +=  el + ' '
-        
-        cmd = 'g++ -fPIC -std=c++11 -Wall -O2 {0} {1} {2} -lpthread {3} -shared -o {4}'.format(launcher_file, 
+
+        cmd = 'g++ -fPIC -std=c++11 -Wall -O2 {0} {1} {2} -lpthread {3} -shared -o {4}'.format(launcher_file,
                                                                     external_source_str, external_libs_str, object_file, output_lib)
         if verbose:
             print('Compiling library')
@@ -274,11 +274,11 @@ def convert_to_ctypes(args, func):
                 if len(arg.shape) > 4:
                     raise ValueError('Detected {0} dimensions. Halide supports only up to 4.'.format(len(arg.shape)) )
 
-                #Check if fortran array 
+                #Check if fortran array
                 if len(arg.shape) > 1 and not np.isfortran(arg):
                     print('Arg ', arg)
                     raise ValueError('Currently supports only Fortran order' ) #Much faster and more natural halide code
-                
+
                 #Add ctype
                 cargs.append(arg.ctypes.data_as(ctypes.c_void_p))
 
@@ -314,7 +314,7 @@ def scan_params(header_file, function_name, verbose=True):
     signature = ""
     searchfile = open(header_file, "r")
     for line in searchfile:
-        if signature_start in line: 
+        if signature_start in line:
             signature = line
     searchfile.close()
 
@@ -326,7 +326,7 @@ def scan_params(header_file, function_name, verbose=True):
     #Assumes halide checks internally if the arguments are correct (e.g. buffer_t with wrong elem size)
     arglist = []
     for arg_string in signature.split(","):
-        if 'buffer_t *' in arg_string: 
+        if 'buffer_t *' in arg_string:
             arglist.append( Params.ImageParam_Float32 )
         elif 'const float' in arg_string:
             arglist.append( Params.Param_Float32 )
@@ -357,7 +357,7 @@ def generate_launcher_arguments(params):
         #Name of current argument
         argname = 'arg{:d}'.format(id)
         argument_names.append(argname)
-        
+
         #Create buffer if buffer argument
         if param == Params.ImageParam_Float32:
             buffer_name = 'buf{0}'.format(argname)
@@ -380,7 +380,7 @@ def generate_launcher_arguments(params):
             call_names.append( '&{0}'.format(buffer_name) )
 
         elif param == Params.Param_Float32:
-            
+
             #Add argument
             argument_defs.append( 'const float {0}'.format(argname) )
             call_names.append( argname )

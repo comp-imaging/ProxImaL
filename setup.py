@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='proximal',
-    version='0.1.3', 
+    version='0.1.3',
     packages=['proximal',
               'proximal.prox_fns',
               'proximal.lin_ops',

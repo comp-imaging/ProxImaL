@@ -47,7 +47,7 @@ imgplot = plt.imshow(K / np.amax(K), interpolation="nearest", clim=(0.0, 1.0))
 imgplot.set_cmap('gray')
 plt.title('K')
 plt.show()
-           
+
 plt.figure()
 imgplot = plt.imshow(b , interpolation="nearest", clim=(0.0, 1.0))
 imgplot.set_cmap('gray')

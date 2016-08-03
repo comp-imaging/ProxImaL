@@ -14,7 +14,7 @@ import StringIO
 
 ############################################################
 
-#Start the engine 
+#Start the engine
 eng = matlab.engine.start_matlab()
 
 #Add test path

@@ -35,7 +35,7 @@ imgplot = plt.imshow(np_img , interpolation="nearest", clim=(0.0, 1.0))
 imgplot.set_cmap('gray')
 plt.title('Numpy')
 plt.show()
-           
+
 #tic()
 #Halide('A_grad.cpp', recompile=True, verbose=False) #Force recompile
 #Halide('At_grad.cpp', recompile=True, verbose=False) #Force recompile in local dir
@@ -97,13 +97,13 @@ Kfh = np.asfortranarray( Kf[:,:,:,:] ) #For halide
 # tic()
 # ss = f.shape;
 # fx = f[ :, np.r_[1:ss[1],ss[1] - 1],: ] - f;
-# fy = f[ np.r_[1:ss[0],ss[0] - 1],:,:] - f; 
+# fy = f[ np.r_[1:ss[0],ss[0] - 1],:,:] - f;
 # Kf = np.asfortranarray( np.stack( (fx, fy), axis=-1 ) )
 # print( 'Running grad 1 took: {0:.1f}ms'.format( toc() ) )
 # Kfh = Kf
 
 #Error
-print('Maximum error {0}'.format( np.amax( np.abs( Kfh - output ) ) ) ) 
+print('Maximum error {0}'.format( np.amax( np.abs( Kfh - output ) ) ) )
 
 tic()
 hl = Halide('At_grad.cpp', recompile=True, verbose=False, cleansource=True) #Force recompile
@@ -159,7 +159,7 @@ tic()
 # Adjoint.
 KTf = np.zeros(var.shape, dtype=np.float32, order='F')
 fn.adjoint([f], [KTf])
-	
+
 print( 'Running trans nd-grad took: {0:.1f}ms'.format( toc() ) )
 
 # #2D reference
@@ -173,6 +173,6 @@ print( 'Running trans nd-grad took: {0:.1f}ms'.format( toc() ) )
 # fy = Kfy - Kfy[ np.r_[0,0:ss[0]-1],:,:];
 # fy[0,:,:] = Kfy[0,:,:];
 # fy[-1,:,:] = -Kfy[-2,:,:];
-# KtKf = -fx -fy 
+# KtKf = -fx -fy
 
-print('Maximum trans error {0}'.format( np.amax( np.abs( KTf - output_t ) ) ) ) 
+print('Maximum trans error {0}'.format( np.amax( np.abs( KTf - output_t ) ) ) )

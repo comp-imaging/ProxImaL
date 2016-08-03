@@ -70,5 +70,5 @@ print 'Ref vs. our output: ', output_ref, output
 
 
 #Error
-print('Maximum error {0}'.format( np.amax( np.abs( output_ref - output ) ) ) ) 
+print('Maximum error {0}'.format( np.amax( np.abs( output_ref - output ) ) ) )
 

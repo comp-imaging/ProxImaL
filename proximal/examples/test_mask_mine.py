@@ -72,7 +72,7 @@ output_ref = mask * np_img
 print( 'Running mask in scipy took: {0:.1f}ms'.format( toc() ) )
 
 #Error
-print('Maximum error {0}'.format( np.amax( np.abs( output_ref - output ) ) ) ) 
+print('Maximum error {0}'.format( np.amax( np.abs( output_ref - output ) ) ) )
 
 plt.figure()
 imgplot = plt.imshow(output_ref , interpolation="nearest", clim=(0.0, 1.0))
@@ -101,5 +101,5 @@ print( 'Running trans (second) took: {0:.1f}ms'.format( toc() ) )
 
 
 #Error
-print('Maximum error {0}'.format( np.amax( np.abs( output_ref - output_trans ) ) ) ) 
+print('Maximum error {0}'.format( np.amax( np.abs( output_ref - output_trans ) ) ) )
 

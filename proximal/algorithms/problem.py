@@ -69,7 +69,7 @@ class Problem(object):
     def set_implementation(self, implem=Impl['numpy']):
         """Set the implementation of the lin ops and proxes.
         """
-        self.implem = implem 
+        self.implem = implem
 
     def set_solver(self, solver):
         """Set the solver.

@@ -41,7 +41,7 @@ imgplot = plt.imshow(I , interpolation="nearest", clim=(0.0, 1.0))
 imgplot.set_cmap('gray')
 plt.title('Original Image')
 plt.show()
-           
+
 plt.figure()
 imgplot = plt.imshow( np.clip(b,0,1) , interpolation="nearest", clim=(0.0, 1.0))
 imgplot.set_cmap('gray')

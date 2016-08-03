@@ -50,7 +50,7 @@ H = np.array([[np.cos(theta_rad),-np.sin(theta_rad), 0.0001 ],\
 tic()
 #Reference
 #output_ref = cv2.warpPerspective(np_img, H.T, np_img.shape[1::-1], flags=cv2.INTER_LINEAR,
-#                    		borderMode=cv2.BORDER_CONSTANT, borderValue=0.) #cv2.WARP_INVERSE_MAP, 
+#                    		borderMode=cv2.BORDER_CONSTANT, borderValue=0.) #cv2.WARP_INVERSE_MAP,
 var = Variable(np_img.shape)
 fn = warp(var, H) #2d Gradient
 output_ref = np.zeros(np_img.shape, dtype=np.float32, order='F')
@@ -83,7 +83,7 @@ plt.title('Output from halide')
 plt.savefig('warp2.png')
 
 #Error
-print('Maximum error {0}'.format( np.amax( np.abs( output_ref - output ) ) ) ) 
+print('Maximum error {0}'.format( np.amax( np.abs( output_ref - output ) ) ) )
 
 
 ############################################################################
@@ -110,7 +110,7 @@ plt.savefig('warp3.png')
 tic()
 #Reference
 #output_ref_trans = cv2.warpPerspective(output_ref, H.T, np_img.shape[1::-1], flags=cv2.INTER_LINEAR + cv2.WARP_INVERSE_MAP,
-#                    		borderMode=cv2.BORDER_CONSTANT, borderValue=0.) 
+#                    		borderMode=cv2.BORDER_CONSTANT, borderValue=0.)
 
 # Adjoint.
 output_ref_trans = np.zeros(var.shape, dtype=np.float32, order='F')
@@ -125,5 +125,5 @@ plt.title('Output trans reference')
 plt.savefig('warp4.png')
 
 #Error
-print('Maximum error trans {0}'.format( np.amax( np.abs( output_ref_trans - output_trans ) ) ) ) 
+print('Maximum error trans {0}'.format( np.amax( np.abs( output_ref_trans - output_trans ) ) ) )
 

@@ -7,7 +7,7 @@ sys.path.append('../../')
 
 from scipy import ndimage
 import matplotlib as mpl
-mpl.use('Agg')	  
+mpl.use('Agg')
 
 from proximal.utils.utils import *
 from proximal.halide.halide import *
@@ -79,7 +79,7 @@ fn.forward([np_img], [output_ref])
 print( 'Running conv fft convolution took: {0:.1f}ms'.format( toc() ) )
 
 #Error
-print('Maximum error {0}'.format( np.amax( np.abs( output_ref - output ) ) ) ) 
+print('Maximum error {0}'.format( np.amax( np.abs( output_ref - output ) ) ) )
 
 plt.figure()
 imgplot = plt.imshow(output_ref , interpolation="nearest", clim=(0.0, 1.0))
@@ -109,4 +109,4 @@ fn.adjoint([np_img], [output_corr_ref])
 print( 'Running transpose conv fft convolution took: {0:.1f}ms'.format( toc() ) )
 
 #Error
-print('Maximum error correlation {0}'.format( np.amax( np.abs( output_corr_ref - output_corr ) ) ) ) 
+print('Maximum error correlation {0}'.format( np.amax( np.abs( output_corr_ref - output_corr ) ) ) )

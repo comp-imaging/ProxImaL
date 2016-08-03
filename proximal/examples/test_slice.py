@@ -27,7 +27,7 @@ print 'Type ', np_img.dtype , 'Shape', np_img.shape
 
 plt.ion()
 plt.figure()
-imgplot = plt.imshow( np.reshape( np_img, (np_img.shape[0], np_img.shape[1] * np_img.shape[2] * np_img.shape[3]), order='F') 
+imgplot = plt.imshow( np.reshape( np_img, (np_img.shape[0], np_img.shape[1] * np_img.shape[2] * np_img.shape[3]), order='F')
 					 , interpolation="nearest", clim=(0.0, 1.0))
 imgplot.set_cmap('gray')
 plt.title('Numpy')
@@ -59,7 +59,7 @@ for k in range( np_img.shape[3]):
 print( 'Running mask in scipy took: {0:.1f}ms'.format( toc() ) )
 
 #Error
-print('Maximum error {0}'.format( np.amax( np.abs( output_ref - output ) ) ) ) 
+print('Maximum error {0}'.format( np.amax( np.abs( output_ref - output ) ) ) )
 
 #Wait until done
 raw_input("Press Enter to continue...")

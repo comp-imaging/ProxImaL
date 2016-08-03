@@ -24,7 +24,7 @@ img = Image.open('./data/angela.jpg')  # opens the file using Pillow - it's not 
 I = np.asfortranarray( im2nparray(img) )
 I = np.maximum( cv2.resize(I,(2048,2048), interpolation=cv2.INTER_LINEAR), 0)
 I = np.mean( I, axis=2)
-I = np.asfortranarray( I )  
+I = np.asfortranarray( I )
 I = np.maximum(I, 0.0)
 
 #Kernel
@@ -55,7 +55,7 @@ imgplot = plt.imshow(K / np.amax(K), interpolation="nearest", clim=(0.0, 1.0))
 imgplot.set_cmap('gray')
 plt.title('K')
 plt.show()
-           
+
 plt.figure()
 imgplot = plt.imshow(b , interpolation="nearest", clim=(0.0, 1.0))
 imgplot.set_cmap('gray')

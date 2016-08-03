@@ -25,7 +25,7 @@ img = Image.open('./data/angela.jpg')  # opens the file using Pillow - it's not 
 I = np.asfortranarray( im2nparray(img) )
 I = np.maximum( cv2.resize(I,(512,512), interpolation=cv2.INTER_LINEAR), 0)
 I = np.mean( I, axis=2)
-I = np.asfortranarray( I )  
+I = np.asfortranarray( I )
 I = np.maximum(I, 0.0)
 
 #Generate observation
@@ -39,7 +39,7 @@ imgplot = plt.imshow(I , interpolation="nearest", clim=(0.0, 1.0))
 imgplot.set_cmap('gray')
 plt.title('Original Image')
 plt.show()
-           
+
 plt.figure()
 imgplot = plt.imshow( np.clip(b,0,1) , interpolation="nearest", clim=(0.0, 1.0))
 imgplot.set_cmap('gray')
@@ -57,7 +57,7 @@ plt.show()
 
 #Estimate the noise
 tic()
-ndev = estimate_std(b, 'daub_replicate') 
+ndev = estimate_std(b, 'daub_replicate')
 print( 'Estimation took: {0:.1f}ms'.format( toc() ) )
 
 #Result
