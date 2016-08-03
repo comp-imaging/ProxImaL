@@ -59,7 +59,7 @@ def merge_fns(lh_prox, rh_prox):
         to_copy = args[1 - idx]
         coeff = sq_fn.alpha * sq_fn.beta
         return to_copy.copy(c=new_c - 2 * coeff * sq_fn.b,
-            gamma=new_gamma + coeff * sq_fn.beta,
-            d=new_d + np.square(sq_fn.b).sum())
+                            gamma=new_gamma + coeff * sq_fn.beta,
+                            d=new_d + np.square(sq_fn.b).sum())
     else:
         raise ValueError("Unknown merge strategy.")

@@ -1,7 +1,6 @@
 from __future__ import print_function, division
 
 # Imports
-from PIL import Image
 import numpy as np
 from numpy.fft import fftn, ifftn, fft2, ifft2
 import cv2
@@ -79,7 +78,7 @@ def tic():
 
     t = timeit.default_timer()
     lastticstamp = t
-    return t;
+    return t
 
 
 def toc(t=[]):
@@ -167,10 +166,10 @@ def psf2otf(K, outsize, dims=None):
         sK = sK[0:dims]
 
     nElem = np.prod(sK)
-    nOps = 0;
+    nOps = 0
     for k in range(len(sK)):
-        nffts = nElem / sK[k];
-        nOps = nOps + sK[k] * np.log2(sK[k]) * nffts;
+        nffts = nElem / sK[k]
+        nOps = nOps + sK[k] * np.log2(sK[k]) * nffts
 
     # Discard the imaginary part of the psf if it's withi roundoff error.
     eps = np.finfo(np.float32).eps
@@ -244,9 +243,9 @@ def estimate_std(z, method='daub_reflect'):
 
         # Daubechies denoising method
         if method == NoiseEstMethod['daub_reflect'] or method == NoiseEstMethod['daub_replicate']:
-            daub6kern = np.array([0.03522629188571, 0.08544127388203, -0.13501102001025, \
-                                -0.45987750211849, 0.80689150931109, -0.33267055295008], \
-                                dtype=np.float32, order='F')
+            daub6kern = np.array([0.03522629188571, 0.08544127388203, -0.13501102001025,
+                                  -0.45987750211849, 0.80689150931109, -0.33267055295008],
+                                 dtype=np.float32, order='F')
 
             if method == NoiseEstMethod['daub_reflect']:
                 wav_det = cv2.sepFilter2D(z, -1, daub6kern, daub6kern, borderType=cv2.BORDER_REFLECT_101)

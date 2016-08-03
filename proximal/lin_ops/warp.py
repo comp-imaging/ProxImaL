@@ -68,13 +68,13 @@ class warp(LinOp):
             if len(self.H.shape) == 2:
 
                 warpedInput = cv2.warpPerspective(np.asfortranarray(inimg), self.H.T, inimg.shape[1::-1], flags=cv2.INTER_LINEAR,
-                                    borderMode=cv2.BORDER_CONSTANT, borderValue=0.)  # Necessary due to array layout in opencv
+                                                  borderMode=cv2.BORDER_CONSTANT, borderValue=0.)  # Necessary due to array layout in opencv
                 np.copyto(outputs[0], warpedInput)
 
             else:
                 for j in range(self.H.shape[2]):
                     warpedInput = cv2.warpPerspective(np.asfortranarray(inimg), self.H[:, :, j].T, inimg.shape[1::-1], flags=cv2.INTER_LINEAR,
-                                                    borderMode=cv2.BORDER_CONSTANT, borderValue=0.)  # Necessary due to array layout in opencv
+                                                      borderMode=cv2.BORDER_CONSTANT, borderValue=0.)  # Necessary due to array layout in opencv
 
                     np.copyto(outputs[0][:, :, :, j], warpedInput)
 
@@ -102,14 +102,14 @@ class warp(LinOp):
             if len(self.H.shape) == 2:
                 # + cv2.WARP_INVERSE_MAP
                 warpedInput = cv2.warpPerspective(np.asfortranarray(inimg), self.Hinv.T, inimg.shape[1::-1], flags=cv2.INTER_LINEAR,
-                                    borderMode=cv2.BORDER_CONSTANT, borderValue=0.)
+                                                  borderMode=cv2.BORDER_CONSTANT, borderValue=0.)
                 np.copyto(outputs[0], warpedInput)
 
             else:
                 outputs[0][:] = 0.0
                 for j in range(self.H.shape[2]):
                     warpedInput = cv2.warpPerspective(np.asfortranarray(inimg[:, :, :, j]), self.Hinv[:, :, j].T, inimg.shape[1::-1], flags=cv2.INTER_LINEAR,
-                                                    borderMode=cv2.BORDER_CONSTANT, borderValue=0.)  # Necessary due to array layout in opencv
+                                                      borderMode=cv2.BORDER_CONSTANT, borderValue=0.)  # Necessary due to array layout in opencv
                     outputs[0] += warpedInput
 
     # TODO what is the spectral norm of a warp?

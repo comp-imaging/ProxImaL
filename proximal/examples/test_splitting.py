@@ -30,19 +30,19 @@ import cv2
 # Parse options
 parser = argparse.ArgumentParser(description='Deconvolution Splitting test with different algorithms and optimizations.')
 parser.add_argument('method', metavar='method', nargs='?', default='pc',
-                   help='Algorithm [admm, hqs, pc, lin-admm].')
+                    help='Algorithm [admm, hqs, pc, lin-admm].')
 
 parser.add_argument('quadratics', metavar='quadratics', type=int, nargs='?', default=0,
-                   help='Exploit quadratics in solver.')
+                    help='Exploit quadratics in solver.')
 
 parser.add_argument('convolutional', metavar='convolutional', type=int, nargs='?', default=0,
-                   help='Compute grad via convolution.')
+                    help='Compute grad via convolution.')
 
 parser.add_argument('diagonalize', metavar='diagonalize', type=int, nargs='?', default=0,
-                   help='Try diagonalizing (in spatial or frequency domain).')
+                    help='Try diagonalizing (in spatial or frequency domain).')
 
 parser.add_argument('verbose', metavar='verbose', type=int, nargs='?', default=1,
-                   help='Try diagonalizing (0 - None, 1 - brief, 2 - full (expensive) ).')
+                    help='Try diagonalizing (0 - None, 1 - brief, 2 - full (expensive) ).')
 
 args = parser.parse_args()
 args.quadratics = args.quadratics != 0
@@ -50,7 +50,7 @@ args.convolutional = args.convolutional != 0
 diag = args.diagonalize != 0
 verbose = args.verbose
 print "\n<<<RUNNING method=%s, using quadratics=%d, using convolutional grad=%d, trying to diagonalize=%d, verbose = %d >>>\n\n" % (args.method,
-                args.quadratics, args.convolutional, diag, verbose)
+                                                                                                                                    args.quadratics, args.convolutional, diag, verbose)
 
 ############################################################
 

@@ -45,7 +45,7 @@ class weighted_sum_squares(sum_squares):
         new_lin_op = mul_elemwise(self.weight, self.lin_op)
         new_b = mul_elemwise(self.weight, self.b).value
         return sum_squares(new_lin_op, alpha=self.alpha,
-            beta=new_beta, b=new_b, c=self.c, gamma=self.gamma).absorb_params()
+                           beta=new_beta, b=new_b, c=self.c, gamma=self.gamma).absorb_params()
 
     def _prox(self, rho, v, *args, **kwargs):
         """x = (rho/weight)/(2+(rho/weight))*v.

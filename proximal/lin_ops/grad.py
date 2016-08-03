@@ -86,7 +86,7 @@ class grad(LinOp):
             # Halide implementation
             if len(self.shape) == 3:
                 tmpin = np.asfortranarray(np.reshape(inputs[0],
-                    (self.shape[0], self.shape[1], 1, 2)).astype(np.float32))
+                                                     (self.shape[0], self.shape[1], 1, 2)).astype(np.float32))
             else:
                 tmpin = np.asfortranarray(inputs[0].astype(np.float32))
 

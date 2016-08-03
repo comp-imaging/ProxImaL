@@ -59,7 +59,7 @@ class TestTransforms(BaseTest):
 
         cvx_x = cvx.Variable(10)
         prob = cvx.Problem(cvx.Minimize(cvx.sum_squares(cvx_x - v) * (rho / 2) + \
-            5 * cvx.sum_squares(cvx.mul_elemwise(-v, cvx_x)) + (val * -v).T * cvx_x
+                                        5 * cvx.sum_squares(cvx.mul_elemwise(-v, cvx_x)) + (val * -v).T * cvx_x
         ))
         prob.solve()
         self.assertItemsAlmostEqual(x, cvx_x.value, places=3)
@@ -84,7 +84,7 @@ class TestTransforms(BaseTest):
         x = new_prox.prox(rho, v.copy())
         cvx_x = cvx.Variable(10)
         prob = cvx.Problem(cvx.Minimize(cvx.sum_squares(cvx_x - v) + \
-            cvx.norm(10 * cvx_x - val, 1) + 10 * val.T * cvx_x + cvx.sum_squares(cvx_x)
+                                        cvx.norm(10 * cvx_x - val, 1) + 10 * val.T * cvx_x + cvx.sum_squares(cvx_x)
         ))
         prob.solve()
         self.assertItemsAlmostEqual(x, cvx_x.value, places=2)

@@ -13,10 +13,10 @@ import numpy as np
 class Halide(object):
 
     def __init__(self, generator_source=[], func=[],
-                builddir=[], recompile=False, target='host',
-                generator_name=[], generator_param=[],
-                external_source=[], external_libs=[],
-                compile_flags=[], cleansource=True, verbose=False):
+                 builddir=[], recompile=False, target='host',
+                 generator_name=[], generator_param=[],
+                 external_source=[], external_libs=[],
+                 compile_flags=[], cleansource=True, verbose=False):
         """ Compiles and runs a halide pipeline defined in a generator file ``filepath``
             If recompile is not enabled, first, the library is searched and then loaded. 
             Otherwise it is recompiled and a new library is defined.
@@ -236,7 +236,7 @@ def gengen(generator_source, builddir='./build',
                 external_libs_str += el + ' '
 
         cmd = 'g++ -fPIC -std=c++11 -Wall -O2 {0} {1} {2} -lpthread {3} -shared -o {4}'.format(launcher_file,
-                                                                    external_source_str, external_libs_str, object_file, output_lib)
+                                                                                               external_source_str, external_libs_str, object_file, output_lib)
         if verbose:
             print('Compiling library')
             print('\t' + cmd)

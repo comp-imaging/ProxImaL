@@ -32,7 +32,7 @@ class patch_NLM(ProxFn):
         if len(lin_op.shape) == 3 and lin_op.shape[2] == 3:
             self.tmpout = np.zeros(lin_op.shape, dtype=np.float32, order='F')
             self.paramsh = np.asfortranarray(np.array([self.sigma_fixed, 1.0, self.sigma_scale, self.prior],
-                                            dtype=np.float32)[..., np.newaxis])
+                                                      dtype=np.float32)[..., np.newaxis])
 
         super(patch_NLM, self).__init__(lin_op, **kwargs)
 
@@ -91,8 +91,8 @@ class patch_NLM(ProxFn):
             else:
 
                 vdstuint = cv2.fastNlMeansDenoisingColored(vuint, None,
-                                                        sigma_luma * 255.0, sigma_color * 255.,
-                                                        self.templateWindowSizeNLM, self.searchWindowSizeNLM)
+                                                           sigma_luma * 255.0, sigma_color * 255.,
+                                                           self.templateWindowSizeNLM, self.searchWindowSizeNLM)
 
             # Convert to float and inverse scale
             if self.gamma_trans != 1.0:

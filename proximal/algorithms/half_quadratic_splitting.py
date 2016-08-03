@@ -51,7 +51,7 @@ def solve(psi_fns, omega_fns,
     op_list = [fn.lin_op for fn in psi_fns] + quad_ops
     stacked_ops = vstack(op_list)
     x_update = get_least_squares_inverse(op_list, None,
-                                        try_diagonalize, verbose)
+                                         try_diagonalize, verbose)
 
     # Initialize
     if x0 is not None:

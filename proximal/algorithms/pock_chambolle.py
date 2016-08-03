@@ -1,5 +1,5 @@
 from proximal.lin_ops import (CompGraph, est_CompGraph_norm, scale, Variable,
-    vstack)
+                              vstack)
 from proximal.prox_fns import least_squares
 from proximal.utils.timings_log import TimingsLog, TimingsEntry
 from invert import get_least_squares_inverse, max_diag_set

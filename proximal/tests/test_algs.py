@@ -113,7 +113,7 @@ class TestAlgs(BaseTest):
 
         psi_fns, omega_fns = pc.partition(prox_fns)
         sltn = pc.solve(psi_fns, omega_fns, 0.5, 1.0, 1.0,
-            eps_abs=1e-5, eps_rel=1e-5)
+                        eps_abs=1e-5, eps_rel=1e-5)
         self.assertItemsAlmostEqual(X.value, cvx_X.value, places=2)
         self.assertAlmostEqual(sltn, prob.value)
 
@@ -124,7 +124,7 @@ class TestAlgs(BaseTest):
         b = np.array([-41, 413, 2])
         prox_fns = [px.nonneg(x), px.sum_squares(px.conv(kernel, x), b=b)]
         sltn = pc.solve(prox_fns, [], 0.1, 0.1, 1.0, max_iters=3000,
-            eps_abs=1e-5, eps_rel=1e-5)
+                        eps_abs=1e-5, eps_rel=1e-5)
         cvx_X = cvx.Variable(3)
         cost = cvx.norm(kernel_mat * cvx_X - b)
         prob = cvx.Problem(cvx.Minimize(cost), [cvx_X >= 0])
@@ -133,7 +133,7 @@ class TestAlgs(BaseTest):
 
         psi_fns, omega_fns = pc.partition(prox_fns)
         sltn = pc.solve(psi_fns, omega_fns, 0.1, 0.1, 1.0, max_iters=3000,
-            eps_abs=1e-5, eps_rel=1e-5)
+                        eps_abs=1e-5, eps_rel=1e-5)
         self.assertItemsAlmostEqual(x.value, cvx_X.value, places=2)
 
         # # TODO
@@ -168,8 +168,8 @@ class TestAlgs(BaseTest):
 
         prox_fns = [px.norm1(X), px.sum_squares(X, b=B)]
         sltn = hqs.solve(prox_fns, [], eps_rel=1e-7,
-                     rho_0=1.0, rho_scale=np.sqrt(2.0) * 2.0, rho_max=2**16,
-                    max_iters=20, max_inner_iters=500)
+                         rho_0=1.0, rho_scale=np.sqrt(2.0) * 2.0, rho_max=2**16,
+                         max_iters=20, max_inner_iters=500)
 
         cvx_X = cvx.Variable(10, 5)
         cost = cvx.sum_squares(cvx_X - B) + cvx.norm(cvx_X, 1)
@@ -180,8 +180,8 @@ class TestAlgs(BaseTest):
 
         psi_fns, omega_fns = hqs.partition(prox_fns)
         sltn = hqs.solve(psi_fns, omega_fns, eps_rel=1e-7,
-                     rho_0=1.0, rho_scale=np.sqrt(2.0) * 2.0, rho_max=2**16,
-                    max_iters=20, max_inner_iters=500)
+                         rho_0=1.0, rho_scale=np.sqrt(2.0) * 2.0, rho_max=2**16,
+                         max_iters=20, max_inner_iters=500)
         self.assertItemsAlmostEqual(X.value, cvx_X.value, places=2)
         self.assertAlmostEqual(sltn, prob.value, places=3)
 
@@ -252,7 +252,7 @@ class TestAlgs(BaseTest):
 
         psi_fns, omega_fns = ladmm.partition(prox_fns)
         sltn = ladmm.solve(psi_fns, omega_fns, 0.1, max_iters=3000, eps_abs=1e-5,
-            eps_rel=1e-5)
+                           eps_rel=1e-5)
         self.assertItemsAlmostEqual(x.value, cvx_X.value, places=2)
 
     def test_equil(self):

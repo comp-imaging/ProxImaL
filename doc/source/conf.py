@@ -239,7 +239,7 @@ latex_elements = {
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
     ('index', 'proximal.tex', u'ProxImaL Documentation',
-   u'Felix Heide and Steven Diamond', 'manual'),
+     u'Felix Heide and Steven Diamond', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -283,9 +283,9 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
     ('index', 'proximal', u'ProxImaL Documentation',
-   u'Felix Heide and Steven Diamond', 'ProxImaL',
-   'A domain-specific language for image optimization.',
-   'Miscellaneous'),
+     u'Felix Heide and Steven Diamond', 'ProxImaL',
+     'A domain-specific language for image optimization.',
+     'Miscellaneous'),
 ]
 
 # Documents to append as an appendix to all manuals.

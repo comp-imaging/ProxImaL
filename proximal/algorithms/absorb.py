@@ -72,8 +72,8 @@ def absorb_lin_op(prox_fn):
     if isinstance(prox_fn.lin_op, scale):
         scalar = prox_fn.lin_op.scalar
         new_prox = prox_fn.copy(prox_fn.lin_op.input_nodes[0],
-            beta=prox_fn.beta * scalar, b=prox_fn.b / scalar, c=prox_fn.c * scalar,
-            gamma=prox_fn.gamma * scalar**2)
+                                beta=prox_fn.beta * scalar, b=prox_fn.b / scalar, c=prox_fn.c * scalar,
+                                gamma=prox_fn.gamma * scalar**2)
         return [new_prox]
     # No change.
     return [prox_fn]

@@ -99,7 +99,7 @@ def solve(psi_fns, omega_fns, lmb=1.0, mu=None, quad_funcs=None,
 
         if len(omega_fns) > 0:
             v[:] = omega_fns[0].prox(1.0 / mu, v, x_init=v_prev.copy(),
-                lin_solver=lin_solver, options=lin_solver_options)
+                                     lin_solver=lin_solver, options=lin_solver_options)
 
         # Update z.
         K.forward(v, Kv)

@@ -129,11 +129,11 @@ class Problem(object):
                     omega_fns[idx] = fn.copy(beta=fn.beta / np.sqrt(Knorm),
                                              implem=self.implem)
             opt_val = module.solve(psi_fns, omega_fns,
-                            lin_solver=self.lin_solver,
-                            try_diagonalize=self.try_diagonalize,
-                            try_fast_norm=self.try_fast_norm,
-                            scaled=self.scale,
-                            *args, **kwargs)
+                                   lin_solver=self.lin_solver,
+                                   try_diagonalize=self.try_diagonalize,
+                                   try_fast_norm=self.try_fast_norm,
+                                   scaled=self.scale,
+                                   *args, **kwargs)
             # Unscale the variables.
             if self.scale:
                 for var in self.variables():

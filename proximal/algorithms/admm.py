@@ -28,11 +28,11 @@ def partition(prox_fns, try_diagonalize=True):
 
 
 def solve(psi_fns, omega_fns, rho=1.0,
-         max_iters=1000, eps_abs=1e-3, eps_rel=1e-3, x0=None,
-         lin_solver="cg", lin_solver_options=None,
-         try_diagonalize=True, try_fast_norm=False,
-         scaled=True,
-         metric=None, convlog=None, verbose=0):
+          max_iters=1000, eps_abs=1e-3, eps_rel=1e-3, x0=None,
+          lin_solver="cg", lin_solver_options=None,
+          try_diagonalize=True, try_fast_norm=False,
+          scaled=True,
+          metric=None, convlog=None, verbose=0):
     prox_fns = psi_fns + omega_fns
     stacked_ops = vstack([fn.lin_op for fn in psi_fns])
     K = CompGraph(stacked_ops)

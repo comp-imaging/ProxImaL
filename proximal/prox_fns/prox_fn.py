@@ -10,7 +10,7 @@ class ProxFn(object):
     __metaclass__ = abc.ABCMeta
 
     def __init__(self, lin_op, alpha=1.0, beta=1.0, b=0.0, c=0.0,
-        gamma=0.0, d=0.0, implem=None):
+                 gamma=0.0, d=0.0, implem=None):
         # Error checking.
         for elem, name in zip([b, c], ["b", "c"]):
             if not (np.isscalar(elem) or elem.shape == lin_op.shape):

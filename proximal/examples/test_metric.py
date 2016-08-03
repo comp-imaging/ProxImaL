@@ -71,8 +71,8 @@ plt.show()
 v = np_img_color
 tmp = Variable(v.shape)
 fp = patch_NLM(tmp, sigma_fixed=sigma_fixed, sigma_scale=sigma_scale,
-              templateWindowSizeNLM=3, searchWindowSizeNLM=11, gamma_trans=1.0,
-              prior=prior)  # group over all but first two dims
+               templateWindowSizeNLM=3, searchWindowSizeNLM=11, gamma_trans=1.0,
+               prior=prior)  # group over all but first two dims
 rho = 1.0 / theta
 dst = fp.prox(rho, v.copy())
 

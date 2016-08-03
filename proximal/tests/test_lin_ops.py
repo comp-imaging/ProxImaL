@@ -60,7 +60,7 @@ class TestLinOps(BaseTest):
         assert fn.is_gram_diag(freq=False)
         print fn.get_diag(freq=False)[var]
         self.assertItemsAlmostEqual(fn.get_diag(freq=False)[var],
-            [1, 0, 1, 0, 1])
+                                    [1, 0, 1, 0, 1])
 
     def test_sum(self):
         # Forward.
@@ -95,7 +95,7 @@ class TestLinOps(BaseTest):
         assert not fn.is_diag(freq=True)
         assert fn.is_diag(freq=False)
         self.assertItemsAlmostEqual(fn.get_diag(freq=False)[x],
-            np.arange(5) - 3 + np.ones(5))
+                                    np.arange(5) - 3 + np.ones(5))
 
     def test_conv(self):
         """Test convolution lin op.
@@ -150,7 +150,7 @@ class TestLinOps(BaseTest):
         assert not fn.is_diag(freq=False)
         forward_kernel = psf2otf(kernel, (5,), 1)
         self.assertItemsAlmostEqual(fn.get_diag(freq=True)[x],
-            forward_kernel)
+                                    forward_kernel)
 
     def test_conv_halide(self):
         """Test convolution lin op in halide.
@@ -259,7 +259,7 @@ class TestLinOps(BaseTest):
         assert not fn.is_diag(freq=True)
         assert fn.is_diag(freq=False)
         self.assertItemsAlmostEqual(fn.get_diag(freq=False)[x],
-            np.arange(5) - 3)
+                                    np.arange(5) - 3)
 
     def test_black_box(self):
         """Test custom linear operators.
@@ -485,7 +485,7 @@ class TestLinOps(BaseTest):
 
         # Reference
         output_ref = cv2.warpPerspective(np_img, H.T, np_img.shape[1::-1], flags=cv2.INTER_LINEAR,
-                                    borderMode=cv2.BORDER_CONSTANT, borderValue=0.)
+                                         borderMode=cv2.BORDER_CONSTANT, borderValue=0.)
 
         # Halide
         output = np.zeros_like(np_img);
@@ -500,7 +500,7 @@ class TestLinOps(BaseTest):
         # Compute reference
         output_ref_trans = cv2.warpPerspective(output_ref, H.T, np_img.shape[1::-1],
                                                flags=cv2.INTER_LINEAR + cv2.WARP_INVERSE_MAP,
-                                    borderMode=cv2.BORDER_CONSTANT, borderValue=0.)
+                                               borderMode=cv2.BORDER_CONSTANT, borderValue=0.)
         # Opencv does inverse warp
         self.assertItemsAlmostEqual(output, output_ref, places=1)
         # Opencv does inverse warp
