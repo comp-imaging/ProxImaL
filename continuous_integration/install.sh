@@ -8,11 +8,13 @@ set -e
 
 sudo apt-get update -qq
 if [[ "$DISTRIB" == "conda" ]]; then
+
+    sudo apt-get install -qq libatlas-base-dev gfortran
+    export ATLAS="/usr/lib/atlas-base/libatlas.so"
     # Deactivate the travis-provided virtual environment and setup a
     # conda-based environment instead
     deactivate
 
-    export ATLAS="/usr/lib/atlas-base/libatlas.so"
     # Use the miniconda installer for faster download / install of conda
     # itself
     wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh \
