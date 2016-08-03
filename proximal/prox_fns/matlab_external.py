@@ -24,12 +24,12 @@ class matlab_external(ProxFn):
 
         vmat = matlab.double(v.tolist())
         if self.params is None:
-            pres = np.array( proxmethod(vmat, rho, it) )
+            pres = np.array(proxmethod(vmat, rho, it))
         else:
             paramsmat = matlab.double(self.params.tolist())
-            pres = np.array( proxmethod(vmat, rho, it, paramsmat) )
+            pres = np.array(proxmethod(vmat, rho, it, paramsmat))
 
-        np.copyto( v, pres )
+        np.copyto(v, pres)
         return v
 
     def _eval(self, v):
@@ -43,10 +43,10 @@ class matlab_external(ProxFn):
 
             vmat = matlab.double(v)
             if self.params is None:
-                peval = np.float32( evalmethod(vmat) )
+                peval = np.float32(evalmethod(vmat))
             else:
                 paramsmat = matlab.double(self.params.tolist())
-                peval = np.float32( evalmethod(vmat, paramsmat) )
+                peval = np.float32(evalmethod(vmat, paramsmat))
 
             return peval
 

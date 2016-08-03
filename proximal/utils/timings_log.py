@@ -14,7 +14,7 @@ class TimingsEntry(object):
         if self.evals == 0:
             return 0
         else:
-            return self.total_time/self.evals
+            return self.total_time / self.evals
 
     def record_timing(self, elapsed):
         """Updates the log with the new time.

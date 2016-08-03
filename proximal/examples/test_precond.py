@@ -21,24 +21,24 @@ import cv2
 
 #Load image
 img = Image.open('./data/angela.jpg')  # opens the file using Pillow - it's not an array yet
-x = np.asfortranarray( im2nparray(img) )
-x = np.mean( x, axis=2)
+x = np.asfortranarray(im2nparray(img))
+x = np.mean(x, axis=2)
 x = np.maximum(x, 0.0)
 
 #Kernel
 K = Image.open('./data/kernel_snake.png')  # opens the file using Pillow - it's not an array yet
-K = np.mean( np.asfortranarray( im2nparray(K) ) , axis=2)
-K = np.maximum( cv2.resize(K,(15,15), interpolation=cv2.INTER_LINEAR), 0)
-K /= np.sum( K )
+K = np.mean(np.asfortranarray(im2nparray(K)), axis=2)
+K = np.maximum(cv2.resize(K, (15, 15), interpolation=cv2.INTER_LINEAR), 0)
+K /= np.sum(K)
 
 #Generate observation
 sigma_noise = 0.01
-b = ndimage.convolve(x,K, mode='wrap') + sigma_noise * np.random.randn(*x.shape)
+b = ndimage.convolve(x, K, mode='wrap') + sigma_noise * np.random.randn(*x.shape)
 
 #Display data
 plt.ion()
 plt.figure()
-imgplot = plt.imshow(x , interpolation="nearest", clim=(0.0, 1.0))
+imgplot = plt.imshow(x, interpolation="nearest", clim=(0.0, 1.0))
 imgplot.set_cmap('gray')
 plt.title('Original Image')
 plt.show()
@@ -50,7 +50,7 @@ plt.title('K')
 plt.show()
 
 plt.figure()
-imgplot = plt.imshow(b , interpolation="nearest", clim=(0.0, 1.0))
+imgplot = plt.imshow(b, interpolation="nearest", clim=(0.0, 1.0))
 imgplot.set_cmap('gray')
 plt.title('Observation')
 plt.show()
@@ -62,17 +62,17 @@ lambda_data = 500.0
 I = x.copy()
 #psnrval = psnr_metric( I, pad = (10,10), decimals = 2 )
 psnrval = None
-x = Variable( I.size )
+x = Variable(I.size)
 shaped_x = reshape(x, I.shape)
 # Modify with equilibration.
 np.random.seed(1)
-op1 = grad(shaped_x, dims = 2)
+op1 = grad(shaped_x, dims=2)
 op2 = conv(K, shaped_x)
 wrand1 = np.random.lognormal(0, 1, size=op1.shape)
 wrand2 = np.random.lognormal(0, 1, size=op2.shape)
 # wrand = np.ones(op2.shape)
 op1 = mul_elemwise(wrand1, op1)
-b = wrand2*b
+b = wrand2 * b
 op2 = mul_elemwise(wrand2, op2)
 
 stacked_ops = vstack([op1, op2])
@@ -84,12 +84,12 @@ op2_d = np.reshape(d[op1.size:], op2.shape)#/wrand2
 
 new_x = mul_elemwise(e, x)
 shaped_x = reshape(new_x, I.shape)
-op1 = grad(shaped_x, dims = 2)
+op1 = grad(shaped_x, dims=2)
 op2 = conv(K, shaped_x)
 op1 = mul_elemwise(wrand1, op1)
 op2 = mul_elemwise(wrand2, op2)
 
-orig_fns = [norm1(op1, alpha = lambda_tv ), sum_squares(op2, b=b, alpha = lambda_data)]
+orig_fns = [norm1(op1, alpha=lambda_tv), sum_squares(op2, b=b, alpha=lambda_data)]
 op1 = mul_elemwise(op1_d, op1)
 op2 = mul_elemwise(op2_d, op2)
 
@@ -105,9 +105,9 @@ print 'Splitting quadratics'
 # e /= np.sqrt(L)
 # print np.linalg.norm(new_x.weight)
 
-nonquad_fns = [weighted_norm1(1/op1_d, op1, alpha = lambda_tv )] #Anisotropic
+nonquad_fns = [weighted_norm1(1 / op1_d, op1, alpha=lambda_tv)] #Anisotropic
 # nonquad_fns = [group_norm1( grad(x, dims = 2), [2], alpha = lambda_tv )] #Isotropic
-quad_funcs = [weighted_sum_squares(1/op2_d, op2, b=op2_d*b, alpha = lambda_data)]
+quad_funcs = [weighted_sum_squares(1 / op2_d, op2, b=op2_d * b, alpha=lambda_data)]
 
 # print 'No splitting'
 # #nonquad_fns = [sum_squares(conv(K, x), b=b, alpha = 400), norm1( grad(x, dims = 2), alpha = lambda_tv ) ] #Anisotropic
@@ -141,39 +141,39 @@ if method == 'pc':
 
     options = cg_options(tol=1e-5, num_iters=100, verbose=True)
     #options = lsqr_options(atol=1e-5, btol=1e-5, num_iters=100, verbose=False)
-    pc(prox_fns, quad_funcs = [], tau=1/L, sigma=1/L, theta=1, max_iters=1000 - equil_iters,
+    pc(prox_fns, quad_funcs=[], tau=1 / L, sigma=1 / L, theta=1, max_iters=1000 - equil_iters,
           eps_rel=1e-5, eps_abs=1e-5, lin_solver="cg", lin_solver_options=options,
-          try_split=False, try_diagonalize = diag,
+          try_split=False, try_diagonalize=diag,
           metric=psnrval, verbose=verbose, convlog=None)
 
 
 elif method == 'lin-admm':
 
     options = cg_options(tol=1e-5, num_iters=100, verbose=True)
-    lin_admm(prox_fns, quad_funcs = quad_funcs, lmb=0.1, max_iters=300,
+    lin_admm(prox_fns, quad_funcs=quad_funcs, lmb=0.1, max_iters=300,
              eps_abs=1e-4, eps_rel=1e-4, lin_solver="cg", lin_solver_options=options,
-             try_diagonalize = diag, metric=psnrval, verbose=verbose)
+             try_diagonalize=diag, metric=psnrval, verbose=verbose)
 
 elif method == 'admm':
 
     options = cg_options(tol=1e-5, num_iters=100, verbose=True)
-    admm(prox_fns, quad_funcs = [], rho=10, max_iters=300,
+    admm(prox_fns, quad_funcs=[], rho=10, max_iters=300,
              eps_abs=1e-4, eps_rel=1e-4, lin_solver="cg", lin_solver_options=options,
-             try_diagonalize = diag, metric=psnrval, verbose=verbose)
+             try_diagonalize=diag, metric=psnrval, verbose=verbose)
 
 elif method == 'hqs':
 
     #Need high accuracy when quadratics are not splitted
     options = cg_options(tol=1e-5, num_iters=100, verbose=True)
-    hqs(prox_fns, lin_solver="cg", lin_solver_options = options,
-                                    eps_rel=1e-6, max_iters = 10, max_inner_iters = 10, x0 = b,
-                                    try_diagonalize = diag, metric=psnrval, verbose=verbose)
+    hqs(prox_fns, lin_solver="cg", lin_solver_options=options,
+                                    eps_rel=1e-6, max_iters=10, max_inner_iters=10, x0=b,
+                                    try_diagonalize=diag, metric=psnrval, verbose=verbose)
 
 print convlog.objective_val
 
-print reduce(lambda x,y:x+y, [fn.value for fn in orig_fns])
+print reduce(lambda x, y: x + y, [fn.value for fn in orig_fns])
 
-print( 'Running took: {0:.1f}s'.format( toc()/1000.0 ) )
+print('Running took: {0:.1f}s'.format(toc() / 1000.0))
 
 plt.figure()
 imgplot = plt.imshow(shaped_x.value, interpolation="nearest", clim=(0.0, 1.0))

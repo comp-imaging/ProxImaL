@@ -62,4 +62,4 @@ class BlackBox(LinOp):
         if self._norm_bound is None:
             return super(BlackBox, self).norm_bound(input_mags)
         else:
-            return self._norm_bound*input_mags[0]
+            return self._norm_bound * input_mags[0]

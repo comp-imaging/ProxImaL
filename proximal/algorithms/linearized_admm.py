@@ -28,8 +28,8 @@ def partition(prox_fns, try_diagonalize=True):
         const_terms = []
         for fn in quad_fns:
             fn = fn.absorb_params()
-            quad_ops.append( fn.beta*fn.lin_op )
-            const_terms.append( fn.b.flatten() )
+            quad_ops.append(fn.beta * fn.lin_op)
+            const_terms.append(fn.b.flatten())
 
         stacked_ops = vstack(quad_ops)
         b = np.hstack(const_terms)
@@ -40,7 +40,7 @@ def partition(prox_fns, try_diagonalize=True):
     psi_fns = [fn for fn in prox_fns if fn not in split_fn + quad_fns]
     return psi_fns, omega_fns
 
-def solve(psi_fns, omega_fns, lmb=1.0, mu = None, quad_funcs=None,
+def solve(psi_fns, omega_fns, lmb=1.0, mu=None, quad_funcs=None,
           max_iters=1000, eps_abs=1e-3, eps_rel=1e-3,
           lin_solver="cg", lin_solver_options=None,
           try_diagonalize=True, try_fast_norm=True, scaled=False,
@@ -78,8 +78,8 @@ def solve(psi_fns, omega_fns, lmb=1.0, mu = None, quad_funcs=None,
     if convlog != None:
         K.update_vars(v)
         objval = sum([fn.value for fn in prox_fns])
-        convlog.record_objective( objval )
-        convlog.record_timing( 0.0 )
+        convlog.record_objective(objval)
+        convlog.record_timing(0.0)
 
     for i in range(max_iters):
         iter_timing.tic()
@@ -93,10 +93,10 @@ def solve(psi_fns, omega_fns, lmb=1.0, mu = None, quad_funcs=None,
         K.forward(v, Kv)
         Kvzu[:] = Kv - z + u
         K.adjoint(Kvzu, v)
-        v[:] = v_prev - (mu/lmb) * v
+        v[:] = v_prev - (mu / lmb) * v
 
         if len(omega_fns) > 0:
-            v[:] = omega_fns[0].prox(1.0/mu, v, x_init=v_prev.copy(),
+            v[:] = omega_fns[0].prox(1.0 / mu, v, x_init=v_prev.copy(),
                 lin_solver=lin_solver, options=lin_solver_options)
 
         # Update z.
@@ -104,11 +104,11 @@ def solve(psi_fns, omega_fns, lmb=1.0, mu = None, quad_funcs=None,
         Kv_u = Kv + u
         offset = 0
         for fn in psi_fns:
-            slc = slice(offset, offset+fn.lin_op.size, None)
+            slc = slice(offset, offset + fn.lin_op.size, None)
             Kv_u_slc = np.reshape(Kv_u[slc], fn.lin_op.shape)
             # Apply and time prox.
             prox_log[fn].tic()
-            z[slc] = fn.prox(1.0/lmb, Kv_u_slc, i).flatten()
+            z[slc] = fn.prox(1.0 / lmb, Kv_u_slc, i).flatten()
             prox_log[fn].toc()
             offset += fn.lin_op.size
 
@@ -118,16 +118,16 @@ def solve(psi_fns, omega_fns, lmb=1.0, mu = None, quad_funcs=None,
 
         # Check convergence.
         r = Kv - z
-        K.adjoint((1.0/lmb)*(z - z_prev), s)
-        eps_pri = np.sqrt(K.output_size)*eps_abs + eps_rel*max([np.linalg.norm(Kv), np.linalg.norm(z)])
-        eps_dual = np.sqrt(K.input_size)*eps_abs + eps_rel*np.linalg.norm(KTu)/(1.0/lmb)
+        K.adjoint((1.0 / lmb) * (z - z_prev), s)
+        eps_pri = np.sqrt(K.output_size) * eps_abs + eps_rel * max([np.linalg.norm(Kv), np.linalg.norm(z)])
+        eps_dual = np.sqrt(K.input_size) * eps_abs + eps_rel * np.linalg.norm(KTu) / (1.0 / lmb)
 
         #Convergence log
         if convlog != None:
             convlog.toc()
             K.update_vars(v)
             objval = sum([fn.value for fn in prox_fns])
-            convlog.record_objective( objval )
+            convlog.record_objective(objval)
 
         #Show progess
         if verbose > 0:
@@ -138,7 +138,7 @@ def solve(psi_fns, omega_fns, lmb=1.0, mu = None, quad_funcs=None,
                 objstr = ", obj_val = %02.03e" % sum([fn.value for fn in prox_fns])
 
             #Evaluate metric potentially
-            metstr = '' if metric is None else ", {}".format( metric.message(v) )
+            metstr = '' if metric is None else ", {}".format(metric.message(v))
             print "iter %d: ||r||_2 = %.3f, eps_pri = %.3f, ||s||_2 = %.3f, eps_dual = %.3f%s%s" % (
                 i, np.linalg.norm(r), eps_pri, np.linalg.norm(s), eps_dual, objstr, metstr)
 
@@ -165,7 +165,7 @@ def solve(psi_fns, omega_fns, lmb=1.0, mu = None, quad_funcs=None,
 def est_params_lin_admm(K, lmb=None, verbose=True, scaled=False, try_fast_norm=False):
 
     #Select lambda
-    lmb = 1.0 if lmb is None else np.maximum( lmb, 1e-5)
+    lmb = 1.0 if lmb is None else np.maximum(lmb, 1e-5)
 
     #Warn user
     if lmb > 1.0:

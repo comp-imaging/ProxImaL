@@ -120,11 +120,11 @@ class Problem(object):
                               implem=self.implem)
                 Knorm = est_CompGraph_norm(K, try_fast_norm=self.try_fast_norm)
                 for idx, fn in enumerate(psi_fns):
-                    psi_fns[idx] = fn.copy(fn.lin_op/Knorm,
-                                           beta=fn.beta*np.sqrt(Knorm),
+                    psi_fns[idx] = fn.copy(fn.lin_op / Knorm,
+                                           beta=fn.beta * np.sqrt(Knorm),
                                            implem=self.implem)
                 for idx, fn in enumerate(omega_fns):
-                    omega_fns[idx] = fn.copy(beta=fn.beta/np.sqrt(Knorm),
+                    omega_fns[idx] = fn.copy(beta=fn.beta / np.sqrt(Knorm),
                                              implem=self.implem)
             opt_val = module.solve(psi_fns, omega_fns,
                             lin_solver=self.lin_solver,

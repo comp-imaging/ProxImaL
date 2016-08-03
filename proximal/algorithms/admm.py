@@ -13,7 +13,7 @@ def partition(prox_fns, try_diagonalize=True):
     quad_funcs = []
     # All lin ops must be gram diagonal for the least squares problem
     # to be diagonal.
-    func_opts = {True:[], False:[]}
+    func_opts = {True: [], False: []}
     for freq in [True, False]:
         if all([fn.lin_op.is_gram_diag(freq) for fn in prox_fns]):
             func_opts[freq] = get_diag_quads(prox_fns, freq)
@@ -26,7 +26,7 @@ def partition(prox_fns, try_diagonalize=True):
     return psi_fns, quad_funcs
 
 def solve(psi_fns, omega_fns, rho=1.0,
-         max_iters=1000, eps_abs=1e-3, eps_rel=1e-3, x0 = None,
+         max_iters=1000, eps_abs=1e-3, eps_rel=1e-3, x0=None,
          lin_solver="cg", lin_solver_options=None,
          try_diagonalize=True, try_fast_norm=False,
          scaled=True,
@@ -35,13 +35,13 @@ def solve(psi_fns, omega_fns, rho=1.0,
     stacked_ops = vstack([fn.lin_op for fn in psi_fns])
     K = CompGraph(stacked_ops)
     # Rescale so (rho/2)||x - b||^2_2
-    rescaling = np.sqrt(2./rho)
+    rescaling = np.sqrt(2. / rho)
     quad_ops = []
     const_terms = []
     for fn in omega_fns:
         fn = fn.absorb_params()
-        quad_ops.append( scale(rescaling*fn.beta, fn.lin_op) )
-        const_terms.append( fn.b.flatten()*rescaling )
+        quad_ops.append(scale(rescaling * fn.beta, fn.lin_op))
+        const_terms.append(fn.b.flatten() * rescaling)
     # Check for fast inverse.
     op_list = [fn.lin_op for fn in psi_fns] + quad_ops
     stacked_ops = vstack(op_list)
@@ -56,7 +56,7 @@ def solve(psi_fns, omega_fns, rho=1.0,
 
     #Initialize
     if x0 is not None:
-        v[:] = np.reshape( x0, K.input_size )
+        v[:] = np.reshape(x0, K.input_size)
         K.forward(v, z);
 
     # Buffers.
@@ -72,8 +72,8 @@ def solve(psi_fns, omega_fns, rho=1.0,
     if convlog != None:
         K.update_vars(v)
         objval = sum([fn.value for fn in prox_fns])
-        convlog.record_objective( objval )
-        convlog.record_timing( 0.0 )
+        convlog.record_objective(objval)
+        convlog.record_timing(0.0)
 
     for i in range(max_iters):
         iter_timing.tic()
@@ -83,7 +83,7 @@ def solve(psi_fns, omega_fns, rho=1.0,
         z_prev = z.copy()
 
         # Update v.
-        tmp = np.hstack([z-u] + const_terms)
+        tmp = np.hstack([z - u] + const_terms)
         v = v_update.solve(tmp, x_init=v, lin_solver=lin_solver, options=lin_solver_options)
 
         # Update z.
@@ -91,7 +91,7 @@ def solve(psi_fns, omega_fns, rho=1.0,
         Kv_u = Kv + u
         offset = 0
         for fn in psi_fns:
-            slc = slice(offset, offset+fn.lin_op.size, None)
+            slc = slice(offset, offset + fn.lin_op.size, None)
             Kv_u_slc = np.reshape(Kv_u[slc], fn.lin_op.shape)
             # Apply and time prox.
             prox_log[fn].tic()
@@ -104,16 +104,16 @@ def solve(psi_fns, omega_fns, rho=1.0,
 
         # Check convergence.
         r = Kv - z
-        K.adjoint(rho*(z - z_prev), s)
-        eps_pri = np.sqrt(K.output_size)*eps_abs + eps_rel*max([np.linalg.norm(Kv), np.linalg.norm(z)])
-        eps_dual = np.sqrt(K.input_size)*eps_abs + eps_rel*np.linalg.norm(KTu)/rho
+        K.adjoint(rho * (z - z_prev), s)
+        eps_pri = np.sqrt(K.output_size) * eps_abs + eps_rel * max([np.linalg.norm(Kv), np.linalg.norm(z)])
+        eps_dual = np.sqrt(K.input_size) * eps_abs + eps_rel * np.linalg.norm(KTu) / rho
 
         #Convergence log
         if convlog != None:
             convlog.toc()
             K.update_vars(v)
             objval = sum([fn.value for fn in prox_fns])
-            convlog.record_objective( objval )
+            convlog.record_objective(objval)
 
         #Show progess
         if verbose > 0:
@@ -124,7 +124,7 @@ def solve(psi_fns, omega_fns, rho=1.0,
                 objstr = ", obj_val = %02.03e" % sum([fn.value for fn in prox_fns])
 
             #Evaluate metric potentially
-            metstr = '' if metric is None else ", {}".format( metric.message(v) )
+            metstr = '' if metric is None else ", {}".format(metric.message(v))
             print "iter %d: ||r||_2 = %.3f, eps_pri = %.3f, ||s||_2 = %.3f, eps_dual = %.3f%s%s" % (
                 i, np.linalg.norm(r), eps_pri, np.linalg.norm(s), eps_dual, objstr, metstr)
 

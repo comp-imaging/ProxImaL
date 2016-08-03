@@ -25,13 +25,13 @@ from scipy.misc import lena
 #img = Image.open('./data/angela.jpg')  # opens the file using Pillow - it's not an array yet
 img = Image.open('./data/largeimage.png')  # opens the file using Pillow - it's not an array yet
 
-np_img = np.asfortranarray( im2nparray(img) )
-np_img = np.mean( np_img, axis=2)
-print 'Img Type ', np_img.dtype , 'Shape', np_img.shape
+np_img = np.asfortranarray(im2nparray(img))
+np_img = np.mean(np_img, axis=2)
+print 'Img Type ', np_img.dtype, 'Shape', np_img.shape
 
 plt.ion()
 plt.figure()
-imgplot = plt.imshow(np_img , interpolation="nearest", clim=(0.0, 1.0))
+imgplot = plt.imshow(np_img, interpolation="nearest", clim=(0.0, 1.0))
 imgplot.set_cmap('gray')
 plt.title('Numpy')
 plt.show()
@@ -42,20 +42,20 @@ plt.show()
 #print( 'Compilation took: {0:.1f}ms'.format( toc() ) )
 
 #Test the runner
-output = np.zeros( (np_img.shape[0], np_img.shape[1], np_img.shape[2] if (len(np_img.shape) > 2) else 1, 2) , dtype=np.float32, order='FORTRAN');
-print 'Out Type ', output.dtype , 'Shape', output.shape
+output = np.zeros((np_img.shape[0], np_img.shape[1], np_img.shape[2] if (len(np_img.shape) > 2) else 1, 2), dtype=np.float32, order='FORTRAN');
+print 'Out Type ', output.dtype, 'Shape', output.shape
 
 tic()
 hl = Halide('A_grad.cpp', recompile=True, verbose=False, cleansource=True) #Force recompile
-print( 'Compilation took: {0:.1f}ms'.format( toc() ) )
+print('Compilation took: {0:.1f}ms'.format(toc()))
 
 tic()
 hl.A_grad(np_img, output) #Call
-print( 'Running halide (first) took: {0:.1f}ms'.format( toc() ) )
+print('Running halide (first) took: {0:.1f}ms'.format(toc()))
 
 tic()
 hl.A_grad(np_img, output) #Call
-print( 'Running halide (second) took: {0:.1f}ms'.format( toc() ) )
+print('Running halide (second) took: {0:.1f}ms'.format(toc()))
 
 
 #Compute comparison
@@ -86,12 +86,12 @@ tic()
 
  # Forward.
 var = Variable(f.shape)
-fn = grad(var, dims =2) #2d Gradient
+fn = grad(var, dims=2) #2d Gradient
 Kf = np.zeros(fn.shape, dtype=np.float32, order='F')
 fn.forward([f], [Kf])
 
-print( 'Running nd-grad took: {0:.1f}ms'.format( toc() ) )
-Kfh = np.asfortranarray( Kf[:,:,:,:] ) #For halide
+print('Running nd-grad took: {0:.1f}ms'.format(toc()))
+Kfh = np.asfortranarray(Kf[:, :, :, :]) #For halide
 
 #2D code
 # tic()
@@ -103,20 +103,20 @@ Kfh = np.asfortranarray( Kf[:,:,:,:] ) #For halide
 # Kfh = Kf
 
 #Error
-print('Maximum error {0}'.format( np.amax( np.abs( Kfh - output ) ) ) )
+print('Maximum error {0}'.format(np.amax(np.abs(Kfh - output))))
 
 tic()
 hl = Halide('At_grad.cpp', recompile=True, verbose=False, cleansource=True) #Force recompile
-print( 'Compilation took: {0:.1f}ms'.format( toc() ) )
+print('Compilation took: {0:.1f}ms'.format(toc()))
 
 output_t = np.zeros(f.shape, dtype=np.float32, order='F');
 tic()
 hl.At_grad(Kfh, output_t) #Call
-print( 'Running trans halid (first) took: {0:.1f}ms'.format( toc() ) )
+print('Running trans halid (first) took: {0:.1f}ms'.format(toc()))
 
 tic()
 hl.At_grad(Kfh, output_t) #Call
-print( 'Running trans halid (second) took: {0:.1f}ms'.format( toc() ) )
+print('Running trans halid (second) took: {0:.1f}ms'.format(toc()))
 
 
 
@@ -160,7 +160,7 @@ tic()
 KTf = np.zeros(var.shape, dtype=np.float32, order='F')
 fn.adjoint([f], [KTf])
 
-print( 'Running trans nd-grad took: {0:.1f}ms'.format( toc() ) )
+print('Running trans nd-grad took: {0:.1f}ms'.format(toc()))
 
 # #2D reference
 # Kfx = Kf[:,:,:,0]
@@ -175,4 +175,4 @@ print( 'Running trans nd-grad took: {0:.1f}ms'.format( toc() ) )
 # fy[-1,:,:] = -Kfy[-2,:,:];
 # KtKf = -fx -fy
 
-print('Maximum trans error {0}'.format( np.amax( np.abs( KTf - output_t ) ) ) )
+print('Maximum trans error {0}'.format(np.amax(np.abs(KTf - output_t))))

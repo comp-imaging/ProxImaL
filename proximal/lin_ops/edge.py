@@ -12,4 +12,4 @@ class Edge(object):
 
     @property
     def size(self):
-        return reduce(lambda x,y: x*y, self.shape, 1)
+        return reduce(lambda x, y: x * y, self.shape, 1)

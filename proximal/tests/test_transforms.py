@@ -14,27 +14,27 @@ class TestTransforms(BaseTest):
         """
         # norm1.
         tmp = Variable(10)
-        v = np.arange(10)*1.0 - 5.0
+        v = np.arange(10) * 1.0 - 5.0
 
         fn = norm1(mul_elemwise(-v, tmp), alpha=5.)
         rho = 2
         new_prox = absorb_lin_op(fn)[0]
         x = new_prox.prox(rho, v.copy())
-        self.assertItemsAlmostEqual(x, np.sign(v)*np.maximum(np.abs(v) - 5.*np.abs(v)/rho,0))
+        self.assertItemsAlmostEqual(x, np.sign(v) * np.maximum(np.abs(v) - 5. * np.abs(v) / rho, 0))
 
-        fn = norm1(mul_elemwise(-v, mul_elemwise(2*v, tmp)), alpha=5.)
+        fn = norm1(mul_elemwise(-v, mul_elemwise(2 * v, tmp)), alpha=5.)
         rho = 2
         new_prox = absorb_lin_op(fn)[0]
         x = new_prox.prox(rho, v.copy())
-        self.assertItemsAlmostEqual(x, np.sign(v)*np.maximum(np.abs(v) - 5.*np.abs(v)/rho,0))
+        self.assertItemsAlmostEqual(x, np.sign(v) * np.maximum(np.abs(v) - 5. * np.abs(v) / rho, 0))
         new_prox = absorb_lin_op(new_prox)[0]
         x = new_prox.prox(rho, v.copy())
-        new_v = 2*v*v
-        self.assertItemsAlmostEqual(x, np.sign(new_v)*np.maximum(np.abs(new_v) - 5.*np.abs(new_v)/rho,0))
+        new_v = 2 * v * v
+        self.assertItemsAlmostEqual(x, np.sign(new_v) * np.maximum(np.abs(new_v) - 5. * np.abs(new_v) / rho, 0))
 
         # nonneg.
         tmp = Variable(10)
-        v = np.arange(10)*1.0 - 5.0
+        v = np.arange(10) * 1.0 - 5.0
 
         fn = nonneg(mul_elemwise(-v, tmp), alpha=5.)
         rho = 2
@@ -44,7 +44,7 @@ class TestTransforms(BaseTest):
 
         # sum_squares.
         tmp = Variable(10)
-        v = np.arange(10)*1.0 - 5.0
+        v = np.arange(10) * 1.0 - 5.0
 
         alpha = 5.
         val = np.arange(10)
@@ -54,8 +54,8 @@ class TestTransforms(BaseTest):
         x = new_prox.prox(rho, v.copy())
 
         cvx_x = cvx.Variable(10)
-        prob = cvx.Problem(cvx.Minimize(cvx.sum_squares(cvx_x - v)*(rho/2) + \
-            5*cvx.sum_squares(cvx.mul_elemwise(-v, cvx_x)) + (val*-v).T*cvx_x
+        prob = cvx.Problem(cvx.Minimize(cvx.sum_squares(cvx_x - v) * (rho / 2) + \
+            5 * cvx.sum_squares(cvx.mul_elemwise(-v, cvx_x)) + (val * -v).T * cvx_x
         ))
         prob.solve()
         self.assertItemsAlmostEqual(x, cvx_x.value, places=3)
@@ -63,38 +63,38 @@ class TestTransforms(BaseTest):
 
         # Test scale.
         tmp = Variable(10)
-        v = np.arange(10)*1.0 - 5.0
+        v = np.arange(10) * 1.0 - 5.0
 
-        fn = norm1(10*tmp)
+        fn = norm1(10 * tmp)
         rho = 2
         new_prox = absorb_lin_op(fn)[0]
         x = new_prox.prox(rho, v.copy())
         cvx_x = cvx.Variable(10)
-        prob = cvx.Problem(cvx.Minimize(cvx.sum_squares(cvx_x - v) + cvx.norm(10*cvx_x, 1)))
+        prob = cvx.Problem(cvx.Minimize(cvx.sum_squares(cvx_x - v) + cvx.norm(10 * cvx_x, 1)))
         prob.solve()
         self.assertItemsAlmostEqual(x, cvx_x.value, places=3)
 
         val = np.arange(10)
-        fn = norm1(10*tmp, c=val, b=val, gamma=0.01)
+        fn = norm1(10 * tmp, c=val, b=val, gamma=0.01)
         rho = 2
         new_prox = absorb_lin_op(fn)[0]
         x = new_prox.prox(rho, v.copy())
         cvx_x = cvx.Variable(10)
         prob = cvx.Problem(cvx.Minimize(cvx.sum_squares(cvx_x - v) + \
-            cvx.norm(10*cvx_x - val, 1) + 10*val.T*cvx_x + cvx.sum_squares(cvx_x)
+            cvx.norm(10 * cvx_x - val, 1) + 10 * val.T * cvx_x + cvx.sum_squares(cvx_x)
         ))
         prob.solve()
         self.assertItemsAlmostEqual(x, cvx_x.value, places=2)
 
         # sum_entries
         tmp = Variable(10)
-        v = np.arange(10)*1.0 - 5.0
+        v = np.arange(10) * 1.0 - 5.0
 
-        fn = sum_entries(sum([10*tmp, mul_elemwise(v, tmp)]))
+        fn = sum_entries(sum([10 * tmp, mul_elemwise(v, tmp)]))
 
         funcs = absorb.absorb_all_lin_ops([fn])
         c = __builtins__['sum']([fn.c for fn in funcs])
-        self.assertItemsAlmostEqual(c, v+10, places=3)
+        self.assertItemsAlmostEqual(c, v + 10, places=3)
 
     def test_merge(self):
         """Test merging functions.
@@ -105,7 +105,7 @@ class TestTransforms(BaseTest):
         fn2 = norm1(x)
         assert can_merge(fn1, fn2)
         merged = merge_fns(fn1, fn2)
-        v = np.arange(10)*1.0 - 5.0
+        v = np.arange(10) * 1.0 - 5.0
         prox_val1 = merged.prox(1.0, v.copy())
         tmp = norm1(x, c=np.ones(10), gamma=1.0)
         prox_val2 = tmp.prox(1.0, v.copy())
@@ -118,9 +118,9 @@ class TestTransforms(BaseTest):
         fn2 = norm1(x)
         assert can_merge(fn1, fn2)
         merged = merge_fns(fn1, fn2)
-        v = np.arange(10)*1.0 - 5.0
+        v = np.arange(10) * 1.0 - 5.0
         prox_val1 = merged.prox(1.0, v.copy())
-        tmp = norm1(x, c=-12*val, gamma=1.0+12, d=val.dot(val))
+        tmp = norm1(x, c=-12 * val, gamma=1.0 + 12, d=val.dot(val))
         prox_val2 = tmp.prox(1.0, v.copy())
         self.assertItemsAlmostEqual(prox_val1, prox_val2)
 
@@ -133,9 +133,9 @@ class TestTransforms(BaseTest):
         fns = [sum_squares(lin_op), sum_entries(lin_op), nonneg(lin_op)]
         merged = merge_all(fns)
         assert len(merged) == 1
-        v = np.reshape(np.arange(10)*1.0 - 5.0, (10,1))
+        v = np.reshape(np.arange(10) * 1.0 - 5.0, (10, 1))
         prox_val1 = merged[0].prox(1.0, v.copy())
-        tmp = nonneg(lin_op, c=np.ones((10,1)), gamma=1.0)
+        tmp = nonneg(lin_op, c=np.ones((10, 1)), gamma=1.0)
         prox_val2 = tmp.prox(1.0, v.copy())
         self.assertItemsAlmostEqual(prox_val1, prox_val2)
 

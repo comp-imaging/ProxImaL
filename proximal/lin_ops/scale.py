@@ -43,7 +43,7 @@ class scale(LinOp):
         """
         var_diags = self.input_nodes[0].get_diag(freq)
         for var in var_diags.keys():
-            var_diags[var] = var_diags[var]*self.scalar
+            var_diags[var] = var_diags[var] * self.scalar
         return var_diags
 
     def norm_bound(self, input_mags):
@@ -59,4 +59,4 @@ class scale(LinOp):
         float
             Magnitude of outputs.
         """
-        return abs(self.scalar)*input_mags[0]
+        return abs(self.scalar) * input_mags[0]

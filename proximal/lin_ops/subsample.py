@@ -7,7 +7,7 @@ class subsample(LinOp):
     """
     def __init__(self, arg, steps):
         self.steps = steps
-        shape = tuple([(dim-1)//step + 1 for dim,step in zip(arg.shape, steps)])
+        shape = tuple([(dim - 1) // step + 1 for dim, step in zip(arg.shape, steps)])
         super(subsample, self).__init__([arg], shape)
 
     def forward(self, inputs, outputs):
@@ -34,7 +34,7 @@ class subsample(LinOp):
         """
         selection = []
         for step in self.steps:
-            selection.append(slice(None,None,step))
+            selection.append(slice(None, None, step))
         return tuple(selection)
 
     def is_gram_diag(self, freq=False):
@@ -60,7 +60,7 @@ class subsample(LinOp):
         self_diag = np.zeros(self.input_nodes[0].shape)
         self_diag[selection] = 1
         for var in var_diags.keys():
-            var_diags[var] = var_diags[var]*self_diag.ravel()
+            var_diags[var] = var_diags[var] * self_diag.ravel()
         return var_diags
 
     def norm_bound(self, input_mags):

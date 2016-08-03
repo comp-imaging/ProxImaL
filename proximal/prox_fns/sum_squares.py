@@ -12,14 +12,14 @@ class sum_squares(ProxFn):
         """Returns an equivalent sum_squares with alpha = 1.0,
            gamma = 0, and c = 0.
         """
-        new_beta = np.sqrt(self.alpha*self.beta**2 + self.gamma)
-        new_b = (self.alpha*self.beta*self.b - self.c/2)/new_beta
+        new_beta = np.sqrt(self.alpha * self.beta**2 + self.gamma)
+        new_b = (self.alpha * self.beta * self.b - self.c / 2) / new_beta
         return sum_squares(self.lin_op, beta=new_beta, b=new_b)
 
     def _prox(self, rho, v, *args, **kwargs):
         """x = rho/(2+rho)*v.
         """
-        v *= rho/(2+rho)
+        v *= rho / (2 + rho)
         return v
 
     def _eval(self, v):
@@ -46,14 +46,14 @@ class weighted_sum_squares(sum_squares):
     def _prox(self, rho, v, *args, **kwargs):
         """x = (rho/weight)/(2+(rho/weight))*v.
         """
-        rho_vec = rho/np.square(self.weight[self.weight != 0])
-        v[self.weight != 0] *= rho_vec/(2 + rho_vec)
+        rho_vec = rho / np.square(self.weight[self.weight != 0])
+        v[self.weight != 0] *= rho_vec / (2 + rho_vec)
         return v
 
     def _eval(self, v):
         """Evaluate the function on v (ignoring parameters).
         """
-        return super(weighted_sum_squares, self)._eval(self.weight*v)
+        return super(weighted_sum_squares, self)._eval(self.weight * v)
 
     def get_data(self):
         """Returns info needed to reconstruct the object besides the args.
@@ -70,7 +70,7 @@ class least_squares(sum_squares):
        Here K is a computation graph (vector to vector lin op).
     """
     def __init__(self, lin_op, offset, diag=None, freq_diag=None,
-                 freq_dims=None, implem = Impl['numpy'], **kwargs):
+                 freq_dims=None, implem=Impl['numpy'], **kwargs):
         self.K = CompGraph(lin_op)
         self.offset = offset
         self.diag = diag
@@ -85,20 +85,20 @@ class least_squares(sum_squares):
                 raise Exception("Diagonal frequency inversion supports only one var currently.")
 
             self.freq_shape = self.K.orig_end.variables()[0].shape
-            self.freq_diag = np.reshape( self.freq_diag, self.freq_shape )
+            self.freq_diag = np.reshape(self.freq_diag, self.freq_shape)
             if implem == Impl['halide'] and \
-                ( len(self.freq_shape) == 2 or (len(self.freq_shape) == 2 and self.freq_dims == 2) ):
+                (len(self.freq_shape) == 2 or (len(self.freq_shape) == 2 and self.freq_dims == 2)):
                 print "hello"
                 #TODO: FIX REAL TO IMAG
                 hsize = self.freq_shape if len(self.freq_shape) == 3 else (self.freq_shape[0], self.freq_shape[1], 1)
-                hsizehalide = ( (hsize[0] + 1)/2 + 1, hsize[1], hsize[2], 2)
+                hsizehalide = ((hsize[0] + 1) / 2 + 1, hsize[1], hsize[2], 2)
 
                 self.hsizehalide = hsizehalide
-                self.ftmp_halide = np.zeros( hsizehalide, dtype=np.float32, order='F' )
-                self.ftmp_halide_out = np.zeros( hsize, dtype=np.float32, order='F' )
-                self.freq_diag = np.reshape( self.freq_diag[0:hsizehalide[0], ...], hsizehalide[0:3] )
+                self.ftmp_halide = np.zeros(hsizehalide, dtype=np.float32, order='F')
+                self.ftmp_halide_out = np.zeros(hsize, dtype=np.float32, order='F')
+                self.freq_diag = np.reshape(self.freq_diag[0:hsizehalide[0], ...], hsizehalide[0:3])
 
-        super(least_squares, self).__init__(lin_op, implem = implem, **kwargs)
+        super(least_squares, self).__init__(lin_op, implem=implem, **kwargs)
 
     def get_data(self):
         """Returns info needed to reconstruct the object besides the args.
@@ -134,8 +134,8 @@ class least_squares(sum_squares):
             if rho is None:
                 Ktb /= self.diag
             else:
-                Ktb += (rho/2.) * v
-                Ktb /= (self.diag + rho/2.)
+                Ktb += (rho / 2.) * v
+                Ktb /= (self.diag + rho / 2.)
 
             return Ktb
 
@@ -146,25 +146,25 @@ class least_squares(sum_squares):
 
             #Frequency inversion
             if self.implementation == Impl['halide'] and \
-                ( len(self.freq_shape) == 2 or (len(self.freq_shape) == 2 and self.freq_dims == 2) ):
+                (len(self.freq_shape) == 2 or (len(self.freq_shape) == 2 and self.freq_dims == 2)):
 
-                Halide('fft2_r2c.cpp').fft2_r2c( np.asfortranarray( np.reshape(Ktb.astype(np.float32), self.freq_shape) ), 0, 0, self.ftmp_halide)
+                Halide('fft2_r2c.cpp').fft2_r2c(np.asfortranarray(np.reshape(Ktb.astype(np.float32), self.freq_shape)), 0, 0, self.ftmp_halide)
 
-                Ktb = 1j*self.ftmp_halide[...,1]
-                Ktb += self.ftmp_halide[...,0]
+                Ktb = 1j * self.ftmp_halide[..., 1]
+                Ktb += self.ftmp_halide[..., 0]
 
                 if rho is None:
                     Ktb /= self.freq_diag
                 else:
-                    Halide('fft2_r2c.cpp').fft2_r2c( np.asfortranarray( np.reshape(v.astype(np.float32), self.freq_shape) ), 0, 0, self.ftmp_halide)
+                    Halide('fft2_r2c.cpp').fft2_r2c(np.asfortranarray(np.reshape(v.astype(np.float32), self.freq_shape)), 0, 0, self.ftmp_halide)
 
-                    vhat = self.ftmp_halide[...,0] + 1j*self.ftmp_halide[...,1]
-                    Ktb *= 1.0/rho
+                    vhat = self.ftmp_halide[..., 0] + 1j * self.ftmp_halide[..., 1]
+                    Ktb *= 1.0 / rho
                     Ktb += vhat
-                    Ktb /= (1.0/rho * self.freq_diag + 1.0)
+                    Ktb /= (1.0 / rho * self.freq_diag + 1.0)
 
                 #Do inverse tranform
-                Ktb = np.asfortranarray( np.stack( (Ktb.real, Ktb.imag ), axis=-1 ) )
+                Ktb = np.asfortranarray(np.stack((Ktb.real, Ktb.imag), axis=-1))
                 Halide('ifft2_c2r.cpp').ifft2_c2r(Ktb, self.ftmp_halide_out)
 
                 return self.ftmp_halide_out.ravel()
@@ -177,9 +177,9 @@ class least_squares(sum_squares):
                 if rho is None:
                     Ktb /= self.freq_diag
                 else:
-                    Ktb *= 2.0/rho
-                    Ktb += fftd(np.reshape(v,self.freq_shape), self.freq_dims)
-                    Ktb /= (2.0/rho * self.freq_diag + 1.0)
+                    Ktb *= 2.0 / rho
+                    Ktb += fftd(np.reshape(v, self.freq_shape), self.freq_dims)
+                    Ktb /= (2.0 / rho * self.freq_diag + 1.0)
 
                 return (ifftd(Ktb, self.freq_dims).real).ravel()
 
@@ -197,10 +197,10 @@ class least_squares(sum_squares):
         #Add additional linear terms for the rho terms
         sizev = 0
         if rho is not None:
-            vf = v.flatten() * np.sqrt(rho/2.0)
+            vf = v.flatten() * np.sqrt(rho / 2.0)
             sizeb = self.K.input_size
             sizev = np.prod(v.shape)
-            b = np.hstack( (b, vf) )
+            b = np.hstack((b, vf))
 
         input_data = np.zeros(self.K.input_size)
         output_data = np.zeros(self.K.output_size + sizev)
@@ -208,11 +208,11 @@ class least_squares(sum_squares):
         def matvec(x, output_data):
             if rho is None:
                 #Traverse compgraph
-                self.K.forward(x, output_data )
+                self.K.forward(x, output_data)
             else:
                 #Compgraph and additional terms
-                self.K.forward(x, output_data[0:0 + sizeb] )
-                np.copyto( output_data[sizeb:sizeb + sizev], x * np.sqrt(rho/2.0) )
+                self.K.forward(x, output_data[0:0 + sizeb])
+                np.copyto(output_data[sizeb:sizeb + sizev], x * np.sqrt(rho / 2.0))
 
             return output_data
 
@@ -221,7 +221,7 @@ class least_squares(sum_squares):
                 self.K.adjoint(y, input_data)
             else:
                 self.K.adjoint(y[0:0 + sizeb], input_data)
-                input_data += y[sizeb:sizeb + sizev] * np.sqrt(rho/2.0)
+                input_data += y[sizeb:sizeb + sizev] * np.sqrt(rho / 2.0)
 
             return input_data
 
@@ -239,7 +239,7 @@ class least_squares(sum_squares):
         else:
             if not isinstance(options, lsqr_options):
                 raise Exception("Invalid LSQR options.")
-            return lsqr(K, b, atol=options.atol, btol = options.btol, show=options.show, iter_lim=options.iter_lim)[0]
+            return lsqr(K, b, atol=options.atol, btol=options.btol, show=options.show, iter_lim=options.iter_lim)[0]
 
     def solve_cg(self, b, rho=None, v=None, x_init=None, options=None):
         """Solve ||K*x - b||^2_2 + (rho/2)||x-v||_2^2.
@@ -266,7 +266,7 @@ class least_squares(sum_squares):
         elif not isinstance(options, cg_options):
             raise Exception("Invalid CG options.")
 
-        return cg(KtK, Ktb, options.tol, options.num_iters, options.verbose, x_init,  self.implementation)
+        return cg(KtK, Ktb, options.tol, options.num_iters, options.verbose, x_init, self.implementation)
 
 class lsqr_options:
     def __init__(self, atol=1e-6, btol=1e-6, num_iters=50, verbose=False):
@@ -281,7 +281,7 @@ class cg_options:
         self.num_iters = num_iters
         self.verbose = verbose
 
-def cg( KtKfun, b, tol, num_iters, verbose, x_init = None, implem = Impl['numpy'] ):
+def cg(KtKfun, b, tol, num_iters, verbose, x_init=None, implem=Impl['numpy']):
 
     # Solves KtK x = b with
     # KtKfun being a function that computes the matrix vector product KtK x
@@ -312,7 +312,7 @@ def cg( KtKfun, b, tol, num_iters, verbose, x_init = None, implem = Impl['numpy'
 
     # Compute residual
     # r = b - KtKfun(x)
-    KtKfun(x,r)
+    KtKfun(x, r)
     r *= -1.0
     r += b
 
@@ -324,7 +324,7 @@ def cg( KtKfun, b, tol, num_iters, verbose, x_init = None, implem = Impl['numpy'
         cg_tol = tol * np.linalg.norm(b.ravel(), 2)  #Relative tol
 
     # CG iteration
-    cg_iter = np.minimum( num_iters, np.prod(b.shape) )
+    cg_iter = np.minimum(num_iters, np.prod(b.shape))
     for iter in range(cg_iter):
         # Check for convergence
 
@@ -335,7 +335,7 @@ def cg( KtKfun, b, tol, num_iters, verbose, x_init = None, implem = Impl['numpy'
             normr = np.linalg.norm(r.ravel(), 2)
 
         #Check for convergence
-        if normr <= cg_tol :
+        if normr <= cg_tol:
             break
 
         #gamma = r'*r;
@@ -344,17 +344,17 @@ def cg( KtKfun, b, tol, num_iters, verbose, x_init = None, implem = Impl['numpy'
             gamma = output[0]
             gamma *= gamma
         else:
-            gamma = np.dot( r.ravel().T, r.ravel() )
+            gamma = np.dot(r.ravel().T, r.ravel())
 
         #direction vector
-        if iter > 0 :
+        if iter > 0:
             beta = gamma / gamma_1;
             p = r + beta * p;
         else:
             p = r;
 
         # Compute Ap
-        KtKfun(p,Ap)
+        KtKfun(p, Ap)
 
         #Cg update
         q = Ap
@@ -364,7 +364,7 @@ def cg( KtKfun, b, tol, num_iters, verbose, x_init = None, implem = Impl['numpy'
             hl_dot(p.ravel(), q.ravel(), output)
             alpha = gamma / output[0]
         else:
-            alpha = gamma / np.dot( p.ravel().T, q.ravel() )
+            alpha = gamma / np.dot(p.ravel().T, q.ravel())
 
         x = x + alpha * p  # update approximation vector
         r = r - alpha * q  # compute residual
@@ -372,7 +372,7 @@ def cg( KtKfun, b, tol, num_iters, verbose, x_init = None, implem = Impl['numpy'
         gamma_1 = gamma
 
         # Iterate
-        if verbose :
+        if verbose:
             print "CG Iter %03d" % iter
 
     return x

@@ -6,14 +6,14 @@ from proximal.halide.halide import *
 class mul_elemwise(LinOp):
     """Elementwise multiplication weight*X with a fixed constant.
     """
-    def __init__(self, weight, arg, implem = None):
+    def __init__(self, weight, arg, implem=None):
         assert arg.shape == weight.shape
         self.weight = weight
         shape = arg.shape
 
         #Halide temp
-        if len(shape) in [2,3]:
-            self.weight = np.asfortranarray( self.weight.astype(np.float32) )
+        if len(shape) in [2, 3]:
+            self.weight = np.asfortranarray(self.weight.astype(np.float32))
             self.tmpout = np.zeros(arg.shape, dtype=np.float32, order='F')
 
         super(mul_elemwise, self).__init__([arg], shape, implem)
@@ -23,11 +23,11 @@ class mul_elemwise(LinOp):
 
         Reads from inputs and writes to outputs.
         """
-        if self.implementation == Impl['halide'] and (len(self.shape) in [2,3]):
+        if self.implementation == Impl['halide'] and (len(self.shape) in [2, 3]):
 
             #Halide implementation
-            tmpin = np.asfortranarray( inputs[0].astype(np.float32) )
-            Halide('A_mask.cpp').A_mask( tmpin, self.weight, self.tmpout ) #Call
+            tmpin = np.asfortranarray(inputs[0].astype(np.float32))
+            Halide('A_mask.cpp').A_mask(tmpin, self.weight, self.tmpout) #Call
             np.copyto(outputs[0], self.tmpout)
 
         else:
@@ -62,7 +62,7 @@ class mul_elemwise(LinOp):
         var_diags = self.input_nodes[0].get_diag(freq)
         self_diag = np.reshape(self.weight, self.size)
         for var in var_diags.keys():
-            var_diags[var] = var_diags[var]*self_diag
+            var_diags[var] = var_diags[var] * self_diag
         return var_diags
 
     def norm_bound(self, input_mags):
@@ -78,4 +78,4 @@ class mul_elemwise(LinOp):
         float
             Magnitude of outputs.
         """
-        return np.max(np.abs(self.weight))*input_mags[0]
+        return np.max(np.abs(self.weight)) * input_mags[0]

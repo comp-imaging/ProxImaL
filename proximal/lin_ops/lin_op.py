@@ -150,7 +150,7 @@ class LinOp(object):
         from .scale import scale
         # Can only divide by scalar constants.
         if np.isscalar(other):
-            return scale(1./other, self)
+            return scale(1. / other, self)
         else:
             raise TypeError("Can only divide by a scalar constant.")
 
@@ -167,7 +167,7 @@ class LinOp(object):
     def __neg__(self):
         """The negation of the Lin Op.
         """
-        return -1*self
+        return -1 * self
 
     def __str__(self):
         """Default to string is name of class.

@@ -6,7 +6,7 @@ from proximal.halide.halide import *
 class conv(LinOp):
     """Circular convolution of the input with a kernel.
     """
-    def __init__(self, kernel, arg, dims = None, implem = None):
+    def __init__(self, kernel, arg, dims=None, implem=None):
         self.kernel = kernel
         self.dims = dims if dims < len(arg.shape) else None
         self.forward_kernel = psf2otf(kernel, arg.shape, dims)
@@ -21,27 +21,27 @@ class conv(LinOp):
             arg = self.input_nodes[0]
             #Replicate kernel for multichannel deconv
             if len(arg.shape) == 3 and len(self.kernel.shape) == 2:
-                self.kernel = np.stack( (self.kernel,) * arg.shape[2], axis=-1 )
+                self.kernel = np.stack((self.kernel,) * arg.shape[2], axis=-1)
 
             #Halide kernel
             if self.implementation == Impl['halide'] and \
-               ( len(arg.shape) == 2 or (len(arg.shape) == 3 and arg.dims == 2) ):
+               (len(arg.shape) == 2 or (len(arg.shape) == 3 and arg.dims == 2)):
                 self.kernel = np.asfortranarray(self.kernel.astype(np.float32))
                 #Halide FFT (pack into diag)
                 #TODO: FIX IMREAL LATER
                 hsize = arg.shape if len(arg.shape) == 3 else arg.shape + (1,)
-                output_fft_tmp = np.zeros( ((hsize[0] + 1)/2 + 1, hsize[1],hsize[2], 2),
-                                           dtype=np.float32, order='F' );
-                Halide('fft2_r2c.cpp').fft2_r2c(self.kernel, self.kernel.shape[1]/2,
-                                                self.kernel.shape[0]/2, output_fft_tmp)
+                output_fft_tmp = np.zeros(((hsize[0] + 1) / 2 + 1, hsize[1], hsize[2], 2),
+                                           dtype=np.float32, order='F');
+                Halide('fft2_r2c.cpp').fft2_r2c(self.kernel, self.kernel.shape[1] / 2,
+                                                self.kernel.shape[0] / 2, output_fft_tmp)
                 self.forward_kernel[:] = 0.
 
                 if len(arg.shape) == 2:
-                    self.forward_kernel[0:(hsize[0] + 1)/2 + 1, ...] = 1j* output_fft_tmp[...,0, 1]
-                    self.forward_kernel[0:(hsize[0] + 1)/2 + 1, ...] += output_fft_tmp[...,0, 0]
+                    self.forward_kernel[0:(hsize[0] + 1) / 2 + 1, ...] = 1j * output_fft_tmp[..., 0, 1]
+                    self.forward_kernel[0:(hsize[0] + 1) / 2 + 1, ...] += output_fft_tmp[..., 0, 0]
                 else:
-                    self.forward_kernel[0:(hsize[0] + 1)/2 + 1, ...] = 1j* output_fft_tmp[..., 1]
-                    self.forward_kernel[0:(hsize[0] + 1)/2 + 1, ...] += output_fft_tmp[..., 0]
+                    self.forward_kernel[0:(hsize[0] + 1) / 2 + 1, ...] = 1j * output_fft_tmp[..., 1]
+                    self.forward_kernel[0:(hsize[0] + 1) / 2 + 1, ...] += output_fft_tmp[..., 0]
 
             self.tmpout = np.zeros(arg.shape, dtype=np.float32, order='F')
             self.initialized = True
@@ -53,11 +53,11 @@ class conv(LinOp):
         """
         self.init_kernel()
         if self.implementation == Impl['halide'] and \
-            ( len(self.shape) == 2 or (len(self.shape) == 3 and self.dims == 2) ):
+            (len(self.shape) == 2 or (len(self.shape) == 3 and self.dims == 2)):
 
             #Halide implementation
-            tmpin = np.asfortranarray( inputs[0].astype(np.float32) )
-            Halide('A_conv.cpp').A_conv( tmpin, self.kernel, self.tmpout ) #Call
+            tmpin = np.asfortranarray(inputs[0].astype(np.float32))
+            Halide('A_conv.cpp').A_conv(tmpin, self.kernel, self.tmpout) #Call
             np.copyto(outputs[0], self.tmpout)
 
         else:
@@ -74,11 +74,11 @@ class conv(LinOp):
         """
         self.init_kernel()
         if self.implementation == Impl['halide'] and \
-            ( len(self.shape) == 2 or (len(self.shape) == 3 and self.dims == 2) ):
+            (len(self.shape) == 2 or (len(self.shape) == 3 and self.dims == 2)):
 
             #Halide implementation
-            tmpin = np.asfortranarray( inputs[0].astype(np.float32) )
-            Halide('At_conv.cpp').At_conv( tmpin, self.kernel, self.tmpout ) #Call
+            tmpin = np.asfortranarray(inputs[0].astype(np.float32))
+            Halide('At_conv.cpp').At_conv(tmpin, self.kernel, self.tmpout) #Call
             np.copyto(outputs[0], self.tmpout)
 
         else:
@@ -109,7 +109,7 @@ class conv(LinOp):
         var_diags = self.input_nodes[0].get_diag(freq)
         self_diag = np.reshape(self.forward_kernel, self.size)
         for var in var_diags.keys():
-            var_diags[var] = var_diags[var]*self_diag
+            var_diags[var] = var_diags[var] * self_diag
         return var_diags
 
     def norm_bound(self, input_mags):
@@ -125,4 +125,4 @@ class conv(LinOp):
         float
             Magnitude of outputs.
         """
-        return np.max(np.abs(self.forward_kernel))*input_mags[0]
+        return np.max(np.abs(self.forward_kernel)) * input_mags[0]

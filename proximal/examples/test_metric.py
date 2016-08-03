@@ -21,14 +21,14 @@ import cv2
 #Load image
 img = Image.open('./data/angela.jpg')  # opens the file using Pillow - it's not an array yet
 
-np_img = np.asfortranarray( im2nparray(img) )
+np_img = np.asfortranarray(im2nparray(img))
 np_img_color = np_img
-np_img = np.mean( np_img_color, axis=2)
+np_img = np.mean(np_img_color, axis=2)
 #print 'Type ', np_img.dtype , 'Shape', np_img.shape
 
 plt.ion()
 plt.figure()
-imgplot = plt.imshow(np_img , interpolation="nearest", clim=(0.0, 1.0))
+imgplot = plt.imshow(np_img, interpolation="nearest", clim=(0.0, 1.0))
 imgplot.set_cmap('gray')
 plt.title('Numpy')
 plt.show()
@@ -50,19 +50,19 @@ sigma_fixed = 0.6
 lambda_prior = 0.5
 sigma_scale = 1.5 * 1
 prior = 1.0
-params = np.asfortranarray( np.array([sigma_fixed, lambda_prior, sigma_scale, prior], dtype=np.float32)[..., np.newaxis] )
+params = np.asfortranarray(np.array([sigma_fixed, lambda_prior, sigma_scale, prior], dtype=np.float32)[..., np.newaxis])
 theta = 0.5
 
 # #Output
-output = np.zeros_like( v )
+output = np.zeros_like(v)
 
 # #Run
 tic()
 Halide('prox_NLM.cpp').prox_NLM(v, theta, params, output) #Call
-print( 'Running took: {0:.1f}ms'.format( toc() ) )
+print('Running took: {0:.1f}ms'.format(toc()))
 
 plt.figure()
-imgplot = plt.imshow(v , interpolation="nearest", clim=(0.0, 1.0))
+imgplot = plt.imshow(v, interpolation="nearest", clim=(0.0, 1.0))
 imgplot.set_cmap('gray')
 plt.title('Input NLM')
 plt.show()
@@ -73,29 +73,29 @@ tmp = Variable(v.shape)
 fp = patch_NLM(tmp, sigma_fixed=sigma_fixed, sigma_scale=sigma_scale,
               templateWindowSizeNLM=3, searchWindowSizeNLM=11, gamma_trans=1.0,
               prior=prior) #group over all but first two dims
-rho = 1.0/theta
+rho = 1.0 / theta
 dst = fp.prox(rho, v.copy())
 
 plt.figure()
-imgplot = plt.imshow(dst , interpolation="nearest", clim=(0.0, 1.0))
+imgplot = plt.imshow(dst, interpolation="nearest", clim=(0.0, 1.0))
 imgplot.set_cmap('gray')
 plt.title('NLM denoised CV2')
 plt.show()
 
 #Error
-print('Maximum error NLM (CUDA vs. CPU) {0}'.format( np.amax( np.abs( output - dst ) ) ) )
+print('Maximum error NLM (CUDA vs. CPU) {0}'.format(np.amax(np.abs(output - dst))))
 
 ############################################################################
 ### Compute PSNR
 ############################################################################
 
 ref = np_img_color
-print('PSRN: Full {0} dB, Pad {1} dB, Max {2} dB'.format(  psnr(output, ref), psnr(output, ref, (10,10)), psnr(output * 255., ref * 255., maxval = 255.) ) )
+print('PSRN: Full {0} dB, Pad {1} dB, Max {2} dB'.format(psnr(output, ref), psnr(output, ref, (10, 10)), psnr(output * 255., ref * 255., maxval=255.)))
 
 #Test metric
-imgmetric = psnr_metric( ref, pad = (10,10), decimals = 2 )
+imgmetric = psnr_metric(ref, pad=(10, 10), decimals=2)
 
-print( imgmetric.message(output) )
+print(imgmetric.message(output))
 
 #Wait until done
 raw_input("Press Enter to continue...")

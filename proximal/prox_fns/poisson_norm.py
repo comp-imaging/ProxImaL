@@ -12,7 +12,7 @@ class poisson_norm(ProxFn):
         """Initialize temporary variables for _prox method.
         """
         self.bp = bp
-        self.bph = np.asfortranarray( bp.astype(np.float32) )
+        self.bph = np.asfortranarray(bp.astype(np.float32))
         self.maskh = np.ones(lin_op.shape, dtype=np.float32, order='F')
         self.tmpout = np.zeros(lin_op.shape, dtype=np.float32, order='F')
 
@@ -21,14 +21,14 @@ class poisson_norm(ProxFn):
     def _prox(self, rho, v, *args, **kwargs):
         """x = 1/2* ( v - 1./rho + sqrt( ||v - 1./rho||^2 + 4 * 1./rho * b ) )
         """
-        if self.implementation == Impl['halide'] and (len(self.lin_op.shape) in [2,3,4]):
+        if self.implementation == Impl['halide'] and (len(self.lin_op.shape) in [2, 3, 4]):
 
             #Halide implementation
             tmpin = np.asfortranarray(v)
-            Halide('prox_Poisson.cpp').prox_Poisson(tmpin, self.maskh, self.bph, 1./rho, self.tmpout)
+            Halide('prox_Poisson.cpp').prox_Poisson(tmpin, self.maskh, self.bph, 1. / rho, self.tmpout)
             np.copyto(v, self.tmpout)
         else:
-            v = 0.5 * ( v - 1./rho + np.sqrt( (v - 1./rho)*(v - 1./rho) + 4. * 1./rho * self.bp ) )
+            v = 0.5 * (v - 1. / rho + np.sqrt((v - 1. / rho) * (v - 1. / rho) + 4. * 1. / rho * self.bp))
 
         return v
 
@@ -42,7 +42,7 @@ class poisson_norm(ProxFn):
 
         #Other penalties
         vsum = v.copy();
-        vsum -= self.bp * np.log( np.maximum(v, 1e-9) )
+        vsum -= self.bp * np.log(np.maximum(v, 1e-9))
         return vsum.sum()
 
     def get_data(self):
@@ -64,7 +64,7 @@ class weighted_poisson_norm(poisson_norm):
     def _prox(self, rho, v, *args, **kwargs):
         """x = 1/2* ( v - |W|/rho + sqrt( ||v - |W|/rho||^2 + 4 * 1./rho * b ) )
         """
-        output = 0.5 * ( v - np.absolute(self.weight)/rho + np.sqrt( (v - np.absolute(self.weight)/rho)*(v - np.absolute(self.weight)/rho) + 4. * 1./rho * self.bp ) )
+        output = 0.5 * (v - np.absolute(self.weight) / rho + np.sqrt((v - np.absolute(self.weight) / rho) * (v - np.absolute(self.weight) / rho) + 4. * 1. / rho * self.bp))
 
         #Reference
         idxs = self.weight == 0
@@ -74,7 +74,7 @@ class weighted_poisson_norm(poisson_norm):
     def _eval(self, v):
         """Evaluate the function on v (ignoring parameters).
         """
-        return super(weighted_poisson_norm, self)._eval(self.weight*v)
+        return super(weighted_poisson_norm, self)._eval(self.weight * v)
 
     def get_data(self):
         """Returns info needed to reconstruct the object besides the args.

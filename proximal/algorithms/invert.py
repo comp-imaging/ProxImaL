@@ -75,14 +75,14 @@ def get_least_squares_inverse(op_list, b, try_freq_diagonalize=True, verbose=Fal
             print 'Optimized for diagonal inverse'
 
         diag = stacked.get_diag(freq=False).values()[0]
-        diag = diag*np.conj(diag)
+        diag = diag * np.conj(diag)
         x_update = least_squares(stacked, b, diag=diag)
 
     # Are all the operators diagonal in the frequency domain?
     elif try_freq_diagonalize and stacked.is_gram_diag(freq=True):
 
         diag = stacked.get_diag(freq=True).values()[0]
-        diag = diag*np.conj(diag)
+        diag = diag * np.conj(diag)
         dims = get_dims(op_list)
         implem = get_implem(op_list) #If any freqdiag is halide, solve with halide
 
@@ -91,7 +91,7 @@ def get_least_squares_inverse(op_list, b, try_freq_diagonalize=True, verbose=Fal
             print 'Optimized for diagonal frequency inverse' + dimstr
 
         x_update = least_squares(stacked, b,
-                                 freq_diag=diag, freq_dims=dims, implem = implem)
+                                 freq_diag=diag, freq_dims=dims, implem=implem)
     else:
 
         x_update = least_squares(stacked, b)

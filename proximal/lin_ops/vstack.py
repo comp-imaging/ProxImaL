@@ -17,7 +17,7 @@ class vstack(LinOp):
         offset = 0
         for idx, input_data in enumerate(inputs):
             size = input_data.size
-            outputs[0][offset:size+offset] = input_data.flatten()
+            outputs[0][offset:size + offset] = input_data.flatten()
             offset += size
 
     def adjoint(self, inputs, outputs):
@@ -28,7 +28,7 @@ class vstack(LinOp):
         offset = 0
         for idx, output_data in enumerate(outputs):
             size = output_data.size
-            data = inputs[0][offset:size+offset]
+            data = inputs[0][offset:size + offset]
             output_data[:] = np.reshape(data, output_data.shape)
             offset += size
 
@@ -49,11 +49,11 @@ class vstack(LinOp):
         dict of variable to ndarray
             The diagonal operator acting on each variable.
         """
-        var_diags = {var:np.zeros(var.size) for var in self.variables()}
+        var_diags = {var: np.zeros(var.size) for var in self.variables()}
         for arg in self.input_nodes:
             arg_diags = arg.get_diag(freq)
             for var, diag in arg_diags.items():
-                var_diags[var] = var_diags[var]+diag*np.conj(diag)
+                var_diags[var] = var_diags[var] + diag * np.conj(diag)
         # Get (A^TA)^{1/2}
         for var in self.variables():
             var_diags[var] = np.sqrt(var_diags[var])

@@ -228,7 +228,7 @@ class CompGraph(object):
         """
         for var in self.orig_end.variables():
             offset = self.var_info[var.uuid]
-            var.value = np.reshape(val[offset:offset+var.size], var.shape)
+            var.value = np.reshape(val[offset:offset + var.size], var.shape)
             offset += var.size
 
     def __str__(self):
@@ -267,5 +267,5 @@ def est_CompGraph_norm(K, tol=1e-3, try_fast_norm=True):
     A = LinearOperator((K.input_size, K.input_size),
                         KtK, KtK)
 
-    Knorm = np.sqrt( eigs(A, k=1, M=None, sigma=None, which='LM', tol=tol)[0].real )
+    Knorm = np.sqrt(eigs(A, k=1, M=None, sigma=None, which='LM', tol=tol)[0].real)
     return np.float(Knorm)

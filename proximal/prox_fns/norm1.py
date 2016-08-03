@@ -17,17 +17,17 @@ class norm1(ProxFn):
         """x = sign(v)*(|v| - 1/rho)_+
         """
 
-        if self.implementation == Impl['halide'] and (len(self.lin_op.shape) in [2,3,4]):
+        if self.implementation == Impl['halide'] and (len(self.lin_op.shape) in [2, 3, 4]):
             #Halide implementation
             tmpin = np.asfortranarray(v.astype(np.float32))
-            Halide('prox_L1.cpp').prox_L1(tmpin, 1./rho, self.tmpout)
+            Halide('prox_L1.cpp').prox_L1(tmpin, 1. / rho, self.tmpout)
             np.copyto(v, self.tmpout)
 
         else:
             #Numpy implementation
             np.sign(v, self.v_sign)
             np.absolute(v, v)
-            v -= 1./rho
+            v -= 1. / rho
             np.maximum(v, 0, v)
             v *= self.v_sign
 
@@ -51,7 +51,7 @@ class weighted_norm1(norm1):
         idxs = self.weight != 0
         np.sign(v[idxs], self.v_sign[idxs])
         np.absolute(v[idxs], v[idxs])
-        v[idxs] -= np.absolute(self.weight[idxs])/rho
+        v[idxs] -= np.absolute(self.weight[idxs]) / rho
         np.maximum(v[idxs], 0, v[idxs])
         v[idxs] *= self.v_sign[idxs]
         return v
@@ -59,7 +59,7 @@ class weighted_norm1(norm1):
     def _eval(self, v):
         """Evaluate the function on v (ignoring parameters).
         """
-        return super(weighted_norm1, self)._eval(self.weight*v)
+        return super(weighted_norm1, self)._eval(self.weight * v)
 
     def get_data(self):
         """Returns info needed to reconstruct the object besides the args.

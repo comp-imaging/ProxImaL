@@ -12,7 +12,7 @@ class patch_NLM(ProxFn):
                  gamma_trans=1.0, prior=1, **kwargs):
 
         #Check for the shape
-        if not ( len(lin_op.shape) == 2 or len(lin_op.shape) == 3 and lin_op.shape[2] in [1,3] ):
+        if not (len(lin_op.shape) == 2 or len(lin_op.shape) == 3 and lin_op.shape[2] in [1, 3]):
             raise ValueError('NLM needs a 3 or 1 channel image')
 
         self.sigma_fixed = sigma_fixed
@@ -29,8 +29,8 @@ class patch_NLM(ProxFn):
         #Halide
         if len(lin_op.shape) == 3 and lin_op.shape[2] == 3:
             self.tmpout = np.zeros(lin_op.shape, dtype=np.float32, order='F')
-            self.paramsh = np.asfortranarray( np.array([self.sigma_fixed, 1.0, self.sigma_scale, self.prior],
-                                            dtype=np.float32)[..., np.newaxis] )
+            self.paramsh = np.asfortranarray(np.array([self.sigma_fixed, 1.0, self.sigma_scale, self.prior],
+                                            dtype=np.float32)[..., np.newaxis])
 
         super(patch_NLM, self).__init__(lin_op, **kwargs)
 
@@ -42,13 +42,13 @@ class patch_NLM(ProxFn):
 
             #Halide implementation
             tmpin = np.asfortranarray(v.astype(np.float32))
-            Halide('prox_NLM.cpp').prox_NLM(tmpin, 1./rho, self.paramsh, self.tmpout)
+            Halide('prox_NLM.cpp').prox_NLM(tmpin, 1. / rho, self.paramsh, self.tmpout)
             np.copyto(v, self.tmpout)
 
         else:
 
             #Compute sigma
-            sigma = np.sqrt(1.0/rho)
+            sigma = np.sqrt(1.0 / rho)
 
             #Fixed sigma if wanted
             sigma_estim = sigma
@@ -71,33 +71,33 @@ class patch_NLM(ProxFn):
             #Denoising params
             sigma_luma = sigma_estim
             sigma_color = sigma_estim
-            if self.prior > 0.5 :
-                sigma_luma =  sigma_estim * 1.3 #NLM color stronger on luma
+            if self.prior > 0.5:
+                sigma_luma = sigma_estim * 1.3 #NLM color stronger on luma
                 sigma_color = sigma_color * 3.0
 
             #Transform
             if self.gamma_trans != 1.0:
-                vuint = np.uint8(np.clip( v**self.gamma_trans * 255.0,0, 255)) #Quadratic tranform to account for gamma
+                vuint = np.uint8(np.clip(v**self.gamma_trans * 255.0, 0, 255)) #Quadratic tranform to account for gamma
             else:
-                vuint = np.uint8(np.clip( v * 255.0,0.0, 255.0)) #Quadratic tranform to account for gamma
+                vuint = np.uint8(np.clip(v * 255.0, 0.0, 255.0)) #Quadratic tranform to account for gamma
 
-            if self.prior <= 0.5 :
+            if self.prior <= 0.5:
 
-                vdstuint = cv2.fastNlMeansDenoising( vuint, None,
+                vdstuint = cv2.fastNlMeansDenoising(vuint, None,
                                                         sigma_luma * 255.0,
                                                         self.templateWindowSizeNLM, self.searchWindowSizeNLM)
             else:
 
-                vdstuint = cv2.fastNlMeansDenoisingColored( vuint, None,
+                vdstuint = cv2.fastNlMeansDenoisingColored(vuint, None,
                                                         sigma_luma * 255.0, sigma_color * 255.,
                                                         self.templateWindowSizeNLM, self.searchWindowSizeNLM)
 
             #Convert to float and inverse scale
             if self.gamma_trans != 1.0:
-                dst = ((vdstuint.astype(np.float32) / 255.0)**(1.0/self.gamma_trans)) * (v_max - v_min) + v_min
+                dst = ((vdstuint.astype(np.float32) / 255.0)**(1.0 / self.gamma_trans)) * (v_max - v_min) + v_min
             else:
                 dst = vdstuint.astype(np.float32) / 255.0 * (v_max - v_min) + v_min
-            np.copyto( v, dst)
+            np.copyto(v, dst)
 
         return v
 

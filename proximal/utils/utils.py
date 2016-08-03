@@ -79,7 +79,7 @@ def tic():
     lastticstamp = t
     return t;
 
-def toc(t = []):
+def toc(t=[]):
     """ See tic f
     """
 
@@ -107,9 +107,9 @@ def fftd(I, dims=None):
     if dims is None:
         X = fftn(I)
     elif dims == 2:
-        X = fft2(I, axes=(0,1))
+        X = fft2(I, axes=(0, 1))
     else:
-        X = fftn(I, axes=tuple(range(dims)) )
+        X = fftn(I, axes=tuple(range(dims)))
 
     return X
 
@@ -119,9 +119,9 @@ def ifftd(I, dims=None):
     if dims is None:
         X = ifftn(I)
     elif dims == 2:
-        X = ifft2(I, axes=(0,1))
+        X = ifft2(I, axes=(0, 1))
     else:
-        X = ifftn(I, axes=tuple(range(dims)) )
+        X = ifftn(I, axes=tuple(range(dims)))
 
     return X
 
@@ -141,16 +141,16 @@ def psf2otf(K, outsize, dims=None):
     #Pad to large size and circshift
     padfull = []
     for j in range(len(sK)):
-        padfull.append( (0, outsize[j] - sK[j]) )
+        padfull.append((0, outsize[j] - sK[j]))
 
     Kfull = np.pad(K, padfull, mode='constant', constant_values=0.0)
 
     #Circular shift
-    shifts = -np.floor_divide( np.array(sK), 2 )
+    shifts = -np.floor_divide(np.array(sK), 2)
     if dims is not None and dims < len(sK):
         shifts = shifts[0:dims]
 
-    Kfull = circshift(Kfull, shifts )
+    Kfull = circshift(Kfull, shifts)
 
     #Compute otf
     otf = fftd(Kfull, dims)
@@ -159,15 +159,15 @@ def psf2otf(K, outsize, dims=None):
     if dims is not None and dims < len(sK):
         sK = sK[0:dims]
 
-    nElem = np.prod( sK )
-    nOps  = 0;
+    nElem = np.prod(sK)
+    nOps = 0;
     for k in range(len(sK)):
         nffts = nElem / sK[k];
-        nOps  = nOps + sK[k] * np.log2( sK[k] ) * nffts;
+        nOps = nOps + sK[k] * np.log2(sK[k]) * nffts;
 
     # Discard the imaginary part of the psf if it's withi roundoff error.
     eps = np.finfo(np.float32).eps
-    if np.amax( np.absolute( otf.imag ) ) / np.amax( np.absolute( otf ) ) <= nOps * eps :
+    if np.amax(np.absolute(otf.imag)) / np.amax(np.absolute(otf)) <= nOps * eps:
         otf = otf.real
 
     return otf
@@ -176,7 +176,7 @@ def psf2otf(K, outsize, dims=None):
 ## Image metrics
 ###############################################################################
 
-def psnr(x, ref, pad=None, maxval = 1.0):
+def psnr(x, ref, pad=None, maxval=1.0):
 
     #Sheck size
     if ref.shape != x.shape:
@@ -190,17 +190,17 @@ def psnr(x, ref, pad=None, maxval = 1.0):
         for j in range(len(ss)):
             if len(pad) >= j + 1 and pad[j] > 0:
                 currpad = pad[j]
-                il += np.index_exp[ currpad:-currpad ]
+                il += np.index_exp[currpad:-currpad]
             else:
                 il += np.index_exp[:]
 
-        mse = np.mean( (x[il] - ref[il])**2 )
+        mse = np.mean((x[il] - ref[il])**2)
     else:
-        mse = np.mean( (x - ref)**2 )
+        mse = np.mean((x - ref)**2)
 
     #MSE
     if mse > np.finfo(float).eps:
-        return 10.0 * np.log10( maxval**2 / mse )
+        return 10.0 * np.log10(maxval**2 / mse)
     else:
         return np.inf
 
@@ -211,7 +211,7 @@ def psnr(x, ref, pad=None, maxval = 1.0):
 #Currently only implements one method
 NoiseEstMethod = {'daub_reflect': 0, 'daub_replicate': 1}
 
-def estimate_std(z, method = 'daub_reflect'):
+def estimate_std(z, method='daub_reflect'):
     #Estimates noise standard deviation assuming additive gaussian noise
 
     #Check method
@@ -228,14 +228,14 @@ def estimate_std(z, method = 'daub_reflect'):
 
     #Run on multichannel image
     channels = z.shape[2]
-    dev = np.zeros( channels )
+    dev = np.zeros(channels)
 
     #Iterate over channels
     for ch in range(channels):
 
         #Daubechies denoising method
         if method == NoiseEstMethod['daub_reflect'] or method == NoiseEstMethod['daub_replicate']:
-            daub6kern= np.array([0.03522629188571, 0.08544127388203, -0.13501102001025, \
+            daub6kern = np.array([0.03522629188571, 0.08544127388203, -0.13501102001025, \
                                 -0.45987750211849, 0.80689150931109, -0.33267055295008], \
                                 dtype=np.float32, order='F')
 
@@ -244,7 +244,7 @@ def estimate_std(z, method = 'daub_reflect'):
             else:
                 wav_det = cv2.sepFilter2D(z, -1, daub6kern, daub6kern, borderType=cv2.BORDER_REPLICATE)
 
-            dev[ch] = np.median( np.absolute(wav_det) ) / 0.6745
+            dev[ch] = np.median(np.absolute(wav_det)) / 0.6745
 
     #Return standard deviation
     return dev

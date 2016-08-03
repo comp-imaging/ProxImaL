@@ -23,9 +23,9 @@ class metric(object):
         """Evaluate the metric
         """
         if self.decimals is None:
-            return self._eval( v )
+            return self._eval(v)
         else:
-            return np.round( self._eval( v ), decimals = self.decimals)
+            return np.round(self._eval(v), decimals=self.decimals)
 
     def message(self, v):
         """Evaluate the metric
@@ -37,7 +37,7 @@ class metric(object):
 class psnr_metric(metric):
     """PSNR metric
     """
-    def __init__(self, ref, maxval = 1.0, pad = None, decimals = 2):
+    def __init__(self, ref, maxval=1.0, pad=None, decimals=2):
         self.pad = pad
         self.ref = ref
         self.maxval = maxval
@@ -46,6 +46,6 @@ class psnr_metric(metric):
     def _eval(self, v):
         """Evaluate PSNR metric
         """
-        return psnr( np.reshape(v,self.ref.shape),
+        return psnr(np.reshape(v, self.ref.shape),
                     self.ref,
                     pad=self.pad, maxval=self.maxval)

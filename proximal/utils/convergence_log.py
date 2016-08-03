@@ -6,7 +6,7 @@ class ConvergenceLog(object):
     def __init__(self):
         self.total_time = 0.0
         self.iter_time = []
-        self.objective_val = [ ]
+        self.objective_val = []
         self.lastticstamp = None
 
     def record_timing(self, elapsed):

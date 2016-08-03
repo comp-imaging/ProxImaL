@@ -46,7 +46,7 @@ def absorb_lin_op(prox_fn):
         prox_fn.lin_op.adjoint(inputs, outputs)
         new_proxes = []
         for output, arg in zip(outputs, prox_fn.lin_op.input_nodes):
-            new_proxes.append( prox_fn.copy(arg, c=output) )
+            new_proxes.append(prox_fn.copy(arg, c=output))
         return new_proxes
     # Fold scaling into the function.
     if isinstance(prox_fn.lin_op, mul_elemwise):
@@ -55,8 +55,8 @@ def absorb_lin_op(prox_fn):
             new_prox = prox_type(*args)
             copy_prox_fn(new_prox, prox_fn)
             idxs = op_weight != 0
-            new_prox.b[idxs] = prox_fn.b[idxs]/op_weight[idxs]
-            new_prox.c = prox_fn.c*op_weight
+            new_prox.b[idxs] = prox_fn.b[idxs] / op_weight[idxs]
+            new_prox.c = prox_fn.c * op_weight
             return [new_prox]
 
         if type(prox_fn) in WEIGHTED.keys() and prox_fn.gamma == 0:
@@ -65,14 +65,14 @@ def absorb_lin_op(prox_fn):
             return get_new_prox(WEIGHTED[type(prox_fn)], args)
         elif type(prox_fn) in WEIGHTED.values() and prox_fn.gamma == 0:
             args = [prox_fn.lin_op.input_nodes[0]] + prox_fn.get_data()
-            args[-1] = args[-1]*op_weight
+            args[-1] = args[-1] * op_weight
             return get_new_prox(type(prox_fn), args)
     # Fold scalar into the function.
     if isinstance(prox_fn.lin_op, scale):
         scalar = prox_fn.lin_op.scalar
         new_prox = prox_fn.copy(prox_fn.lin_op.input_nodes[0],
-            beta=prox_fn.beta*scalar, b=prox_fn.b/scalar, c=prox_fn.c*scalar,
-            gamma=prox_fn.gamma*scalar**2)
+            beta=prox_fn.beta * scalar, b=prox_fn.b / scalar, c=prox_fn.c * scalar,
+            gamma=prox_fn.gamma * scalar**2)
         return [new_prox]
     # No change.
     return [prox_fn]

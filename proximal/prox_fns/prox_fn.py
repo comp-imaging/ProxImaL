@@ -10,7 +10,7 @@ class ProxFn(object):
     def __init__(self, lin_op, alpha=1.0, beta=1.0, b=0.0, c=0.0,
         gamma=0.0, d=0.0, implem=None):
         # Error checking.
-        for elem, name in zip([b,c], ["b","c"]):
+        for elem, name in zip([b, c], ["b", "c"]):
             if not (np.isscalar(elem) or elem.shape == lin_op.shape):
                 raise Exception("Invalid dimensions of %s." % name)
         for elem, name in zip([alpha, gamma, d], ["alpha", "gamma"]):
@@ -31,9 +31,9 @@ class ProxFn(object):
         self.b = b
         self.c = c
         if np.isscalar(b):
-            self.b = b*np.ones(self.lin_op.shape)
+            self.b = b * np.ones(self.lin_op.shape)
         if np.isscalar(c):
-            self.c = c*np.ones(self.lin_op.shape)
+            self.c = c * np.ones(self.lin_op.shape)
         self.gamma = float(gamma)
         self.d = float(d)
         self.init_tmps()
@@ -72,12 +72,12 @@ class ProxFn(object):
         """Wrapper on the prox function to handle alpha, etc.
            It is here the iteration for debug purposese etc.
         """
-        rho_hat = (rho+2*self.gamma)/(self.alpha*self.beta**2)
+        rho_hat = (rho + 2 * self.gamma) / (self.alpha * self.beta**2)
         # vhat = (rho*v - c)*beta/(rho + 2*gamma) - b
         # Modify v in-place. This is important for the Python to be performant.
         v *= rho
         v -= self.c
-        v *= self.beta/(rho + 2*self.gamma)
+        v *= self.beta / (rho + 2 * self.gamma)
         v -= self.b
         xhat = self._prox(rho_hat, v, *args, **kwargs)
         # x = (xhat + b)/beta
@@ -95,8 +95,8 @@ class ProxFn(object):
     def eval(self, v):
         """Evaluate the function on v.
         """
-        return self.alpha*self._eval(self.beta*v - self.b) + \
-        np.sum(self.c*v) + self.gamma*np.square(v).sum() + self.d
+        return self.alpha * self._eval(self.beta * v - self.b) + \
+        np.sum(self.c * v) + self.gamma * np.square(v).sum() + self.d
 
     @property
     def value(self):
@@ -130,7 +130,7 @@ class ProxFn(object):
         """
         # Can only multiply by scalar constants.
         if np.isscalar(other) and other > 0:
-            return self.copy(alpha=self.alpha*other)
+            return self.copy(alpha=self.alpha * other)
         else:
             raise TypeError("Can only multiply by a positive scalar.")
 
@@ -142,7 +142,7 @@ class ProxFn(object):
     def __div__(self, other):
         """Called for ProxFn/Number.
         """
-        return (1./other)*self
+        return (1. / other) * self
 
     def copy(self, lin_op=None, **kwargs):
         """Returns a shallow copy of the object.
@@ -162,13 +162,13 @@ class ProxFn(object):
         if lin_op is None:
             lin_op = self.lin_op
         data = self.get_data()
-        curr_args = {'alpha':self.alpha,
-                     'beta':self.beta,
-                     'gamma':self.gamma,
-                     'c':self.c,
-                     'b':self.b,
-                     'd':self.d,
-                     'implem':self.implem_key}
+        curr_args = {'alpha': self.alpha,
+                     'beta': self.beta,
+                     'gamma': self.gamma,
+                     'c': self.c,
+                     'b': self.b,
+                     'd': self.d,
+                     'implem': self.implem_key}
         for key in curr_args.keys():
             if key not in kwargs:
                 kwargs[key] = curr_args[key]

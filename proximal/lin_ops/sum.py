@@ -43,11 +43,11 @@ class sum(LinOp):
         dict of variable to ndarray
             The diagonal operator acting on each variable.
         """
-        var_diags = {var:np.zeros(var.size) for var in self.variables()}
+        var_diags = {var: np.zeros(var.size) for var in self.variables()}
         for arg in self.input_nodes:
             arg_diags = arg.get_diag(freq)
             for var, diag in arg_diags.items():
-                var_diags[var] = var_diags[var]+diag
+                var_diags[var] = var_diags[var] + diag
         return var_diags
 
     def norm_bound(self, input_mags):
