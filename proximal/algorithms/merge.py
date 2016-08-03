@@ -4,6 +4,7 @@ from proximal.lin_ops import *
 from proximal.prox_fns import *
 import numpy as np
 
+
 def merge_all(prox_fns):
     """Merge as many prox functions as possible.
     """
@@ -24,6 +25,7 @@ def merge_all(prox_fns):
 
     return prox_fns
 
+
 def can_merge(lh_prox, rh_prox):
     """Can lh_prox and rh_prox be merged into a single function?
     """
@@ -35,6 +37,7 @@ def can_merge(lh_prox, rh_prox):
             return True
 
     return False
+
 
 def merge_fns(lh_prox, rh_prox):
     """Merge the two functions into a single function.

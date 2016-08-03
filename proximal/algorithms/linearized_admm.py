@@ -6,6 +6,7 @@ from invert import get_least_squares_inverse, max_diag_set
 import numpy as np
 import warnings
 
+
 def partition(prox_fns, try_diagonalize=True):
     """Divide the proxable functions into sets Psi and Omega.
     """
@@ -39,6 +40,7 @@ def partition(prox_fns, try_diagonalize=True):
 
     psi_fns = [fn for fn in prox_fns if fn not in split_fn + quad_fns]
     return psi_fns, omega_fns
+
 
 def solve(psi_fns, omega_fns, lmb=1.0, mu=None, quad_funcs=None,
           max_iters=1000, eps_abs=1e-3, eps_rel=1e-3,
@@ -161,6 +163,7 @@ def solve(psi_fns, omega_fns, lmb=1.0, mu=None, quad_funcs=None,
 
     # Return optimal value.
     return sum([fn.value for fn in prox_fns])
+
 
 def est_params_lin_admm(K, lmb=None, verbose=True, scaled=False, try_fast_norm=False):
 

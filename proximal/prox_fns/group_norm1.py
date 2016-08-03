@@ -3,6 +3,7 @@ import numpy as np
 from proximal.utils.utils import *
 from proximal.halide.halide import *
 
+
 class group_norm1(ProxFn):
     """
     The function || ||x||_g ||_1, with g being a set of dimensions.
@@ -101,9 +102,11 @@ class group_norm1(ProxFn):
         """
         return [self.group_dims]
 
+
 class weighted_group_norm1(group_norm1):
     """The function ||W.*x||_1.
     """
+
     def __init__(self, lin_op, group_dims, weight, **kwargs):
         self.weight = weight
         super(weighted_group_norm1, self).__init__(lin_op, group_dims, **kwargs)

@@ -7,6 +7,7 @@ import cvxpy as cvx
 import numpy as np
 import scipy as sp
 
+
 class TestProblem(BaseTest):
 
     def test_problem(self):

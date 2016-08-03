@@ -3,10 +3,12 @@ import abc
 import numpy as np
 from .utils import psnr
 
+
 class metric(object):
     """Represents an metric for measuring reconstruction quality
     """
     __metaclass__ = abc.ABCMeta
+
     def __init__(self, desc, unit, decimals=None):
         self.desc = desc
         self.unit = unit
@@ -34,9 +36,11 @@ class metric(object):
         message = "{0}: {1} {2}".format(self.desc, mval, self.unit)
         return message
 
+
 class psnr_metric(metric):
     """PSNR metric
     """
+
     def __init__(self, ref, maxval=1.0, pad=None, decimals=2):
         self.pad = pad
         self.ref = ref

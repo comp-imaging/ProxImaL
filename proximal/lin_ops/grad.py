@@ -3,11 +3,13 @@ import numpy as np
 from proximal.utils.utils import *
 from proximal.halide.halide import *
 
+
 class grad(LinOp):
     """
     gradient operation. can be defined for different dimensions.
     default is n-d gradient.
     """
+
     def __init__(self, arg, dims=None, implem=None):
 
         if dims is not None:

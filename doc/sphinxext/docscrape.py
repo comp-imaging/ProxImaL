@@ -9,10 +9,12 @@ import pydoc
 from StringIO import StringIO
 from warnings import warn
 
+
 class Reader(object):
     """A line-based string reader.
 
     """
+
     def __init__(self, data):
         """
         Parameters
@@ -64,6 +66,7 @@ class Reader(object):
 
     def read_to_next_empty_line(self):
         self.seek_next_non_empty_line()
+
         def is_empty(line):
             return not line.strip()
         return self.read_to_condition(is_empty)
@@ -84,6 +87,7 @@ class Reader(object):
 
 
 class NumpyDocString(object):
+
     def __init__(self, docstring, config={}):
         docstring = textwrap.dedent(docstring).split('\n')
 
@@ -183,9 +187,9 @@ class NumpyDocString(object):
 
         return params
 
-
     _name_rgx = re.compile(r"^\s*(:(?P<role>\w+):`(?P<name>[a-zA-Z0-9_.-]+)`|"
                            r" (?P<name2>[a-zA-Z0-9_.-]+))\s*", re.X)
+
     def _parse_see_also(self, content):
         """
         func_name : Descriptive text
@@ -401,15 +405,18 @@ def indent(str, indent=4):
     lines = str.split('\n')
     return '\n'.join(indent_str + l for l in lines)
 
+
 def dedent_lines(lines):
     """Deindent a list of lines maximally"""
     return textwrap.dedent("\n".join(lines)).split("\n")
+
 
 def header(text, style='-'):
     return text + '\n' + style * len(text) + '\n'
 
 
 class FunctionDoc(NumpyDocString):
+
     def __init__(self, func, role='func', doc=None, config={}):
         self._f = func
         self._role = role # e.g. "func" or "meth"

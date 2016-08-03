@@ -2,9 +2,11 @@ from .lin_op import LinOp
 import numpy as np
 import copy
 
+
 class vstack(LinOp):
     """Vectorizes and stacks inputs.
     """
+
     def __init__(self, input_nodes, implem=None):
         height = sum([node.size for node in input_nodes])
         super(vstack, self).__init__(input_nodes, (height,))
@@ -74,7 +76,9 @@ class vstack(LinOp):
         """
         return np.linalg.norm(input_mags, 2)
 
+
 class split(vstack):
+
     def __init__(self, output_nodes, implem=None):
         self.output_nodes = output_nodes
         self.shape = [node.shape for node in output_nodes]
@@ -93,7 +97,6 @@ class split(vstack):
         Reads from inputs and writes to outputs.
         """
         super(split, self).forward(inputs, outputs)
-
 
     def norm_bound(self, input_mags):
         """Gives an upper bound on the magnitudes of the outputs given inputs.

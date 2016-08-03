@@ -6,6 +6,7 @@ import os
 import numpy as np
 from PIL import Image
 
+
 class TestHalide(BaseTest):
 
     def test_compile(self):

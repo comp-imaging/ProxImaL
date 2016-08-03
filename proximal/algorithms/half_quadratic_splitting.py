@@ -25,6 +25,7 @@ def partition(prox_fns, try_diagonalize=True):
     psi_fns = [fn for fn in prox_fns if fn not in quad_funcs]
     return psi_fns, quad_funcs
 
+
 def solve(psi_fns, omega_fns,
           rho_0=1.0, rho_scale=math.sqrt(2.0) * 2.0, rho_max=2**8,
           max_iters=-1, max_inner_iters=100, x0=None,

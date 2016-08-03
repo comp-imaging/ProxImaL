@@ -3,9 +3,11 @@ import numpy as np
 from proximal.utils.utils import *
 from proximal.halide.halide import *
 
+
 class conv(LinOp):
     """Circular convolution of the input with a kernel.
     """
+
     def __init__(self, kernel, arg, dims=None, implem=None):
         self.kernel = kernel
         self.dims = dims if dims < len(arg.shape) else None

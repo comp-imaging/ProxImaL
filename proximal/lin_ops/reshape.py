@@ -1,9 +1,11 @@
 from .lin_op import LinOp
 import numpy as np
 
+
 class reshape(LinOp):
     """A variable.
     """
+
     def __init__(self, arg, shape):
         assert arg.size == np.prod(shape)
         super(reshape, self).__init__([arg], shape)

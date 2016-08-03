@@ -22,6 +22,7 @@ try:
     np.stack(np.array([1]))
 except:
     from numpy.core import numeric
+
     def _stack(arrays, axis=0):
         arrays = [np.asanyarray(arr) for arr in arrays]
         if not arrays:
@@ -47,8 +48,8 @@ except:
 ## Image utils
 ###############################################################################
 
-def im2nparray(img, datatype=np.float32):
 
+def im2nparray(img, datatype=np.float32):
     """ Converts and normalizes image in certain datatype (e.g. np.float32) """
     np_img = np.array(img)
 
@@ -66,6 +67,7 @@ def im2nparray(img, datatype=np.float32):
 global lastticstamp
 lastticstamp = []
 
+
 def tic():
     """ Default timer
     Example: t = tic()
@@ -78,6 +80,7 @@ def tic():
     t = timeit.default_timer()
     lastticstamp = t
     return t;
+
 
 def toc(t=[]):
     """ See tic f
@@ -101,6 +104,7 @@ def toc(t=[]):
 ## FFT utils
 ###############################################################################
 
+
 def fftd(I, dims=None):
 
     #Compute fft
@@ -112,6 +116,7 @@ def fftd(I, dims=None):
         X = fftn(I, axes=tuple(range(dims)))
 
     return X
+
 
 def ifftd(I, dims=None):
 
@@ -125,12 +130,14 @@ def ifftd(I, dims=None):
 
     return X
 
+
 def circshift(x, shifts):
 
     for j in range(len(shifts)):
         x = np.roll(x, shifts[j], axis=j)
 
     return x
+
 
 def psf2otf(K, outsize, dims=None):
 
@@ -176,6 +183,7 @@ def psf2otf(K, outsize, dims=None):
 ## Image metrics
 ###############################################################################
 
+
 def psnr(x, ref, pad=None, maxval=1.0):
 
     #Sheck size
@@ -210,6 +218,7 @@ def psnr(x, ref, pad=None, maxval=1.0):
 
 #Currently only implements one method
 NoiseEstMethod = {'daub_reflect': 0, 'daub_replicate': 1}
+
 
 def estimate_std(z, method='daub_reflect'):
     #Estimates noise standard deviation assuming additive gaussian noise

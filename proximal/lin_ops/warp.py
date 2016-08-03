@@ -5,9 +5,11 @@ import cv2
 from proximal.halide.halide import *
 from proximal.utils.utils import *
 
+
 class warp(LinOp):
     """Warp using a homography.
     """
+
     def __init__(self, arg, H, implem=None):
         self.H = H.copy()
 
@@ -81,7 +83,6 @@ class warp(LinOp):
 
         Reads from inputs and writes to outputs.
         """
-
 
         if self.implementation == Impl['halide']:
 

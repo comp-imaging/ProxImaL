@@ -6,6 +6,7 @@ import cvxpy as cvx
 import numpy as np
 import scipy as sp
 
+
 class TestAlgs(BaseTest):
 
     def test_admm(self):
@@ -154,8 +155,6 @@ class TestAlgs(BaseTest):
         # self.assertItemsAlmostEqual(y.value, [1])
 
     def test_half_quadratic_splitting(self):
-
-
         """Test half quadratic splitting.
         """
         X = Variable((10, 5))

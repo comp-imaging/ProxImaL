@@ -3,6 +3,7 @@ import numpy as np
 from proximal.utils.utils import *
 from proximal.halide.halide import *
 
+
 class norm1(ProxFn):
     """The function ||x||_1.
     """
@@ -38,9 +39,11 @@ class norm1(ProxFn):
         """
         return np.linalg.norm(v.ravel(), 1)
 
+
 class weighted_norm1(norm1):
     """The function ||W.*x||_1.
     """
+
     def __init__(self, lin_op, weight, **kwargs):
         self.weight = weight
         super(weighted_norm1, self).__init__(lin_op, **kwargs)

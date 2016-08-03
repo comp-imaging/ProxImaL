@@ -2,6 +2,7 @@ from .lin_op import LinOp
 import numpy as np
 from proximal.utils.utils import *
 
+
 class mul_color(LinOp):
     """Color transform as blockwise 3x3 transform
 
@@ -9,6 +10,7 @@ class mul_color(LinOp):
        "yuv" (yuv color space)
        3 x 3 array or matrix as general transform
     """
+
     def __init__(self, arg, mode):
         #General transform or predefined mode
         if isinstance(mode, np.ndarray) or isinstance(mode, np.matrix):

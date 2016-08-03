@@ -102,4 +102,3 @@ print('Running trans (second) took: {0:.1f}ms'.format(toc()))
 
 #Error
 print('Maximum error {0}'.format(np.amax(np.abs(output_ref - output_trans))))
-

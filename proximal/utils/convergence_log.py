@@ -1,8 +1,10 @@
 import timeit
 
+
 class ConvergenceLog(object):
     """A log of the runtime for an operation.
     """
+
     def __init__(self):
         self.total_time = 0.0
         self.iter_time = []

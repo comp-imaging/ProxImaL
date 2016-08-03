@@ -5,6 +5,7 @@ from proximal.utils.timings_log import TimingsLog, TimingsEntry
 from invert import get_least_squares_inverse, max_diag_set
 import numpy as np
 
+
 def partition(prox_fns, try_diagonalize=True):
     """Divide the proxable functions into sets Psi and Omega.
     """
@@ -38,6 +39,7 @@ def partition(prox_fns, try_diagonalize=True):
 
     psi_fns = [fn for fn in prox_fns if fn not in split_fn + quad_fns]
     return psi_fns, omega_fns
+
 
 def solve(psi_fns, omega_fns, tau=None, sigma=None, theta=None,
           max_iters=1000, eps_abs=1e-3, eps_rel=1e-3, x0=None,
@@ -214,6 +216,7 @@ def solve(psi_fns, omega_fns, tau=None, sigma=None, theta=None,
 
     # Return optimal value.
     return sum([fn.value for fn in prox_fns])
+
 
 def est_params_pc(K, tau=None, sigma=None, verbose=True, scaled=False, try_fast_norm=False):
 

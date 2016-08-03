@@ -3,10 +3,12 @@ import abc
 import numpy as np
 from proximal.utils import Impl
 
+
 class ProxFn(object):
     """Represents alpha*f(beta*x - b) + <c,x> + gamma*<x,x> + d
     """
     __metaclass__ = abc.ABCMeta
+
     def __init__(self, lin_op, alpha=1.0, beta=1.0, b=0.0, c=0.0,
         gamma=0.0, d=0.0, implem=None):
         # Error checking.

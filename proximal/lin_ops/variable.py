@@ -2,9 +2,11 @@ from .lin_op import LinOp
 import numpy as np
 import uuid
 
+
 class Variable(LinOp):
     """A variable.
     """
+
     def __init__(self, shape):
         self.uuid = uuid.uuid1()
         self._value = None

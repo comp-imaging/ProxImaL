@@ -18,9 +18,11 @@ NAME_TO_SOLVER = {
     "ladmm": ladmm,
 }
 
+
 class Problem(object):
     """An object representing a convex optimization problem.
     """
+
     def __init__(self, prox_fns,
                  implem=Impl['numpy'], try_diagonalize=True,
                  absorb=True, merge=True,

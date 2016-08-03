@@ -2,9 +2,11 @@ from .prox_fn import ProxFn
 import numpy as np
 import matlab.engine
 
+
 class matlab_external(ProxFn):
     """The function for matlab prior
     """
+
     def __init__(self, lin_op, matengine, proxfunc, evalfunc=None, params=None, **kwargs):
 
         self.matengine = matengine
@@ -58,4 +60,3 @@ class matlab_external(ProxFn):
         list
         """
         return [self.matengine, self.proxfunc, self.evalfunc, self.params]
-

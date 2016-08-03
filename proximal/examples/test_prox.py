@@ -221,4 +221,3 @@ print('Maximum error NLM (CUDA vs. CPU) {0}'.format(np.amax(np.abs(output - dst)
 
 #Wait until done
 raw_input("Press Enter to continue...")
-

@@ -26,6 +26,7 @@ from docscrape_sphinx import get_doc_object, SphinxDocString
 from sphinx.util.compat import Directive
 import inspect
 
+
 def mangle_docstrings(app, what, name, obj, options, lines,
                       reference_offset=[0]):
 
@@ -75,6 +76,7 @@ def mangle_docstrings(app, what, name, obj, options, lines,
 
     reference_offset[0] += len(references)
 
+
 def mangle_signature(app, what, name, obj, options, sig, retann):
     # Do not try to inspect classes that don't define `__init__`
     if (inspect.isclass(obj) and
@@ -89,6 +91,7 @@ def mangle_signature(app, what, name, obj, options, sig, retann):
     if doc['Signature']:
         sig = re.sub(u"^[^(]*", u"", doc['Signature'])
         return sig, u''
+
 
 def setup(app, get_doc_object_=get_doc_object):
     global get_doc_object
@@ -112,6 +115,7 @@ from docutils.statemachine import ViewList
 from sphinx.domains.c import CDomain
 from sphinx.domains.python import PythonDomain
 
+
 class ManglingDomainBase(object):
     directive_mangling_map = {}
 
@@ -123,6 +127,7 @@ class ManglingDomainBase(object):
         for name, objtype in self.directive_mangling_map.items():
             self.directives[name] = wrap_mangling_directive(
                 self.directives[name], objtype)
+
 
 class NumpyPythonDomain(ManglingDomainBase, PythonDomain):
     name = 'np'
@@ -136,6 +141,7 @@ class NumpyPythonDomain(ManglingDomainBase, PythonDomain):
         'attribute': 'attribute',
     }
 
+
 class NumpyCDomain(ManglingDomainBase, CDomain):
     name = 'np-c'
     directive_mangling_map = {
@@ -146,8 +152,10 @@ class NumpyCDomain(ManglingDomainBase, CDomain):
         'var': 'object',
     }
 
+
 def wrap_mangling_directive(base_directive, objtype):
     class directive(base_directive):
+
         def run(self):
             env = self.state.document.settings.env
 
@@ -166,4 +174,3 @@ def wrap_mangling_directive(base_directive, objtype):
             return base_directive.run(self)
 
     return directive
-

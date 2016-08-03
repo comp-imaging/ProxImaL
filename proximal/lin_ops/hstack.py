@@ -2,9 +2,11 @@ from .lin_op import LinOp
 import numpy as np
 import copy
 
+
 class hstack(LinOp):
     """Horizontally concatenates vector inputs.
     """
+
     def __init__(self, input_nodes, implem=None):
         height = input_nodes[0].size
         width = len(input_nodes)

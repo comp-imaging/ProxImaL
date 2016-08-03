@@ -1,9 +1,11 @@
 from .prox_fn import ProxFn
 import numpy as np
 
+
 class nonneg(ProxFn):
     """The function I(x >= 0).
     """
+
     def _prox(self, rho, v, *args, **kwargs):
         """x = pos(x).
         """
@@ -18,9 +20,11 @@ class nonneg(ProxFn):
         else:
             return np.inf
 
+
 class weighted_nonneg(nonneg):
     """The function I(W*x >= 0).
     """
+
     def __init__(self, lin_op, weight, **kwargs):
         self.weight = weight
         super(weighted_nonneg, self).__init__(lin_op, **kwargs)
@@ -46,10 +50,12 @@ class weighted_nonneg(nonneg):
         """
         return [self.weight]
 
+
 class masked_nonneg(nonneg):
     """The function I(x >= 0) for M == 1 else I(x == 0)
        Converts any non-binary mask to a binary one.
     """
+
     def __init__(self, lin_op, mask, **kwargs):
         self.mask = mask
         self.mask[self.mask < 0.5] = 0.0

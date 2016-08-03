@@ -1,8 +1,10 @@
 import numpy as np
 
+
 class Edge(object):
     """The edge between two lin ops.
     """
+
     def __init__(self, start, end, shape):
         self.start = start
         self.end = end

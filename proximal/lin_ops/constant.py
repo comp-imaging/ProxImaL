@@ -1,9 +1,11 @@
 from .lin_op import LinOp
 import numpy as np
 
+
 class Constant(LinOp):
     """A constant.
     """
+
     def __init__(self, value):
         if np.isscalar(value):
             value = np.array(value)

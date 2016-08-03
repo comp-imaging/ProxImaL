@@ -12,6 +12,7 @@ from scipy import signal
 from scipy import ndimage
 import cv2
 
+
 class TestLinOps(BaseTest):
 
     def test_variable(self):
@@ -259,6 +260,7 @@ class TestLinOps(BaseTest):
         """Test custom linear operators.
         """
         scale = 2
+
         def op(input, output):
             output[:] = 2 * input
 
@@ -312,7 +314,6 @@ class TestLinOps(BaseTest):
         out = np.zeros(x.shape).flatten()
         fn.adjoint(x, out)
         self.assertItemsAlmostEqual(out, W * W / 2.)
-
 
         # Dividing by a scalar.
         # Forward.

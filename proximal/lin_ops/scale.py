@@ -1,9 +1,11 @@
 from .lin_op import LinOp
 import numpy as np
 
+
 class scale(LinOp):
     """Multiplication scale*X with a fixed scalar.
     """
+
     def __init__(self, scalar, arg):
         assert np.isscalar(scalar)
         self.scalar = scalar

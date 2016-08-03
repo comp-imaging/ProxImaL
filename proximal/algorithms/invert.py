@@ -4,6 +4,7 @@ from proximal.prox_fns import least_squares, sum_squares
 from proximal.lin_ops import Variable, vstack
 from proximal.utils import Impl
 
+
 def get_dims(lin_ops):
 
     dims = -1
@@ -27,6 +28,7 @@ def get_dims(lin_ops):
 
     return dims
 
+
 def get_implem(lin_ops):
 
     implem = Impl['numpy']
@@ -44,6 +46,7 @@ def get_implem(lin_ops):
 
     return implem
 
+
 def get_diag_quads(prox_fns, freq):
     """Returns all the quadratic functions that are Gram (freq) diagonal.
     """
@@ -53,6 +56,7 @@ def get_diag_quads(prox_fns, freq):
                 type(fn) == sum_squares]
     else:
         return [fn for fn in quad_funcs if fn.lin_op.is_diag(freq=False)]
+
 
 def max_diag_set(prox_fns):
     """Return a maximal cardinality set of quadratic functions with
@@ -64,6 +68,7 @@ def max_diag_set(prox_fns):
         return spatial_diag
     else:
         return freq_diag
+
 
 def get_least_squares_inverse(op_list, b, try_freq_diagonalize=True, verbose=False):
     if len(op_list) == 0:

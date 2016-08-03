@@ -6,6 +6,7 @@ from invert import get_least_squares_inverse, get_diag_quads
 from absorb import absorb_offset
 import numpy as np
 
+
 def partition(prox_fns, try_diagonalize=True):
     """Divide the proxable functions into sets Psi and Omega.
     """
@@ -24,6 +25,7 @@ def partition(prox_fns, try_diagonalize=True):
         quad_funcs = func_opts[False]
     psi_fns = [fn for fn in prox_fns if fn not in quad_funcs]
     return psi_fns, quad_funcs
+
 
 def solve(psi_fns, omega_fns, rho=1.0,
          max_iters=1000, eps_abs=1e-3, eps_rel=1e-3, x0=None,

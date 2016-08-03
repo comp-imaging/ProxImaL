@@ -119,7 +119,6 @@ hl.At_grad(Kfh, output_t) #Call
 print('Running trans halid (second) took: {0:.1f}ms'.format(toc()))
 
 
-
 #Compute comparison (Negative divergence)
 f = Kf;
 

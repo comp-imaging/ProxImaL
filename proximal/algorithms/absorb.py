@@ -51,6 +51,7 @@ def absorb_lin_op(prox_fn):
     # Fold scaling into the function.
     if isinstance(prox_fn.lin_op, mul_elemwise):
         op_weight = prox_fn.lin_op.weight
+
         def get_new_prox(prox_type, args):
             new_prox = prox_type(*args)
             copy_prox_fn(new_prox, prox_fn)
@@ -88,6 +89,7 @@ def copy_prox_fn(dst_prox, src_prox):
     dst_prox.c = src_prox.c
     dst_prox.d = src_prox.d
 
+
 def copy_non_var(lin_op):
     """If not a variable, returns a shallow copy.
     """
@@ -95,6 +97,7 @@ def copy_non_var(lin_op):
         return lin_op
     else:
         return cp.copy(lin_op)
+
 
 def absorb_offset(prox_fn):
     """Absorb the constant offset into the b term and zero out constants in lin op.

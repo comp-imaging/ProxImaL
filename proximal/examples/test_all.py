@@ -103,7 +103,3 @@ timeDot_halide /= numIterations
 timeDot_numpy /= numIterations
 print('Running time dot_halide took: {0:.1f}ms'.format(timeDot_halide))
 print('Running time dot_numpy took: {0:.1f}ms'.format(timeDot_numpy))
-
-
-
-

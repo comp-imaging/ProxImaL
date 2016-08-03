@@ -4,9 +4,11 @@ from proximal.utils.utils import *
 from proximal.halide.halide import *
 import cv2
 
+
 class patch_NLM(ProxFn):
     """The function for NLM patch prior
     """
+
     def __init__(self, lin_op, sigma_fixed=0.6, sigma_scale=6.0,
                  templateWindowSizeNLM=3, searchWindowSizeNLM=11,
                  gamma_trans=1.0, prior=1, **kwargs):

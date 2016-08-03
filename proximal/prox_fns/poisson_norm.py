@@ -3,11 +3,13 @@ import numpy as np
 from proximal.utils.utils import *
 from proximal.halide.halide import *
 
+
 class poisson_norm(ProxFn):
     """The function ||x||_poisson(b) =
        x + Ind_+(x) - b * log( x_+ )
        This is the log likelihood of a poisson fit
     """
+
     def __init__(self, lin_op, bp, **kwargs):
         """Initialize temporary variables for _prox method.
         """
@@ -54,9 +56,11 @@ class poisson_norm(ProxFn):
         """
         return [self.bp]
 
+
 class weighted_poisson_norm(poisson_norm):
     """The function ||W.*x||_poisson.
     """
+
     def __init__(self, lin_op, bp, weight, **kwargs):
         self.weight = weight
         super(weighted_poisson_norm, self).__init__(lin_op, bp, **kwargs)

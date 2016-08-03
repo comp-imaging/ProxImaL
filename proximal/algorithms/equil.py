@@ -1,6 +1,7 @@
 import numpy as np
 import math
 
+
 def equil(K, iters=50, gamma=1e-1, M=math.log(1e4)):
     """Computes diagonal D, E so that DKE is approximately equilibrated.
     """
@@ -37,8 +38,10 @@ def equil(K, iters=50, gamma=1e-1, M=math.log(1e4)):
 
     return np.exp(ubar), np.exp(vbar)
 
+
 def get_alpha_beta(m, n):
     return (n / m)**(0.25), (m / n)**(0.25)
+
 
 def project(x, M):
     """Project x onto [-M, M]^n.
@@ -46,12 +49,15 @@ def project(x, M):
     return np.minimum(M, np.maximum(x, -M, out=x), out=x)
 
 # Comparison method.
+
+
 def f(A, u, v, gamma, p=2):
     m, n = A.shape
     alpha, beta = get_alpha_beta(m, n)
     total = (1. / p) * np.exp(p * u).T.dot(np.power(np.abs(A), p)).dot(np.exp(p * v))
     total += -alpha**p * u.sum() - beta**p * v.sum() + (gamma / 2) * ((u * u).sum() + (v * v).sum())
     return np.sum(total)
+
 
 def get_grad(A, u, v, gamma, p=2):
     m, n = A.shape
@@ -66,6 +72,7 @@ def get_grad(A, u, v, gamma, p=2):
     dv = -grad_v / (2 * tmp + gamma)
 
     return du, dv, grad_u, grad_v
+
 
 def newton_equil(A, gamma, max_iters):
     alpha = 0.25

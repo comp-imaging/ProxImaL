@@ -46,7 +46,6 @@ H = np.array([[np.cos(theta_rad), -np.sin(theta_rad), 0.0001 ],\
                           [0., 0., 1.]], dtype=np.float32, order='F')
 
 
-
 tic()
 #Reference
 #output_ref = cv2.warpPerspective(np_img, H.T, np_img.shape[1::-1], flags=cv2.INTER_LINEAR,
@@ -126,4 +125,3 @@ plt.savefig('warp4.png')
 
 #Error
 print('Maximum error trans {0}'.format(np.amax(np.abs(output_ref_trans - output_trans))))
-

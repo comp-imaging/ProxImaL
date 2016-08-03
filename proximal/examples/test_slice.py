@@ -62,4 +62,3 @@ print('Maximum error {0}'.format(np.amax(np.abs(output_ref - output))))
 
 #Wait until done
 raw_input("Press Enter to continue...")
-

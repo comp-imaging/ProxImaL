@@ -1,10 +1,12 @@
 from .lin_op import LinOp
 import numpy as np
 
+
 class subsample(LinOp):
     """Samples every steps[i] pixel along axis i,
        starting with pixel 0.
     """
+
     def __init__(self, arg, steps):
         self.steps = steps
         shape = tuple([(dim - 1) // step + 1 for dim, step in zip(arg.shape, steps)])

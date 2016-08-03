@@ -50,6 +50,7 @@ numpydoc_show_class_members = False
 # The following code replaces the relevant cvxopt modules with
 # a dummy namespace, allowing autodoc to work.
 class Mocked(object):
+
     def __setattr__(self, name, value):
         self.__dict__[name] = value
 
@@ -299,4 +300,3 @@ texinfo_documents = [
 
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {'http://docs.python.org/': None}
-

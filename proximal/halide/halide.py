@@ -9,6 +9,7 @@ import ctypes
 import sys
 import numpy as np
 
+
 class Halide(object):
 
     def __init__(self, generator_source=[], func=[],
@@ -16,7 +17,6 @@ class Halide(object):
                 generator_name=[], generator_param=[],
                 external_source=[], external_libs=[],
                 compile_flags=[], cleansource=True, verbose=False):
-
         """ Compiles and runs a halide pipeline defined in a generator file ``filepath``
             If recompile is not enabled, first, the library is searched and then loaded. 
             Otherwise it is recompiled and a new library is defined.
@@ -93,11 +93,13 @@ class Halide(object):
             print('Halide call to {0} returned {1}'.format(function_name_c, error), file=sys.stderr)
             exit()
 
+
 class Params:
     """ Supported Params. """
     ImageParam_Float32 = ('ImageParam_Float32', np.float32)
     Param_Float32 = ('Param_Float32', np.float32)
     Param_Int32 = ('Param_Int32', np.int32)
+
 
 def output_names(function_name, generator_source, builddir):
 
@@ -116,6 +118,7 @@ def output_names(function_name, generator_source, builddir):
     lib_name = os.path.join(builddir, function_name + '.so')
 
     return function_name, function_name_c, lib_name
+
 
 def find_source(source):
 
@@ -140,11 +143,11 @@ def find_source(source):
 
     return source_found
 
+
 def gengen(generator_source, builddir='./build',
             target='host', generator_name=[], function_name=[], generator_param=[],
             external_source=[], external_libs=[], compile_flags=[],
             cleansource=True, verbose=True):
-
     """ Will take .cpp containing one (or more) Generators, compile them, link them with libHalide, and run
         the resulting executable to produce a .o/.h expressing the Generator's
         function. Function name is the C function name for the result """
@@ -253,6 +256,7 @@ def gengen(generator_source, builddir='./build',
                 if os.path.exists(selem):
                     os.remove(selem)
 
+
 def convert_to_ctypes(args, func):
     """ Converts an argument list to a ctype compatible list for our launcher function """
 
@@ -341,6 +345,7 @@ def scan_params(header_file, function_name, verbose=True):
 
     return arglist
 
+
 def generate_launcher_arguments(params):
 
     #Generates buffer definitions for the launcher
@@ -392,8 +397,8 @@ def generate_launcher_arguments(params):
 
     return argument_names, argument_defs, buffer_defs, call_names
 
-def generate_launcher(header_file, function_name, function_name_c, params):
 
+def generate_launcher(header_file, function_name, function_name_c, params):
     """ Generates launcher glue code that runs generator from c-interface. 
         Similar to matlab runtime in halide. """
 
@@ -429,7 +434,6 @@ def generate_launcher(header_file, function_name, function_name_c, params):
     for cid, cn in enumerate(call_names):
         call_argument += cn;
         call_argument += ', ' if cid < len(call_names) - 1 else '' #Trailing comma
-
 
     #Call the function
     body += INDENT + '//Call our halide function with the buffers defined\n'

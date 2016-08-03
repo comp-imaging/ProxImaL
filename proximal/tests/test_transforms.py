@@ -7,6 +7,7 @@ import numpy as np
 import cvxpy as cvx
 import proximal.algorithms.absorb
 
+
 class TestTransforms(BaseTest):
 
     def test_absorb_lin_op(self):
@@ -59,7 +60,6 @@ class TestTransforms(BaseTest):
         ))
         prob.solve()
         self.assertItemsAlmostEqual(x, cvx_x.value, places=3)
-
 
         # Test scale.
         tmp = Variable(10)

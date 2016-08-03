@@ -9,9 +9,11 @@ from collections import defaultdict
 import numpy as np
 from scipy.sparse.linalg import lsqr, LinearOperator, eigs
 
+
 class CompGraph(object):
     """A computation graph representing a composite lin op.
     """
+
     def __init__(self, end, implem=None):
         self.orig_end = end
         self.end = cp.copy(end)
@@ -233,6 +235,7 @@ class CompGraph(object):
 
     def __str__(self):
         return self.__class__.__name__
+
 
 def est_CompGraph_norm(K, tol=1e-3, try_fast_norm=True):
     """Estimates operator norm for L = ||K||.

@@ -1,8 +1,10 @@
 import timeit
 
+
 class TimingsEntry(object):
     """A log of the runtime for an operation.
     """
+
     def __init__(self, op):
         self.op = op
         self.evals = 0
@@ -54,9 +56,11 @@ class TimingsEntry(object):
         return "op = %s, evals = %s, total_time (ms) = %s, avg_time (ms) = %s" % (
             self.op, self.evals, self.total_time, self.avg_time)
 
+
 class TimingsLog(object):
     """A log of the runtime for a set of operations.
     """
+
     def __init__(self, ops):
         self.ops = ops
         self.data = {}

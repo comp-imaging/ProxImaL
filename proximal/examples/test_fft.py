@@ -15,6 +15,7 @@ from scipy.misc import lena
 from numpy.fft import fftn, ifftn
 import cv2
 
+
 def complex_mult(a, b):
     """ Complex array multiplication for plane array a and b """
 

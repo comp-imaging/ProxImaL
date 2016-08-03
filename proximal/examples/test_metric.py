@@ -99,4 +99,3 @@ print(imgmetric.message(output))
 
 #Wait until done
 raw_input("Press Enter to continue...")
-

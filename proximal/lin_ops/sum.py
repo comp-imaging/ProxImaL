@@ -1,9 +1,11 @@
 from .lin_op import LinOp
 import numpy as np
 
+
 class sum(LinOp):
     """Sums its inputs.
     """
+
     def __init__(self, input_nodes, implem=None):
         shape = input_nodes[0].shape
         super(sum, self).__init__(input_nodes, shape)
@@ -65,7 +67,9 @@ class sum(LinOp):
         """
         return np.sum(input_mags)
 
+
 class copy(sum):
+
     def __init__(self, shape, implem=None):
         self.shape = shape
         self.input_nodes = []

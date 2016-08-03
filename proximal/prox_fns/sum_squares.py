@@ -5,9 +5,11 @@ from proximal.utils.utils import *
 from scipy.sparse.linalg import lsqr, LinearOperator
 from proximal.halide.halide import *
 
+
 class sum_squares(ProxFn):
     """The function ||x||_2^2.
     """
+
     def absorb_params(self):
         """Returns an equivalent sum_squares with alpha = 1.0,
            gamma = 0, and c = 0.
@@ -27,9 +29,11 @@ class sum_squares(ProxFn):
         """
         return np.square(v).sum()
 
+
 class weighted_sum_squares(sum_squares):
     """The function ||W.*x||_2^2.
     """
+
     def __init__(self, lin_op, weight, **kwargs):
         self.weight = weight
         super(weighted_sum_squares, self).__init__(lin_op, **kwargs)
@@ -64,11 +68,13 @@ class weighted_sum_squares(sum_squares):
         """
         return [self.weight]
 
+
 class least_squares(sum_squares):
     """The function ||K*x||_2^2.
 
        Here K is a computation graph (vector to vector lin op).
     """
+
     def __init__(self, lin_op, offset, diag=None, freq_diag=None,
                  freq_dims=None, implem=Impl['numpy'], **kwargs):
         self.K = CompGraph(lin_op)
@@ -268,18 +274,23 @@ class least_squares(sum_squares):
 
         return cg(KtK, Ktb, options.tol, options.num_iters, options.verbose, x_init, self.implementation)
 
+
 class lsqr_options:
+
     def __init__(self, atol=1e-6, btol=1e-6, num_iters=50, verbose=False):
         self.atol = atol
         self.btol = btol
         self.iter_lim = num_iters
         self.show = verbose
 
+
 class cg_options:
+
     def __init__(self, tol=1e-6, num_iters=50, verbose=False):
         self.tol = tol
         self.num_iters = num_iters
         self.verbose = verbose
+
 
 def cg(KtKfun, b, tol, num_iters, verbose, x_init=None, implem=Impl['numpy']):
 

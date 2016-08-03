@@ -3,9 +3,11 @@ import numpy as np
 from proximal.utils.utils import *
 from proximal.halide.halide import *
 
+
 class mul_elemwise(LinOp):
     """Elementwise multiplication weight*X with a fixed constant.
     """
+
     def __init__(self, weight, arg, implem=None):
         assert arg.shape == weight.shape
         self.weight = weight

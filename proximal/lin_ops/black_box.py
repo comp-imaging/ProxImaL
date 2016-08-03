@@ -1,5 +1,6 @@
 from .lin_op import LinOp
 
+
 def LinOpFactory(input_shape, output_shape, forward, adjoint, norm_bound=None):
     """Returns a function to generate a custom LinOp.
 
@@ -21,9 +22,11 @@ def LinOpFactory(input_shape, output_shape, forward, adjoint, norm_bound=None):
                         forward, adjoint, norm_bound)
     return get_black_box
 
+
 class BlackBox(LinOp):
     """A black-box lin op specified by the user.
     """
+
     def __init__(self, arg, input_shape, output_shape,
                  forward, adjoint, norm_bound=None):
         assert arg.shape == input_shape

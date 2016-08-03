@@ -10,6 +10,7 @@ import scipy as sp
 import os
 from PIL import Image
 
+
 class TestProxFn(BaseTest):
 
     def test_sum_squares(self):

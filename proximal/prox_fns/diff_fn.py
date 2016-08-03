@@ -2,9 +2,11 @@ from .prox_fn import ProxFn
 import numpy as np
 from scipy.optimize import fmin_l_bfgs_b
 
+
 class diff_fn(ProxFn):
     """A generic prox operator for differentiable functions using L-BFGS.
     """
+
     def __init__(self, lin_op, func, fprime, bounds=None, factr=1e7, **kwargs):
         """Initialization.
 
