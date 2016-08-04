@@ -26,6 +26,11 @@ class scale(LinOp):
         """
         self.forward(inputs, outputs)
 
+    def is_gram_diag(self, freq=False):
+        """Is the lin  Gram diagonal (in the frequency domain)?
+        """
+        return self.input_nodes[0].is_gram_diag(freq)
+
     def is_diag(self, freq=False):
         """Is the lin op diagonal (in the frequency domain)?
         """
