@@ -261,6 +261,15 @@ class TestLinOps(BaseTest):
         self.assertItemsAlmostEqual(fn.get_diag(freq=False)[x],
                                     np.arange(5) - 3)
 
+    def test_diagonalization(self):
+        """Test automatic diagonalization.
+        """
+        var = Variable((2, 5))
+        K = np.array([[-1, 1]])
+        expr = 2*vstack([conv(K, var), conv(K, var)])
+        assert expr.is_gram_diag(freq=True)
+
+
     def test_black_box(self):
         """Test custom linear operators.
         """
