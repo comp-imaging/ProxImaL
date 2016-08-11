@@ -125,7 +125,7 @@ class ProxFn(object):
         if type(other) == list:
             return other + [self]
         else:
-            raise NotImplemented
+            return NotImplemented
 
     def __mul__(self, other):
         """ProxFn * Number.
