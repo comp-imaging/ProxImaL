@@ -154,6 +154,11 @@ class LinOp(object):
         else:
             raise TypeError("Can only divide by a scalar constant.")
 
+    def __truediv__(self, other):
+        """LinOp / integer.
+        """
+        return self.__div__(other)
+
     def __sub__(self, other):
         """Called for lin op - other.
         """

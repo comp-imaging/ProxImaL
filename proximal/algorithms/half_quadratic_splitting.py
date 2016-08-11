@@ -1,8 +1,9 @@
+from __future__ import print_function
 import numpy as np
 import math
 from proximal.lin_ops import CompGraph, scale, vstack
 from proximal.utils.timings_log import TimingsLog, TimingsEntry
-from invert import get_least_squares_inverse, get_diag_quads
+from .invert import get_least_squares_inverse, get_diag_quads
 
 
 def partition(prox_fns, try_diagonalize=True):
@@ -135,10 +136,10 @@ def solve(psi_fns, omega_fns,
 
                 # Evaluate metric potentially
                 metstr = '' if metric is None else ", {}".format(metric.message(x))
-                print "iter [%02d (rho=%2.1e) || %02d]:" \
-                      "||w - w_prev||_2 = %02.02e (eps=%02.03e)" \
-                      "||x - x_prev||_2 = %02.02e (eps=%02.03e)%s%s" \
-                    % (i, rho, ii, r_x, eps_x, r_w, eps_w, objstr, metstr)
+                print("iter [%02d (rho=%2.1e) || %02d]:"
+                      "||w - w_prev||_2 = %02.02e (eps=%02.03e)"
+                      "||x - x_prev||_2 = %02.02e (eps=%02.03e)%s%s"
+                      % (i, rho, ii, r_x, eps_x, r_w, eps_w, objstr, metstr))
 
             inner_iter_timing.toc()
             if r_x < eps_x and r_w < eps_w:
@@ -151,14 +152,14 @@ def solve(psi_fns, omega_fns,
 
     # Print out timings info.
     if verbose > 0:
-        print iter_timing
-        print inner_iter_timing
-        print "prox funcs:"
-        print prox_log
-        print "K forward ops:"
-        print K.forward_log
-        print "K adjoint ops:"
-        print K.adjoint_log
+        print(iter_timing)
+        print(inner_iter_timing)
+        print("prox funcs:")
+        print(prox_log)
+        print("K forward ops:")
+        print(K.forward_log)
+        print("K adjoint ops:")
+        print(K.adjoint_log)
 
     # Assign values to variables.
     K.update_vars(x)

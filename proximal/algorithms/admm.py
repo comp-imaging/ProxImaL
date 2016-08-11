@@ -1,7 +1,7 @@
-from __future__ import division
+from __future__ import division, print_function
 from proximal.lin_ops import CompGraph, scale, vstack
 from proximal.utils.timings_log import TimingsLog, TimingsEntry
-from invert import get_least_squares_inverse, get_diag_quads
+from .invert import get_least_squares_inverse, get_diag_quads
 import numpy as np
 
 
@@ -126,8 +126,8 @@ def solve(psi_fns, omega_fns, rho=1.0,
 
             # Evaluate metric potentially
             metstr = '' if metric is None else ", {}".format(metric.message(v))
-            print "iter %d: ||r||_2 = %.3f, eps_pri = %.3f, ||s||_2 = %.3f, eps_dual = %.3f%s%s" % (
-                i, np.linalg.norm(r), eps_pri, np.linalg.norm(s), eps_dual, objstr, metstr)
+            print("iter %d: ||r||_2 = %.3f, eps_pri = %.3f, ||s||_2 = %.3f, eps_dual = %.3f%s%s" % (
+                i, np.linalg.norm(r), eps_pri, np.linalg.norm(s), eps_dual, objstr, metstr))
 
         iter_timing.toc()
         # Exit if converged.
@@ -136,13 +136,13 @@ def solve(psi_fns, omega_fns, rho=1.0,
 
     # Print out timings info.
     if verbose > 0:
-        print iter_timing
-        print "prox funcs:"
-        print prox_log
-        print "K forward ops:"
-        print K.forward_log
-        print "K adjoint ops:"
-        print K.adjoint_log
+        print(iter_timing)
+        print("prox funcs:")
+        print(prox_log)
+        print("K forward ops:")
+        print(K.forward_log)
+        print("K adjoint ops:")
+        print(K.adjoint_log)
 
     # Assign values to variables.
     K.update_vars(v)

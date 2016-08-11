@@ -1,3 +1,4 @@
+from __future__ import print_function
 from .prox_fn import ProxFn
 from proximal.lin_ops import CompGraph, mul_elemwise
 import numpy as np
@@ -95,7 +96,6 @@ class least_squares(sum_squares):
             if implem == Impl['halide'] and \
                     (len(self.freq_shape) == 2 or (len(self.freq_shape) == 2 and
                                                    self.freq_dims == 2)):
-                print "hello"
                 # TODO: FIX REAL TO IMAG
                 hsize = self.freq_shape if len(self.freq_shape) == 3 else (
                     self.freq_shape[0], self.freq_shape[1], 1)
@@ -395,6 +395,6 @@ def cg(KtKfun, b, tol, num_iters, verbose, x_init=None, implem=Impl['numpy']):
 
         # Iterate
         if verbose:
-            print "CG Iter %03d" % iter
+            print("CG Iter %03d" % iter)
 
     return x

@@ -10,7 +10,10 @@ class conv(LinOp):
 
     def __init__(self, kernel, arg, dims=None, implem=None):
         self.kernel = kernel
-        self.dims = dims if dims < len(arg.shape) else None
+        if dims is not None and dims < len(arg.shape):
+            self.dims = dims
+        else:
+            self.dims = None
         self.forward_kernel = psf2otf(kernel, arg.shape, dims)
         self.adjoint_kernel = self.forward_kernel.conj()
         self.initialized = False

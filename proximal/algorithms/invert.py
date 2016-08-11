@@ -1,4 +1,5 @@
 # Utilities for getting the inverse of lin ops.
+from __future__ import print_function
 import numpy as np
 from proximal.prox_fns import least_squares, sum_squares
 from proximal.lin_ops import vstack
@@ -77,23 +78,23 @@ def get_least_squares_inverse(op_list, b, try_freq_diagonalize=True, verbose=Fal
     stacked = vstack(op_list)
     if stacked.is_gram_diag(freq=False):
         if verbose:
-            print 'Optimized for diagonal inverse'
+            print('Optimized for diagonal inverse')
 
-        diag = stacked.get_diag(freq=False).values()[0]
+        diag = list(stacked.get_diag(freq=False).values())[0]
         diag = diag * np.conj(diag)
         x_update = least_squares(stacked, b, diag=diag)
 
     # Are all the operators diagonal in the frequency domain?
     elif try_freq_diagonalize and stacked.is_gram_diag(freq=True):
 
-        diag = stacked.get_diag(freq=True).values()[0]
+        diag = list(stacked.get_diag(freq=True).values())[0]
         diag = diag * np.conj(diag)
         dims = get_dims(op_list)
         implem = get_implem(op_list)  # If any freqdiag is halide, solve with halide
 
         if verbose:
             dimstr = (' with dimensionality %d' % dims) if dims is not None else ''
-            print 'Optimized for diagonal frequency inverse' + dimstr
+            print('Optimized for diagonal frequency inverse' + dimstr)
 
         x_update = least_squares(stacked, b,
                                  freq_diag=diag, freq_dims=dims, implem=implem)

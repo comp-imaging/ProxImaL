@@ -58,7 +58,6 @@ class TestLinOps(BaseTest):
         fn = subsample(var, (2, 1))
         assert not fn.is_gram_diag(freq=True)
         assert fn.is_gram_diag(freq=False)
-        print fn.get_diag(freq=False)[var]
         self.assertItemsAlmostEqual(fn.get_diag(freq=False)[var],
                                     [1, 0, 1, 0, 1])
 

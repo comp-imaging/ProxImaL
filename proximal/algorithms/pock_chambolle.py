@@ -1,7 +1,8 @@
+from __future__ import print_function
 from proximal.lin_ops import (CompGraph, est_CompGraph_norm, Variable,
                               vstack)
 from proximal.utils.timings_log import TimingsLog, TimingsEntry
-from invert import get_least_squares_inverse, max_diag_set
+from .invert import get_least_squares_inverse, max_diag_set
 import numpy as np
 
 
@@ -204,13 +205,13 @@ def solve(psi_fns, omega_fns, tau=None, sigma=None, theta=None,
 
     # Print out timings info.
     if verbose > 0:
-        print iter_timing
-        print "prox funcs:"
-        print prox_log
-        print "K forward ops:"
-        print K.forward_log
-        print "K adjoint ops:"
-        print K.adjoint_log
+        print(iter_timing)
+        print("prox funcs:")
+        print(prox_log)
+        print("K forward ops:")
+        print(K.forward_log)
+        print("K adjoint ops:")
+        print(K.adjoint_log)
 
     # Assign values to variables.
     K.update_vars(x)

@@ -1,7 +1,7 @@
-import admm
-import pock_chambolle as pc
-import half_quadratic_splitting as hqs
-import linearized_admm as ladmm
+from . import admm
+from . import pock_chambolle as pc
+from . import half_quadratic_splitting as hqs
+from . import linearized_admm as ladmm
 
 from .absorb import absorb_lin_op, absorb_offset
 from .problem import Problem

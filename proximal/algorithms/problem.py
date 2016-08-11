@@ -1,11 +1,11 @@
-import admm
-import pock_chambolle as pc
-import half_quadratic_splitting as hqs
-import linearized_admm as ladmm
+from . import admm
+from . import pock_chambolle as pc
+from . import half_quadratic_splitting as hqs
+from . import linearized_admm as ladmm
 from proximal.utils.utils import Impl
 from proximal.lin_ops import Variable, CompGraph, est_CompGraph_norm, vstack
-import absorb
-import merge
+from . import absorb
+from . import merge
 import numpy as np
 
 NAME_TO_SOLVER = {

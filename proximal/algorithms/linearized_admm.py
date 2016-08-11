@@ -1,7 +1,7 @@
-from __future__ import division
+from __future__ import division, print_function
 from proximal.lin_ops import CompGraph, est_CompGraph_norm, Variable, vstack
 from proximal.utils.timings_log import TimingsLog, TimingsEntry
-from invert import get_least_squares_inverse, max_diag_set
+from .invert import get_least_squares_inverse, max_diag_set
 import numpy as np
 import warnings
 
@@ -139,8 +139,8 @@ def solve(psi_fns, omega_fns, lmb=1.0, mu=None, quad_funcs=None,
 
             # Evaluate metric potentially
             metstr = '' if metric is None else ", {}".format(metric.message(v))
-            print "iter %d: ||r||_2 = %.3f, eps_pri = %.3f, ||s||_2 = %.3f, eps_dual = %.3f%s%s" % (
-                i, np.linalg.norm(r), eps_pri, np.linalg.norm(s), eps_dual, objstr, metstr)
+            print("iter %d: ||r||_2 = %.3f, eps_pri = %.3f, ||s||_2 = %.3f, eps_dual = %.3f%s%s" % (
+                i, np.linalg.norm(r), eps_pri, np.linalg.norm(s), eps_dual, objstr, metstr))
 
         iter_timing.toc()
         if np.linalg.norm(r) <= eps_pri and np.linalg.norm(s) <= eps_dual:
@@ -148,13 +148,13 @@ def solve(psi_fns, omega_fns, lmb=1.0, mu=None, quad_funcs=None,
 
     # Print out timings info.
     if verbose > 0:
-        print iter_timing
-        print "prox funcs:"
-        print prox_log
-        print "K forward ops:"
-        print K.forward_log
-        print "K adjoint ops:"
-        print K.adjoint_log
+        print(iter_timing)
+        print("prox funcs:")
+        print(prox_log)
+        print("K forward ops:")
+        print(K.forward_log)
+        print("K adjoint ops:")
+        print(K.adjoint_log)
 
     # Assign values to variables.
     K.update_vars(v)
@@ -180,6 +180,6 @@ def est_params_lin_admm(K, lmb=None, verbose=True, scaled=False, try_fast_norm=F
     mu = lmb / (L**2)
 
     if verbose:
-        print "Estimated params [lambda = %3.3f | mu = %3.3f | L_est = %3.4f]" % (lmb, mu, L)
+        print("Estimated params [lambda = %3.3f | mu = %3.3f | L_est = %3.4f]" % (lmb, mu, L))
 
     return lmb, mu

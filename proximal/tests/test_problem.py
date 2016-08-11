@@ -56,7 +56,7 @@ class TestProblem(BaseTest):
         cvx_X = cvx.Variable(4, 2)
         cost = cvx.sum_squares(-2 * cvx_X - B) + cvx.norm(5 * cvx.mul_elemwise(B, cvx_X), 1)
         cvx_prob = cvx.Problem(cvx.Minimize(cost))
-        cvx_prob.solve(solver=cvx.CVXOPT)
+        cvx_prob.solve(solver=cvx.SCS)
         self.assertItemsAlmostEqual(X.value, cvx_X.value, places=2)
 
         prob.set_absorb(False)

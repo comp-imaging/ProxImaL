@@ -146,6 +146,12 @@ class ProxFn(object):
         """
         return (1. / other) * self
 
+    def __truediv__(self, other):
+        """ProxFn / integer.
+        """
+        return self.__div__(other)
+
+
     def copy(self, lin_op=None, **kwargs):
         """Returns a shallow copy of the object.
 

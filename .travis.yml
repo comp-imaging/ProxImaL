@@ -6,6 +6,9 @@ env:
     - DISTRIB="conda" PYTHON_VERSION="2.7" 
       NUMPY_VERSION="1.10.4" SCIPY_VERSION="0.17.0"
       COVERAGE="false"
+    - DISTRIB="conda" PYTHON_VERSION="3.5" 
+      NUMPY_VERSION="1.10.4" SCIPY_VERSION="0.17.0"
+      COVERAGE="false"
 sudo: required
 install: source continuous_integration/install.sh
 script:
