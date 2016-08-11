@@ -151,7 +151,6 @@ class ProxFn(object):
         """
         return self.__div__(other)
 
-
     def copy(self, lin_op=None, **kwargs):
         """Returns a shallow copy of the object.
 
