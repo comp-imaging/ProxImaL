@@ -100,7 +100,7 @@ class grad(LinOp):
             f = inputs[0]
 
             outputs[0].fill(0.0)
-            for j in [0, 1]:
+            for j in range(self.dims):
 
                 # Get component
                 fj = f[..., j]
