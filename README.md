@@ -22,12 +22,12 @@ np.random.seed(1)
 b = I + 10*np.random.randn(*I.shape)
 
 # Construct and solve problem.
-x = Variable( I.shape )
-prob = Problem(sum_squares(x - b/255) + .1*norm1( grad(x) ) + nonneg(x))
+x = Variable(I.shape)
+prob = Problem(sum_squares(x - b/255) + .1 * norm1(grad(x)) + nonneg(x))
 prob.solve()
 
 # Plot the original, noisy, and denoised images.
-plt.figure(figsize=(15,8))
+plt.figure(figsize=(15, 8))
 plt.subplot(131)
 plt.gray()
 plt.imshow(I)
@@ -40,7 +40,7 @@ plt.title('Noisy image')
 
 plt.subplot(133)
 plt.gray()
-plt.imshow(x.value*255) # x.value is the optimal value of x.
+plt.imshow(x.value * 255)  # x.value is the optimal value of x.
 plt.title('Denoising results')
 plt.show()
 ```
