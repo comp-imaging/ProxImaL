@@ -61,6 +61,11 @@ class TestLinOps(BaseTest):
         self.assertItemsAlmostEqual(fn.get_diag(freq=False)[var],
                                     [1, 0, 1, 0, 1])
 
+        # 1D
+        x = Variable(5)
+        expr = subsample(x, 2)
+        self.assertEqual(expr.shape, (3,))
+
     def test_sum(self):
         # Forward.
         x = Variable((2, 3))

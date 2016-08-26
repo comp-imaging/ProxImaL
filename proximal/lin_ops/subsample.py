@@ -8,8 +8,8 @@ class subsample(LinOp):
     """
 
     def __init__(self, arg, steps):
-        self.steps = steps
-        shape = tuple([(dim - 1) // step + 1 for dim, step in zip(arg.shape, steps)])
+        self.steps = self.format_shape(steps)
+        shape = tuple([(dim - 1) // step + 1 for dim, step in zip(arg.shape, self.steps)])
         super(subsample, self).__init__([arg], shape)
 
     def forward(self, inputs, outputs):
