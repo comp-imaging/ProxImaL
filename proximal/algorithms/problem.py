@@ -4,6 +4,7 @@ from . import half_quadratic_splitting as hqs
 from . import linearized_admm as ladmm
 from proximal.utils.utils import Impl
 from proximal.lin_ops import Variable, CompGraph, est_CompGraph_norm, vstack
+from proximal.prox_fns import ProxFn
 from . import absorb
 from . import merge
 import numpy as np
@@ -29,6 +30,9 @@ class Problem(object):
                  try_split=True, try_fast_norm=True, scale=True,
                  psi_fns=None, omega_fns=None,
                  lin_solver="cg", solver="pc"):
+        # Accept single function as argument.
+        if isinstance(prox_fns, ProxFn):
+            prox_fns = [prox_fns]
         self.prox_fns = prox_fns
         self.implem = implem
         self.try_diagonalize = try_diagonalize  # Auto diagonalize?
@@ -110,7 +114,7 @@ class Problem(object):
         elif solver in NAME_TO_SOLVER:
             module = NAME_TO_SOLVER[solver]
             if len(self.omega_fns + self.psi_fns) == 0:
-                if self.try_split:
+                if self.try_split and len(prox_fns) > 1:
                     psi_fns, omega_fns = module.partition(prox_fns,
                                                           self.try_diagonalize)
                 else:

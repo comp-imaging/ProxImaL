@@ -1,3 +1,4 @@
+from .prox_fn import ProxFn
 from .diff_fn import diff_fn
 from .nonneg import nonneg, weighted_nonneg, masked_nonneg
 from .norm1 import norm1, weighted_norm1

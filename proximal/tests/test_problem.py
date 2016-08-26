@@ -68,3 +68,13 @@ class TestProblem(BaseTest):
         prob = Problem(prox_fns)
         prob.solve(solver="admm", eps_rel=1e-6, eps_abs=1e-6)
         self.assertItemsAlmostEqual(X.value, cvx_X.value, places=2)
+
+    def test_single_func(self):
+        """Test problems with only a single function to minimize.
+        """
+        X = Variable((4, 2))
+        B = np.reshape(np.arange(8), (4, 2)) * 1.
+        prox_fns = [sum_squares(X - B)]
+        prob = Problem(prox_fns[0])
+        prob.solve(solver="admm", eps_rel=1e-6, eps_abs=1e-6)
+        self.assertItemsAlmostEqual(X.value, B, places=2)
