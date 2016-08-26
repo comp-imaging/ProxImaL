@@ -1,5 +1,5 @@
 from proximal.tests.base_test import BaseTest
-from proximal.lin_ops import Variable, mul_elemwise
+from proximal.lin_ops import Variable, mul_elemwise, subsample
 from proximal.prox_fns import norm1, sum_squares
 from proximal.algorithms import Problem
 from proximal.utils.utils import Impl
@@ -78,3 +78,14 @@ class TestProblem(BaseTest):
         prob = Problem(prox_fns[0])
         prob.solve(solver="admm", eps_rel=1e-6, eps_abs=1e-6)
         self.assertItemsAlmostEqual(X.value, B, places=2)
+
+    def test_multiple_vars(self):
+        """Test problems with multiple variables."""
+        x = Variable(3)
+        y = Variable(6)
+        rhs = np.array([1, 2, 3])
+        prob = Problem([sum_squares(x - rhs),
+                        sum_squares(subsample(y, [2]) - x)])
+        prob.solve(solver="admm", eps_rel=1e-6, eps_abs=1e-6)
+        self.assertItemsAlmostEqual(x.value, [1, 2, 3], places=3)
+        self.assertItemsAlmostEqual(y.value, [1, 0, 2, 0, 3, 0], places=3)

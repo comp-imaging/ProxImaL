@@ -114,7 +114,7 @@ class Problem(object):
         elif solver in NAME_TO_SOLVER:
             module = NAME_TO_SOLVER[solver]
             if len(self.omega_fns + self.psi_fns) == 0:
-                if self.try_split and len(prox_fns) > 1:
+                if self.try_split and len(prox_fns) > 1 and len(self.variables()) == 1:
                     psi_fns, omega_fns = module.partition(prox_fns,
                                                           self.try_diagonalize)
                 else:
