@@ -213,7 +213,7 @@ def gengen(generator_source, builddir='./build',
         subprocess.call(cmd, shell=True)
 
         # Run generator
-        cmd = '{0} {1} {2} -o {3} {4}'.format(generator,
+        cmd = '{0} {1} {2} -e o,h -o {3} {4}'.format(generator,
                                               generator_flag, function_flag, builddir, target_flags)
         if verbose:
             print('Calling generator')
@@ -355,9 +355,9 @@ def scan_params(header_file, function_name, verbose=True):
     for arg_string in signature.split(","):
         if 'buffer_t *' in arg_string:
             arglist.append(Params.ImageParam_Float32)
-        elif 'const float' in arg_string:
+        elif 'float' in arg_string:
             arglist.append(Params.Param_Float32)
-        elif 'const int' in arg_string:
+        elif 'int' in arg_string:
             arglist.append(Params.Param_Int32)
         else:
             print('Error: Unsupported argument in {0}'.format(arg_string), file=sys.stderr)
