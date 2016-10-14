@@ -214,7 +214,8 @@ def gengen(generator_source, builddir='./build',
 
         # Run generator
         cmd = '{0} {1} {2} -e o,h -o {3} {4}'.format(generator,
-                                              generator_flag, function_flag, builddir, target_flags)
+                                                     generator_flag, function_flag,
+                                                     builddir, target_flags)
         if verbose:
             print('Calling generator')
             print('\t' + cmd)
