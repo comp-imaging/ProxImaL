@@ -271,8 +271,8 @@ class TestAlgs(BaseTest):
         K = px.CompGraph(K)
 
         # Equilibrate
-        gamma = 1
-        d, e = px.equil(K, 200, gamma=gamma, M=5)
+        gamma = 1e-1
+        d, e = px.equil(K, 1000, gamma=gamma, M=5)
         tmp = d * wl * kernel_mat * wr * e
         u, v = np.log(d), np.log(e)
         obj_val = np.square(tmp).sum() / 2 - u.sum() - v.sum() + \
