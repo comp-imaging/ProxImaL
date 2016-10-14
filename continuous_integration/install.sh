@@ -28,14 +28,15 @@ if [[ "$DISTRIB" == "conda" ]]; then
     conda create -n testenv --yes python=$PYTHON_VERSION pip nose \
         numpy scipy pillow
     source activate testenv
-    if [[ "$PYTHON_VERSION" == "3.5" ]]; then
-        conda install --yes -c https://conda.binstar.org/menpo opencv3
-    else
-        conda install --yes opencv
-    fi
+    # if [[ "$PYTHON_VERSION" == "3.5" ]]; then
+    #     conda install --yes -c https://conda.binstar.org/menpo opencv3
+    # else
+    #     conda install --yes opencv
+    # fi
     conda install --yes -c cvxgrp scs multiprocess cvxcanon ecos
     pip install flake8
     pip install cvxpy
+    pip install opencv-python
     # if [[ "$INSTALL_MKL" == "true" ]]; then
     #     # Make sure that MKL is used
     #     conda install --yes mkl
