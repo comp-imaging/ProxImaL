@@ -26,7 +26,7 @@ class poisson_norm(ProxFn):
         if self.implementation == Impl['halide'] and (len(self.lin_op.shape) in [2, 3, 4]):
 
             # Halide implementation
-            tmpin = np.asfortranarray(v)
+            tmpin = np.asfortranarray(v.astype(np.float32))
             Halide('prox_Poisson.cpp').prox_Poisson(
                 tmpin, self.maskh, self.bph, 1. / rho, self.tmpout)
             np.copyto(v, self.tmpout)
