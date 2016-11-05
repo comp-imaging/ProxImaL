@@ -13,3 +13,4 @@ from .grad import grad
 from .warp import warp
 from .mul_color import mul_color
 from .reshape import reshape
+from .transpose import transpose

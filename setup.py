@@ -17,7 +17,6 @@ setup(
     url='http://github.com/comp-imaging/ProxImaL/',
     install_requires=["numpy >= 1.9",
                       "scipy >= 0.15",
-                      "Pillow",
-                      "opencv-python"],
+                      "Pillow"],
     use_2to3=True,
 )
