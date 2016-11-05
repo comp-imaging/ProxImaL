@@ -42,7 +42,7 @@ def partition(prox_fns, try_diagonalize=True):
 
 def solve(psi_fns, omega_fns, tau=None, sigma=None, theta=None,
           max_iters=1000, eps_abs=1e-3, eps_rel=1e-3, x0=None,
-          lin_solver="cg", lin_solver_options=None,
+          lin_solver="cg", lin_solver_options=None, conv_check=100,
           try_diagonalize=True, try_fast_norm=False, scaled=True,
           metric=None, convlog=None, verbose=0):
     # Can only have one omega function.
@@ -154,7 +154,7 @@ def solve(psi_fns, omega_fns, tau=None, sigma=None, theta=None,
 
         # Iteration order is different than
         # lin-admm (--> start checking at iteration 1)
-        if i > 0:
+        if i > 0 and i % conv_check == 0:
 
             # Check convergence
             r = prev_Kx - z

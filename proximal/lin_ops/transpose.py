@@ -11,7 +11,7 @@ class transpose(LinOp):
         self.axes = axes
         self.inverse = range(len(self.axes))
         for idx, i in enumerate(self.axes):
-            self.inverse[idx] = i
+            self.inverse[i] = idx
         super(transpose, self).__init__([arg], tuple(arg.shape[i] for i in axes))
 
     def forward(self, inputs, outputs):
@@ -30,9 +30,10 @@ class transpose(LinOp):
         shaped_input = np.transpose(inputs[0], self.inverse)
         np.copyto(outputs[0], shaped_input)
 
-    def is_diag(self, freq=False):
+    def is_gram_diag(self, freq=False):
         """Is the lin op diagonal (in the frequency domain)?
         """
+        # Permutation is gram diagonal (P^TP = I) but not diagonal.
         return self.input_nodes[0].is_diag(freq)
 
     def get_diag(self, freq=False):

@@ -29,7 +29,7 @@ def solve(psi_fns, omega_fns, rho=1.0,
           max_iters=1000, eps_abs=1e-3, eps_rel=1e-3, x0=None,
           lin_solver="cg", lin_solver_options=None,
           try_diagonalize=True, try_fast_norm=False,
-          scaled=True,
+          scaled=True, conv_check=100,
           metric=None, convlog=None, verbose=0):
     prox_fns = psi_fns + omega_fns
     stacked_ops = vstack([fn.lin_op for fn in psi_fns])
@@ -103,11 +103,12 @@ def solve(psi_fns, omega_fns, rho=1.0,
         K.adjoint(u, KTu)
 
         # Check convergence.
-        r = Kv - z
-        K.adjoint(rho * (z - z_prev), s)
-        eps_pri = np.sqrt(K.output_size) * eps_abs + eps_rel * \
-            max([np.linalg.norm(Kv), np.linalg.norm(z)])
-        eps_dual = np.sqrt(K.input_size) * eps_abs + eps_rel * np.linalg.norm(KTu) / rho
+        if i % conv_check == 0:
+            r = Kv - z
+            K.adjoint(rho * (z - z_prev), s)
+            eps_pri = np.sqrt(K.output_size) * eps_abs + eps_rel * \
+                    max([np.linalg.norm(Kv), np.linalg.norm(z)])
+            eps_dual = np.sqrt(K.input_size) * eps_abs + eps_rel * np.linalg.norm(KTu) / rho
 
         # Convergence log
         if convlog is not None:
@@ -117,7 +118,7 @@ def solve(psi_fns, omega_fns, rho=1.0,
             convlog.record_objective(objval)
 
         # Show progess
-        if verbose > 0:
+        if verbose > 0 and i % conv_check == 0:
             # Evaluate objective only if required (expensive !)
             objstr = ''
             if verbose == 2:
