@@ -1,19 +1,22 @@
 from .prox_fn import ProxFn
 import numpy as np
 import matlab.engine
-
+import scipy.io
 
 class matlab_external(ProxFn):
     """The function for matlab prior
     """
 
-    def __init__(self, lin_op, matengine, proxfunc, evalfunc=None, params=None, **kwargs):
+    def __init__(self, lin_op, matengine, proxfunc, buffer_name='buffer',
+                 evalfunc=None, params=None, **kwargs):
 
         self.matengine = matengine
         self.params = params
         self.proxfunc = proxfunc
         self.evalfunc = evalfunc
-
+        self.buffer_name = buffer_name
+        # Run external matlab method
+        self.proxmethod = getattr(self.matengine, self.proxfunc)
         super(matlab_external, self).__init__(lin_op, **kwargs)
 
     def _prox(self, rho, v, it, *args, **kwargs):
@@ -21,16 +24,16 @@ class matlab_external(ProxFn):
         """
         assert it is not None
 
-        # Run external matlab method
-        proxmethod = getattr(self.matengine, self.proxfunc)
-
-        vmat = matlab.double(v.tolist())
+        # vmat = matlab.double(v.tolist())
+        vmat = self.buffer_name
+        scipy.io.savemat(vmat, {'z':v})
         if self.params is None:
-            pres = np.array(proxmethod(vmat, rho, it))
+            pres = self.proxmethod(vmat, rho, it)
         else:
             paramsmat = matlab.double(self.params.tolist())
-            pres = np.array(proxmethod(vmat, rho, it, paramsmat))
+            pres = self.proxmethod(vmat, rho, it, paramsmat)
 
+        pres = np.array(pres._data).reshape(v.shape, order='F')
         np.copyto(v, pres)
         return v
 

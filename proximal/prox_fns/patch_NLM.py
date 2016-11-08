@@ -60,8 +60,8 @@ class patch_NLM(ProxFn):
                 sigma_estim = self.sigma_fixed / 30.0 * self.sigma_scale
 
             # Params
-            print("Prox NLM params are: [sigma ={0} prior={1} sigma_scale={2}]".format(
-                sigma_estim, self.prior, self.sigma_scale))
+            # print("Prox NLM params are: [sigma ={0} prior={1} sigma_scale={2}]".format(
+            #     sigma_estim, self.prior, self.sigma_scale))
 
             # Scale d
             v = v.copy()
