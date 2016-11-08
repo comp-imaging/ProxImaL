@@ -3,6 +3,7 @@ import numpy as np
 import matlab.engine
 import scipy.io
 
+
 class matlab_external(ProxFn):
     """The function for matlab prior
     """
@@ -26,7 +27,7 @@ class matlab_external(ProxFn):
 
         # vmat = matlab.double(v.tolist())
         vmat = self.buffer_name
-        scipy.io.savemat(vmat, {'z':v})
+        scipy.io.savemat(vmat, {'z': v})
         if self.params is None:
             pres = self.proxmethod(vmat, rho, it)
         else:
