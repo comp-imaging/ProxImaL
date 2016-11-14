@@ -100,15 +100,14 @@ def solve(psi_fns, omega_fns, rho=1.0,
             offset += fn.lin_op.size
         # Update u.
         u += Kv - z
-        K.adjoint(u, KTu)
 
         # Check convergence.
         if i % conv_check == 0:
             r = Kv - z
-            K.adjoint(rho * (z - z_prev), s)
+            K.adjoint(u, KTu)
             eps_pri = np.sqrt(K.output_size) * eps_abs + eps_rel * \
                 max([np.linalg.norm(Kv), np.linalg.norm(z)])
-            eps_dual = np.sqrt(K.input_size) * eps_abs + eps_rel * np.linalg.norm(KTu) / rho
+            eps_dual = np.sqrt(K.input_size) * eps_abs + eps_rel * np.linalg.norm(KTu) * rho
 
         # Convergence log
         if convlog is not None:
@@ -126,6 +125,7 @@ def solve(psi_fns, omega_fns, rho=1.0,
                 objstr = ", obj_val = %02.03e" % sum([fn.value for fn in prox_fns])
 
             # Evaluate metric potentially
+            K.adjoint(rho * (z - z_prev), s)
             metstr = '' if metric is None else ", {}".format(metric.message(v))
             print("iter %d: ||r||_2 = %.3f, eps_pri = %.3f, ||s||_2 = %.3f, eps_dual = %.3f%s%s" % (
                 i, np.linalg.norm(r), eps_pri, np.linalg.norm(s), eps_dual, objstr, metstr))
