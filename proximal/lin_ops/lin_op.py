@@ -172,7 +172,7 @@ class LinOp(object):
     def __str__(self):
         """Default to string is name of class.
         """
-        return self.__class__.__name__
+        return self.__class__.__name__ + ("( " + ",".join([str(n) for n in self.input_nodes]) + " )" if len(self.input_nodes) > 0 else "")
 
     @property
     def value(self):

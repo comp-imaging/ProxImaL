@@ -107,7 +107,19 @@ class ProxFn(object):
     def __str__(self):
         """Default to string is name of class.
         """
-        return self.__class__.__name__
+        #Represents alpha*f(beta*x - b) + <c,x> + gamma*<x,x> + d
+        r = ""
+        if self.alpha != 1.: r += "%02.03e * " % self.alpha
+        r += self.__class__.__name__ + "( "
+        if self.beta != 1.: r += "%02.03e * " % self.beta
+        r += "x"
+        if not np.alltrue(np.ravel(self.b) == 0.0): r += " - b"
+        r += " )"
+        if not np.all(self.c == 0.0): r += " + <c,x>"
+        if not self.gamma == 0.0: r += " + %02.03e * <x,x>" % self.gamma
+        if not self.d == 0.0: r += " + %02.03e" % self.d
+        r += "; x = " + str(self.lin_op)
+        return "{ " + r + " }"
 
     def __add__(self, other):
         """ProxFn + ProxFn(s).

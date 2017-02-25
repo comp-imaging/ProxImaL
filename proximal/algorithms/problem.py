@@ -132,6 +132,38 @@ class Problem(object):
                 for idx, fn in enumerate(omega_fns):
                     omega_fns[idx] = fn.copy(beta=fn.beta / np.sqrt(Knorm),
                                              implem=self.implem)
+                for v in K.orig_end.variables():
+                    if v.initval is not None:
+                        v.initval *= np.sqrt(Knorm)
+            if 1:
+                # test adjoints
+                L = CompGraph(vstack([fn.lin_op for fn in psi_fns]))
+                from numpy.random import random
+                
+                x = random(L.input_size)
+                yt = np.zeros(L.output_size)
+                #print("x=", x)
+                yt = L.forward(x, yt)
+                #print("yt=", yt)
+                #print("x=", x)
+                y = random(L.output_size)
+                #print("y=", y)
+                xt = np.zeros(L.input_size)
+                xt = L.adjoint(y, xt)
+                #print("xt=", xt)
+                #print("y=", y)
+                r = np.abs( np.dot(np.ravel(y), np.ravel(yt)) - np.dot(np.ravel(x), np.ravel(xt)) )
+                #print( x.shape, y.shape, xt.shape, yt.shape)
+                if r > 1e-6:
+                    #print("yt=", yt)
+                    #print("y =", y)
+                    #print("xt=", xt)
+                    #print("x =", x)
+                    raise RuntimeError("Unmatched adjoints: " + str(r))
+                else:
+                    print("Adjoint test passed.")
+                
+                
             opt_val = module.solve(psi_fns, omega_fns,
                                    lin_solver=self.lin_solver,
                                    try_diagonalize=self.try_diagonalize,

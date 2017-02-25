@@ -44,7 +44,7 @@ def solve(psi_fns, omega_fns, tau=None, sigma=None, theta=None,
           max_iters=1000, eps_abs=1e-3, eps_rel=1e-3, x0=None,
           lin_solver="cg", lin_solver_options=None, conv_check=100,
           try_diagonalize=True, try_fast_norm=False, scaled=True,
-          metric=None, convlog=None, verbose=0):
+          metric=None, convlog=None, verbose=0, callback=None):
     # Can only have one omega function.
     assert len(omega_fns) <= 1
     prox_fns = psi_fns + omega_fns
@@ -54,6 +54,10 @@ def solve(psi_fns, omega_fns, tau=None, sigma=None, theta=None,
     # Select optimal parameters if wanted
     if tau is None or sigma is None or theta is None:
         tau, sigma, theta = est_params_pc(K, tau, sigma, verbose, scaled, try_fast_norm)
+        
+    if verbose > 0:
+        print("psi_fns:", [str(f) for f in psi_fns])
+        print("omega_fns:", [str(f) for f in omega_fns])
 
     # Initialize
     x = np.zeros(K.input_size)
@@ -64,8 +68,10 @@ def solve(psi_fns, omega_fns, tau=None, sigma=None, theta=None,
 
     if x0 is not None:
         x[:] = np.reshape(x0, K.input_size)
-        K.forward(x, y)
-        xbar[:] = x
+    else:
+        x[:] = K.x0()
+    K.forward(x, y)
+    xbar[:] = x
 
     # Buffers.
     Kxbar = np.zeros(K.output_size)
@@ -165,12 +171,16 @@ def solve(psi_fns, omega_fns, tau=None, sigma=None, theta=None,
             K.adjoint(u, KTu)
             eps_dual = np.sqrt(K.input_size) * eps_abs + eps_rel * np.linalg.norm(KTu) / sigma
 
+            if not callback is None or verbose == 2:
+                K.update_vars(x)
+            if not callback is None:
+                callback(x)
+            
             # Progress
             if verbose > 0:
                 # Evaluate objective only if required (expensive !)
                 objstr = ''
                 if verbose == 2:
-                    K.update_vars(x)
                     objstr = ", obj_val = %02.03e" % sum([fn.value for fn in prox_fns])
 
                 """ Old convergence check
@@ -215,7 +225,8 @@ def solve(psi_fns, omega_fns, tau=None, sigma=None, theta=None,
 
     # Assign values to variables.
     K.update_vars(x)
-
+    if not callback is None:
+        callback(x)
     # Return optimal value.
     return sum([fn.value for fn in prox_fns])
 

@@ -10,6 +10,8 @@ class Variable(LinOp):
     def __init__(self, shape):
         self.uuid = uuid.uuid1()
         self._value = None
+        self.varname = ''
+        self.initval = None
         super(Variable, self).__init__([], shape)
 
     def forward(self, inputs, outputs):

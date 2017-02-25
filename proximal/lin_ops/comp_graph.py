@@ -132,6 +132,7 @@ class CompGraph(object):
         self.forward_log[self].tic()
         self.traverse_graph(forward_eval, True)
         self.forward_log[self].toc()
+        return y
 
     def adjoint(self, u, v):
         """Evaluates the adjoint composition.
@@ -156,6 +157,7 @@ class CompGraph(object):
         self.adjoint_log[self].tic()
         self.traverse_graph(adjoint_eval, False)
         self.adjoint_log[self].toc()
+        return v
 
     def traverse_graph(self, node_fn, forward):
         """Traverse the graph and apply the given function at each node.
@@ -233,6 +235,14 @@ class CompGraph(object):
             var.value = np.reshape(val[offset:offset + var.size], var.shape)
             offset += var.size
 
+    def x0(self):
+        res = np.zeros(self.input_size)
+        for var in self.orig_end.variables():
+            if var.initval is not None:
+                offset = self.var_info[var.uuid]
+                res[offset:offset + var.size] = np.ravel(var.initval)
+        return res
+        
     def __str__(self):
         return self.__class__.__name__
 
