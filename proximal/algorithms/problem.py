@@ -8,6 +8,7 @@ from proximal.prox_fns import ProxFn
 from . import absorb
 from . import merge
 import numpy as np
+from numpy import linalg as LA
 
 NAME_TO_SOLVER = {
     "admm": admm,
@@ -87,7 +88,7 @@ class Problem(object):
         """
         self.lin_solver = lin_solver
 
-    def solve(self, solver=None, *args, **kwargs):
+    def solve(self, solver=None, test_adjoints = False, test_norm = False, *args, **kwargs):
         if solver is None:
             solver = self.solver
 
@@ -120,6 +121,25 @@ class Problem(object):
                 else:
                     psi_fns = prox_fns
                     omega_fns = []
+            if test_norm:
+                L = CompGraph(vstack([fn.lin_op for fn in psi_fns]))
+                from numpy.random import random
+
+                output_mags = [NotImplemented]
+                L.norm_bound(output_mags)
+                if not NotImplemented in output_mags:
+                    assert len(output_mags) == 1
+                
+                    x = random(L.input_size)
+                    x = x / LA.norm(x)
+                    y = np.zeros(L.output_size)
+                    y = L.forward(x, y)
+                    ny = LA.norm(y)
+                    nL2 = est_CompGraph_norm(L, try_fast_norm=False)
+                    if ny > output_mags[0]:
+                        raise RuntimeError("wrong implementation of norm!")
+                    print("%.3f <= ||K|| = %.3f (%.3f)" % (ny, output_mags[0], nL2))
+                
             # Scale the problem.
             if self.scale:
                 K = CompGraph(vstack([fn.lin_op for fn in psi_fns]),
@@ -135,7 +155,7 @@ class Problem(object):
                 for v in K.orig_end.variables():
                     if v.initval is not None:
                         v.initval *= np.sqrt(Knorm)
-            if 1:
+            if test_adjoints:
                 # test adjoints
                 L = CompGraph(vstack([fn.lin_op for fn in psi_fns]))
                 from numpy.random import random
@@ -162,7 +182,6 @@ class Problem(object):
                     raise RuntimeError("Unmatched adjoints: " + str(r))
                 else:
                     print("Adjoint test passed.")
-                
                 
             opt_val = module.solve(psi_fns, omega_fns,
                                    lin_solver=self.lin_solver,

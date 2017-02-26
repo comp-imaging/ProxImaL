@@ -9,7 +9,6 @@ from proximal.lin_ops import *
 from proximal.prox_fns import *
 from proximal.algorithms import *
 
-import cvxpy as cvx
 import numpy as np
 from scipy import ndimage
 
@@ -97,9 +96,9 @@ plt.show()
 
 
 # Recompile
-hflags = ['-DWTARGET={0} -DHTARGET={1}'.format(I.shape[1], I.shape[0])]
-Halide('fft2_r2c.cpp', compile_flags=hflags, recompile=True)
-Halide('ifft2_c2r.cpp', compile_flags=hflags, recompile=True)
+#hflags = ['-DWTARGET={0} -DHTARGET={1}'.format(I.shape[1], I.shape[0])]
+#Halide('fft2_r2c.cpp', compile_flags=hflags, recompile=True)
+#Halide('ifft2_c2r.cpp', compile_flags=hflags, recompile=True)
 
 # Sparse gradient deconvolution with quadratic definition
 lambda_tv = 1.0
@@ -124,8 +123,8 @@ options = cg_options(tol=1e-5, num_iters=100, verbose=False)
 #options = lsqr_options(atol=1e-5, btol=1e-5, num_iters=100, verbose=False)
 tic()
 
-pc(prox_fns, quad_funcs=quad_funcs, tau=0.088, sigma=1.000, theta=1.000, max_iters=100,
-   eps=1e-2, lin_solver="cg", lin_solver_options=options, metric=None, verbose=1)
+pock_chambolle.solve(prox_fns, [], tau=0.088, sigma=1.000, theta=1.000, max_iters=100,
+  lin_solver="cg", lin_solver_options=options, metric=None, verbose=2)
 
 print('Overall solver took: {0:.1f}ms'.format(toc()))
 
