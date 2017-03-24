@@ -100,15 +100,15 @@ def solve(psi_fns, omega_fns, rho=1.0,
             offset += fn.lin_op.size
         # Update u.
         u += Kv - z
-        K.adjoint(u, KTu)
 
         # Check convergence.
         if i % conv_check == 0:
             r = Kv - z
+            K.adjoint(u, KTu)
             K.adjoint(rho * (z - z_prev), s)
             eps_pri = np.sqrt(K.output_size) * eps_abs + eps_rel * \
                 max([np.linalg.norm(Kv), np.linalg.norm(z)])
-            eps_dual = np.sqrt(K.input_size) * eps_abs + eps_rel * np.linalg.norm(KTu) / rho
+            eps_dual = np.sqrt(K.input_size) * eps_abs + eps_rel * np.linalg.norm(KTu) * rho
 
         # Convergence log
         if convlog is not None:

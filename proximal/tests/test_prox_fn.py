@@ -87,7 +87,7 @@ class TestProxFn(BaseTest):
         v = np.arange(10) * 1.0 - 5.0
         fn = weighted_norm1(tmp, -v + 1)
         rho = 2
-        x = fn.prox(rho, v)
+        x = fn.prox(rho, v.copy())
         self.assertItemsAlmostEqual(x, np.sign(v) *
                                     np.maximum(np.abs(v) - np.abs(-v + 1) / rho, 0))
 
