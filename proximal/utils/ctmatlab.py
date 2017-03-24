@@ -5,7 +5,7 @@ import numpy as np
 # 0: nothing
 # 1: stdout
 # 2: replay_session
-verbose = 2
+verbose = 0
 
 if verbose == 2:
     var_count = 0
@@ -169,7 +169,7 @@ end
         
     def __del__(self):
         CALL(self.engine.engClose(self.eng))
-        replay_session.flush()
+        if verbose == 2: replay_session.flush()
         print("destructed")
 
 if __name__ == "__main__":

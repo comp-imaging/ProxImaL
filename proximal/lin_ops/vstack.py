@@ -45,8 +45,7 @@ class vstack(LinOp):
         res += "o=1;\n"
         res += "%(out)s = zeros([osize, 1], 'single', 'gpuArray');\n" % locals()
         for i in inputs:
-            
-            res += "%(out)s(o:o+numel(%(i)s)-1) = permute( %(i)s, numel(size(%(i)s)):-1:1 );\n" % locals()
+            res += "%(out)s(o:o+numel(%(i)s)-1) = %(i)s;\n" % locals()
             res += "o = o + numel(%(i)s);\n" % locals()
         return res
          
@@ -56,10 +55,10 @@ class vstack(LinOp):
         arg = inputs[0]
         res = "o=1;\n"
         for i,o in enumerate(outputs):
-            shape = list(self.input_shapes[i])[::-1]
+            shape = list(self.input_shapes[i])
             perm = list(range(len(shape), 0, -1))
             osize = np.prod(shape)
-            res += o + " = permute( reshape(%(arg)s(o:o+%(osize)d-1), %(shape)s), %(perm)s );\n" % locals()
+            res += o + " = reshape(%(arg)s(o:o+%(osize)d-1), %(shape)s);\n" % locals()
             res += "o = o + %(osize)d;\n" % locals()
         return res
     

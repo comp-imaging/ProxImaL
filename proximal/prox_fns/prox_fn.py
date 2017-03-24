@@ -104,21 +104,24 @@ class ProxFn(object):
         return NotImplemented
 
     def init_matlab(self, prefix):
-        matlab_support.put_array(prefix + "_proxint_alpha", np.array(self.alpha, np.float32), globalvar = True)
-        matlab_support.put_array(prefix + "_proxint_beta", np.array(self.beta, np.float32), globalvar = True)
-        matlab_support.put_array(prefix + "_proxint_gamma", np.array(self.gamma, np.float32), globalvar = True)
-        matlab_support.put_array(prefix + "_proxint_b", np.array(self.b, np.float32), globalvar = True)
-        matlab_support.put_array(prefix + "_proxint_c", np.array(self.c, np.float32), globalvar = True)
-        matlab_support.put_array(prefix + "_proxint_d", np.array(self.d, np.float32), globalvar = True)
         res = """
 global %(prefix)s_proxint_alpha %(prefix)s_proxint_beta %(prefix)s_proxint_gamma %(prefix)s_proxint_b %(prefix)s_proxint_c %(prefix)s_proxint_d
 obj.d.%(prefix)s_proxint_alpha = %(prefix)s_proxint_alpha;
 obj.d.%(prefix)s_proxint_beta = %(prefix)s_proxint_beta;
 obj.d.%(prefix)s_proxint_gamma = %(prefix)s_proxint_gamma;
-obj.d.%(prefix)s_proxint_b = gpuArray(%(prefix)s_proxint_b);
-obj.d.%(prefix)s_proxint_c = gpuArray(%(prefix)s_proxint_c);
 obj.d.%(prefix)s_proxint_d = gpuArray(%(prefix)s_proxint_d);
-""" % locals() + self._init_matlab(prefix)
+""" % locals()
+        matlab_support.put_array(prefix + "_proxint_alpha", np.array(self.alpha, np.float32), globalvar = True)
+        matlab_support.put_array(prefix + "_proxint_beta", np.array(self.beta, np.float32), globalvar = True)
+        matlab_support.put_array(prefix + "_proxint_gamma", np.array(self.gamma, np.float32), globalvar = True)
+        if not np.all(self.b == 0):
+            matlab_support.put_array(prefix + "_proxint_b", np.array(self.b, np.float32), globalvar = True)
+            res += "obj.d.%(prefix)s_proxint_b = gpuArray(%(prefix)s_proxint_b);\n" % locals()
+        if not np.all(self.c == 0):
+            matlab_support.put_array(prefix + "_proxint_c", np.array(self.c, np.float32), globalvar = True)
+            res += "obj.d.%(prefix)s_proxint_c = gpuArray(%(prefix)s_proxint_c);\n" % locals()
+        matlab_support.put_array(prefix + "_proxint_d", np.array(self.d, np.float32), globalvar = True)
+        res += self._init_matlab(prefix)
         return res
         
     def prox_matlab(self, prefix, output_var, rho_var, v_var, *args, **kwargs):
@@ -150,12 +153,24 @@ v_hat = ((%(v_var)s * %(rho_var)s)%(minus_c)s) * (obj.d.%(prefix)s_proxint_beta 
         return res
 
     def eval_matlab(self, prefix, v_var):
+        if np.all(self.c == 0):
+            cdotv = ''
+        else:
+            cdotv = 'dot(obj.d.%(prefix)s_proxint_c(:), %(v_var)s(:)) +' % locals()
+            
+        if np.all(self.b == 0):
+            minus_b = ''
+            plus_b = ''
+        else:
+            minus_b = ' - obj.d.%(prefix)s_proxint_b' % locals()
+            plus_b = ' + obj.d.%(prefix)s_proxint_b' % locals()
+
         res = """
-tmp = %(v_var)s * obj.d.%(prefix)s_proxint_beta - obj.d.%(prefix)s_proxint_b;
+tmp = %(v_var)s * obj.d.%(prefix)s_proxint_beta%(minus_b)s;
 """ %locals()
         res += self._eval_matlab(prefix, "evp", "tmp")
         res += """
-evp = gather(obj.d.%(prefix)s_proxint_alpha * evp + dot(obj.d.%(prefix)s_proxint_c(:), %(v_var)s(:)) + obj.d.%(prefix)s_proxint_gamma * sum(reshape(%(v_var)s.^2, 1, [])) + obj.d.%(prefix)s_proxint_d);
+evp = gather(obj.d.%(prefix)s_proxint_alpha * evp + %(cdotv)s obj.d.%(prefix)s_proxint_gamma * sum(reshape(%(v_var)s.^2, 1, [])) + obj.d.%(prefix)s_proxint_d);
 """ % locals()
         return res
 

@@ -22,10 +22,7 @@ class CompGraph(object):
 
     def __init__(self, end, implem=None):
         if implem == 'matlab':
-            matlab = True
             implem = None
-        else:
-            matlab = False
         self.instanceID = CompGraph.instanceCnt
         CompGraph.instanceCnt += 1
         self.orig_end = end
@@ -41,8 +38,12 @@ class CompGraph(object):
         new_vars = []
         # Assumes all nodes have at most one output.
         ready = [self.end]
+        done = []
+        node_to_copies = {}
+        self.split_nodes = {}
         while len(ready) > 0:
             curr = ready.pop(0)
+            done.append(curr)
             if isinstance(curr, Variable):
                 # new_vars may contain specific variables more than once
                 new_vars.append(curr)
@@ -56,15 +57,25 @@ class CompGraph(object):
                     node.orig_node = None
                     self.constants.append(node)
                 else:
-                    node = cp.copy(node)
-                    node.orig_node = node.orig_node
+                    # avoid copying too many nodes
+                    if not node in node_to_copies:                            
+                        cnode = cp.copy(node)
+                        node.orig_node = node.orig_node
+                        node_to_copies[node] = cnode
+                    else:
+                        self.split_nodes[node_to_copies[node]] = True
+                    node = node_to_copies[node]
                     # Default implementation.
                     if implem is not None:
                         node.implem = implem
-                ready.append(node)
-                edge = Edge(node, curr, node.shape)
+                if not node in ready and not node in done:
+                    ready.append(node)
+                edge = Edge(node, curr, node.shape, resultNeeded = curr is self.end)
                 input_edges.append(edge)
-                self.output_edges[node] = [edge]
+                if not node in self.output_edges:
+                    self.output_edges[node] = [edge]
+                else:
+                    self.output_edges[node].append(edge)
 
             self.edges += input_edges
             self.input_edges[curr] = input_edges
@@ -89,14 +100,14 @@ class CompGraph(object):
         # Replace variables with copy nodes in graph.
         for var in new_vars:
             copy_node = id2copy[var.uuid]
-            output_edge = self.output_edges[var][0]
-            output_node = output_edge.end
-            edge = Edge(copy_node, output_node, var.shape)
-            self.edges.append(edge)
-            self.output_edges[copy_node].append(edge)
-            idx = self.input_edges[output_node].index(output_edge)
-            #print("Variable %s(%s): idx=%d" % (var.varname, var.uuid, idx))
-            self.input_edges[output_node][idx] = edge
+            for output_edge in self.output_edges[var]:
+                output_node = output_edge.end
+                edge = Edge(copy_node, output_node, var.shape)
+                self.edges.append(edge)
+                self.output_edges[copy_node].append(edge)
+                idx = self.input_edges[output_node].index(output_edge)
+                #print("Variable %s(%s): idx=%d" % (var.varname, var.uuid, idx))
+                self.input_edges[output_node][idx] = edge
 
         # Record information about variables.
         self.input_size = sum([var.size for var in old_vars])
@@ -142,12 +153,12 @@ class CompGraph(object):
     def get_input_names(self, node):
         """Returns the input data for a node.
         """
-        return ["obj.d." + e.name for e in self.input_edges[node]]
+        return [("obj.d." if e.resultNeeded else '') + e.name for e in self.input_edges[node]]
 
     def get_output_names(self, node):
         """Returns the input data for a node.
         """
-        return ["obj.d." + e.name for e in self.output_edges[node]]
+        return [("obj.d." if e.resultNeeded else '') + e.name for e in self.output_edges[node]]
 
     def genmatlab(self, mlclass):
         """Generate matlab script to calculate the forward linop.
@@ -176,6 +187,13 @@ class CompGraph(object):
             init.append("% Init code for " + str(node).replace("\n",";") + "\n")
             init.append(icode)
             fcode = node.forward_matlab(prefix, inputs, outputs)
+            if node in self.split_nodes:
+                for io in outputs[1:]:
+                    fcode += ("\n%s = %s;\n" % (io, outputs[0]))
+            invars = list(filter(lambda x: not x.startswith("graph") and not x.startswith("obj.d"), inputs))
+            if len(invars) > 0:
+                # delete unneeded variables
+                fcode += "clear " + (" ".join(invars)) + ";\n";
             assert not fcode is NotImplemented and not fcode is None, str(node)
             forward.append("% Forward code for " + str(node).replace("\n",";") + "\n")
             forward.append(fcode)
@@ -194,9 +212,24 @@ class CompGraph(object):
                 # assign a unique name for each output edge
                 inputs = self.get_input_names(node)
 
-            # Run forward op and time it.
+            # Run adjoint op and time it.
             prefix = node_prefixes[node]
-            acode = node.adjoint_matlab(prefix, outputs, inputs)
+            if node in self.split_nodes:
+                assert len(inputs) == 1
+                acode = ""
+                inputedges = []
+                for i,io in enumerate(outputs):
+                    inputedge = "tmp_sn_adjoint" + "_" + str(i)
+                    inputedges.append(inputedge)
+                    acode += node.adjoint_matlab(prefix, [io], [inputedge])
+                acode += inputs[0] + " = " + ("+".join(inputedges)) + ";\n"
+            else:
+                inputedges = []
+                acode = node.adjoint_matlab(prefix, outputs, inputs)
+            invars = inputedges + list(filter(lambda x: not x.startswith("graph") and not x.startswith("obj.d"), outputs))
+            if len(invars) > 0:
+                # delete unneeded variables
+                acode += "clear " + (" ".join(invars)) + ";\n";
             assert not acode is NotImplemented and not acode is None, str(node)
             adjoint.append("% Adjoint code for " + str(node).replace("\n",";") + "\n")
             adjoint.append(acode)
@@ -251,6 +284,9 @@ end
             # Run forward op and time it.
             self.forward_log[node].tic()
             node.forward(inputs, outputs)
+            if node in self.split_nodes:
+                for io in range(1,len(outputs)):
+                    np.copyto(outputs[io], outputs[0])
             self.forward_log[node].toc()
             
         self.forward_log[self].tic()
@@ -287,7 +323,16 @@ end
                 inputs = self.get_inputs(node)
             # Run adjoint op and time it.prox
             self.adjoint_log[node].tic()
-            node.adjoint(outputs, inputs)
+            if node in self.split_nodes:
+                for io in range(len(outputs)):
+                    node.adjoint(outputs[io], inputs)
+                    assert(len(inputs) == 1)
+                    if io == 0:
+                        res = inputs[0].copy()
+                    else:
+                        res += inputs[0]
+            else:
+                node.adjoint(outputs, inputs)
             self.adjoint_log[node].toc()
         # Evaluate adjoint graph and time it.
         self.adjoint_log[self].tic()
@@ -409,12 +454,12 @@ end
 
         self.traverse_graph(node_norm_bound, True)
 
-    def update_vars(self, val):
+    def update_vars(self, val, order='C'):
         """Map sections of val to variables.
         """
         for var in self.orig_end.variables():
             offset = self.var_info[var.uuid]
-            var.value = np.reshape(val[offset:offset + var.size], var.shape)
+            var.value = np.reshape(val[offset:offset + var.size], var.shape, order=order)
             offset += var.size
             
     def update_vars_matlab(self, val_var):
@@ -422,12 +467,12 @@ end
         # make sure that the graph is run in forward direction
         eng.run("[" + self.matlab_instance + ", ~] = " + self.matlab_instance + "." + self.matlab_forward_script + "(" + val_var + ");", nargout=0)
 
-    def x0(self):
+    def x0(self, order='C'):
         res = np.zeros(self.input_size)
         for var in self.orig_end.variables():
             if var.initval is not None:
                 offset = self.var_info[var.uuid]
-                res[offset:offset + var.size] = np.ravel(var.initval)
+                res[offset:offset + var.size] = np.ravel(var.initval, order=order)
         return res
         
     def __str__(self):

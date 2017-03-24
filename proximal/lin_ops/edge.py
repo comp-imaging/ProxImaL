@@ -6,11 +6,12 @@ class Edge(object):
     
     edge_id = 0
 
-    def __init__(self, start, end, shape):
+    def __init__(self, start, end, shape, resultNeeded = True):
         self.start = start
         self.end = end
         self.shape = shape
         self.data = np.zeros(self.shape)
+        self.resultNeeded = resultNeeded
         self.name = "edge%d" % Edge.edge_id
         Edge.edge_id += 1
         self.mag = None  # Used to get norm bounds.

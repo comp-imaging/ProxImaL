@@ -289,12 +289,15 @@ def solve_matlab(psi_fns, omega_fns, tau=None, sigma=None, theta=None,
     x = np.zeros(K.input_size, np.float32)
 
     if x0 is not None:
-        x[:] = np.reshape(x0, K.input_size)
+        x[:] = np.reshape(x0, K.input_size, order='F')
     else:
-        x[:] = K.x0()
+        x[:] = K.x0(order='F')
     
     Kforward = "obj." + K.matlab_forward_script;
     Kadjoint = "obj." + K.matlab_adjoint_script;
+    
+    sigmaf = '' if sigma == 1 else '%(sigma)f *' % locals()
+    
     pciter = """
 function [obj,x,y,xbar,u,z,Kxbar,Kx,KTy,KTu,s,prev_x,prev_Kx,prev_z,prev_u] = pciter(obj, x,y,xbar,u,z,Kxbar,Kx,KTy,KTu,s,prev_x,prev_Kx,prev_z,prev_u)
     prev_x = x;
@@ -306,7 +309,7 @@ function [obj,x,y,xbar,u,z,Kxbar,Kx,KTy,KTu,s,prev_x,prev_Kx,prev_z,prev_u] = pc
     %%display(['xbar :' sprintf('%%f ', xbar(1:5))]);
     [obj, Kxbar] = %(Kforward)s(xbar);
     %%display(['Kxbar:' sprintf('%%f ', Kxbar(1:5))]);
-    z = y + %(sigma)f * Kxbar;
+    z = y + %(sigmaf)s Kxbar;
     %%display(['y    :' sprintf('%%f ', y(1:5))]);
     %%display(['z    :' sprintf('%%f ', z(1:5))]);
 
@@ -316,41 +319,56 @@ function [obj,x,y,xbar,u,z,Kxbar,Kx,KTy,KTu,s,prev_x,prev_Kx,prev_z,prev_u] = pc
         linop_size = fn.lin_op.size
         slc = "(%(offset)d+1):(%(offset)d + %(linop_size)d)" % locals()
         
-        shape = list(fn.lin_op.shape[::-1])
+        shape = list(fn.lin_op.shape)
         numdims = len(shape)
         script = fn.matlab_prox_script
         
-        pciter += """
-        z_slc = permute( reshape( z(%(slc)s), %(shape)s ), %(numdims)d:-1:1 );
+        if sigma == 1:
+            pciter += """
+        z_slc = reshape( z(%(slc)s), %(shape)s );
+        prox_out = obj.%(script)s(z_slc, 1);
+        y(%(slc)s) = (z_slc - %(sigma)f * prox_out);
+        %%display(['z_slc:' sprintf('%%f ', z_slc(1:5))]);
+        %%display(['y    :' sprintf('%%f ', y((%(offset)d+1):(%(offset)d + 5)))]);
+
+""" % locals()
+            
+        else:
+            pciter += """
+        z_slc = reshape( z(%(slc)s), %(shape)s );
         rho = %(sigma)f;
         prox_out = obj.%(script)s(z_slc ./ rho, rho);
-        y(%(slc)s) = permute( (z_slc - %(sigma)f * prox_out), %(numdims)d:-1:1 );
+        y(%(slc)s) = (z_slc - %(sigma)f * prox_out);
         %%display(['z_slc:' sprintf('%%f ', z_slc(1:5))]);
         %%display(['y    :' sprintf('%%f ', y((%(offset)d+1):(%(offset)d + 5)))]);
 
 """ % locals()
         offset += fn.lin_op.size
     
+    tauf = '' if tau == 1 else "%(tau)f *" % locals()
     pciter += """
     y(%(offset)d + 1:end) = 0;
     
     [obj, KTy] = %(Kadjoint)s(y);
     %%display(['KTy  :' sprintf('%%f ', KTy(1:5))]);
     
-    x = x - %(tau)f * KTy;
+    x = x - %(tauf)s KTy;
 """ % locals()
     if len(omega_fns) > 0:
-        shape = omega_fns[0].lin_op.shape[::-1]
+        shape = list(omega_fns[0].lin_op.shape)
         numdims = len(shape)
         script = omega_fns[0].matlab_prox_script
         pciter += """
-        prox_in = permute(reshape(x, %(shape)s), %(numdims)d:-1:1 );
+        prox_in = reshape(x, %(shape)s);
         rho = 1./%(tau)f;
         x(1:end) = script(prox_in, rho);
 """ % locals()
+
+    thetaf = '' if theta == 1 else '%(theta)f *' % locals()
+
     pciter += """
     %%display(['x    :' sprintf('%%f ', x(1:5))]);
-    xbar = x + %(theta)f * (x - prev_x);
+    xbar = x + %(thetaf)s (x - prev_x);
 end""" % locals()
     
     mlclass.add_method(pciter)
@@ -434,6 +452,8 @@ end""" % locals()
                 obj_str = ''
                 if verbose == 2:
                     objstr = ", obj_val = %02.03e [%s] " % (objval, ", ".join("%02.03e" % x for x in ov))
+                else:
+                    objstr = ""
 
                 # Evaluate metric potentially
                 metstr = '' if metric is None else ", {}".format(metric.message(v))
@@ -455,7 +475,7 @@ end""" % locals()
     # Assign values to variables.
     eng.run('xcpu = gather(x);')
     x = matlab_support.get_array('xcpu')
-    K.update_vars(x)
+    K.update_vars(x, order='F')
     if not callback is None:
         callback(x)
     # Return optimal value.

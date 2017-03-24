@@ -97,8 +97,8 @@ class conv_nofft(lin_op.LinOp):
         matlab_support.put_array(prefix + "_kernel_raw", self.kernel, globalvar = True)
         res  = "global %(prefix)s_kernel_raw;" % locals()
         res += "obj.d.%(prefix)s_kernel = gpuArray(%(prefix)s_kernel_raw);\n" % locals()
-        res += "obj.d.%(prefix)s_truncy = @(c, s) [ sum(c(1:(1+s),:),1); c((1+s+1):(end-s-1),:); sum(c((end-s):end,:),1)];\n" % locals()
-        res += "obj.d.%(prefix)s_truncx = @(c, s) [ sum(c(:,1:(1+s)),2)  c(:,(1+s+1):(end-s-1))  sum(c(:,(end-s):end),2)];\n" % locals()
+        res += "obj.d.%(prefix)s_truncy = @(c, s) cat(1, sum(c(1:(1+s),:),1), c((1+s+1):(end-s-1),:), sum(c((end-s):end,:),1));\n" % locals()
+        res += "obj.d.%(prefix)s_truncx = @(c, s) cat(2, sum(c(:,1:(1+s)),2), c(:,(1+s+1):(end-s-1)), sum(c(:,(end-s):end),2));\n" % locals()
         return res
             
     def forward_matlab(self, prefix, inputs, outputs):
@@ -118,6 +118,7 @@ else
         %(out)s(:,:,i) = conv2(padded(:,:,i), obj.d.%(prefix)s_kernel, 'valid');
     end
 end
+clear padded;
 """ % locals()
         return res
         
@@ -128,6 +129,9 @@ end
         ts = list([s//2 for s in self.kernel.shape])
         ts1 = ts[0]
         ts2 = ts[1]
+        ts1p1 = ts1+1
+        ts2p1 = ts2+1
+        
         ts = str(ts)
         
         res = """
@@ -145,6 +149,7 @@ else
         %(out)s(:,:,i) = obj.d.%(prefix)s_truncx(t, %(ts2)s);
     end
 end
+clear padded;
 """ % locals()
         return res
 
