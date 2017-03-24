@@ -52,10 +52,10 @@ class weighted_norm1(norm1):
         """x = sign(v)*(|v| - |W|/rho)_+
         """
         idxs = self.weight != 0
-        np.sign(v[idxs], self.v_sign[idxs])
-        np.absolute(v[idxs], v[idxs])
+        self.v_sign[idxs] = np.sign(v[idxs])
+        self.v[idxs] = np.absolute(v[idxs])
         v[idxs] -= np.absolute(self.weight[idxs]) / rho
-        np.maximum(v[idxs], 0, v[idxs])
+        v[idxs] = np.maximum(v[idxs], 0)
         v[idxs] *= self.v_sign[idxs]
         return v
 

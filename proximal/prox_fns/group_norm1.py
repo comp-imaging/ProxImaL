@@ -76,7 +76,55 @@ class group_norm1(ProxFn):
             v *= self.v_group_norm
 
         return v
-
+    
+    def _gen_matlab_indices(self):
+        res = []
+        idx = [-1] * len(self.v_group_norm.shape)
+        for d in self.group_dims:
+            idx[d] = 0
+        while 1:
+            i = ",".join(':' if x < 0 else str(x+1) for x in idx)
+            res.append(i)
+            # increase index
+            endOfIter = False
+            for k in range(len(idx)-1, -2, -1):
+                if k == -1:
+                    endOfIter = True
+                    break
+                if idx[k] >= 0:
+                    idx[k] += 1
+                    if idx[k] >= self.v_group_norm.shape[k]:
+                        idx[k] = 0
+                    else:
+                        break
+            if endOfIter:
+                break
+        return res
+    
+    def _prox_matlab(self, prefix, output_var, rho_var, v_var, *args, **kwargs):
+        # we want to do this (example for a group of size 2x2)
+        #   tmp = arrayfun(@(v1,v2,v3,v4)(sqrt( v1^2 + v2^2 + v3^2 + v4^2 )), v(:,:,1,1), v(:,:,1,2), v(:,:,2,1), v(:,:,2,2))
+        #   o = bsxfun(@(v, gn)(v*max(0, 1 - (1/rho)*(1/gn))), v, tmp)
+        
+        idx = self._gen_matlab_indices()
+        t = len(idx)
+        
+        res  = "tmp = arrayfun(@(" + ",".join(["v%d"%k for k in range(t)]) + ")"
+        res += "sqrt(" + " + ".join(["v%d^2"%k for k in range(t)]) + "), "
+        res += ", ".join(["%s(%s)" % (v_var, i) for i in idx]) + ");\n"
+        res += "tmp = arrayfun(@(gn, rho) max(0, 1 - (1/(rho*(gn + (gn == 0))))), tmp, %(rho_var)s );\n" % locals()
+        res += "%(output_var)s = bsxfun(@(v,gn)(v*gn), %(v_var)s, tmp);\n" % locals()
+        return res
+    
+    def _eval_matlab(self, prefix, output_var, v_var):
+        idx = self._gen_matlab_indices()
+        t = len(idx)
+        
+        res  = "%(output_var)s = sum(reshape(arrayfun(@(" % locals() + ",".join(["v%d"%k for k in range(t)]) + ")"
+        res += "sqrt(" + " + ".join(["v%d^2"%k for k in range(t)]) + "), "
+        res += ", ".join(["%s(%s)" % (v_var, i) for i in idx]) + "), 1, []));\n"        
+        return res
+    
     def _eval(self, v):
         """Evaluate the function on v (ignoring parameters).
         """
@@ -147,6 +195,9 @@ class weighted_group_norm1(group_norm1):
         idxs = self.weight != 0
         v[idxs] *= self.v_group_norm[idxs]
         return v
+    
+    def _prox_matlab(self, *args, **kw):
+        raise NotImplemented
 
     def _eval(self, v):
         """Evaluate the function on v (ignoring parameters).

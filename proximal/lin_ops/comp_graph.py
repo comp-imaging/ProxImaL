@@ -3,8 +3,12 @@ from .edge import Edge
 from .variable import Variable
 from .constant import Constant
 from .vstack import split
+from ..utils import matlab_support
+from .vstack import vstack
 from proximal.utils.timings_log import TimingsLog
 import copy as cp
+import tempfile
+import os.path
 from collections import defaultdict
 import numpy as np
 from scipy.sparse.linalg import LinearOperator, eigs
@@ -13,10 +17,20 @@ from scipy.sparse.linalg import LinearOperator, eigs
 class CompGraph(object):
     """A computation graph representing a composite lin op.
     """
+    
+    instanceCnt = 0
 
     def __init__(self, end, implem=None):
+        if implem == 'matlab':
+            matlab = True
+            implem = None
+        else:
+            matlab = False
+        self.instanceID = CompGraph.instanceCnt
+        CompGraph.instanceCnt += 1
         self.orig_end = end
         self.end = cp.copy(end)
+        self.end.orig_node = end.orig_node
         self.shape = self.end.shape
         # Construct via graph traversal.
         self.nodes = []
@@ -30,6 +44,7 @@ class CompGraph(object):
         while len(ready) > 0:
             curr = ready.pop(0)
             if isinstance(curr, Variable):
+                # new_vars may contain specific variables more than once
                 new_vars.append(curr)
             # Zero out constants.
             self.nodes.append(curr)
@@ -38,9 +53,11 @@ class CompGraph(object):
                 # Zero out constants.
                 if isinstance(node, Constant):
                     node = Constant(np.zeros(curr.shape))
+                    node.orig_node = None
                     self.constants.append(node)
                 else:
                     node = cp.copy(node)
+                    node.orig_node = node.orig_node
                     # Default implementation.
                     if implem is not None:
                         node.implem = implem
@@ -55,9 +72,17 @@ class CompGraph(object):
         # Make copy node for each variable.
         old_vars = self.orig_end.variables()
         id2copy = {}
+        copy_nodes = []
+        self.var_info = {}
+        offset = 0
         for var in old_vars:
             copy_node = copy(var.shape, implem=implem)
+            copy_node.orig_node = None
             id2copy[var.uuid] = copy_node
+            copy_nodes.append(copy_node)
+            self.var_info[var.uuid] = offset
+            offset += copy_node.size
+            #print("Variable %s(%s): offset=%d size=%d" % (var.varname, var.uuid, self.var_info[var.uuid], copy_node.size))
             self.output_edges[copy_node] = []
             self.nodes.append(copy_node)
 
@@ -70,22 +95,15 @@ class CompGraph(object):
             self.edges.append(edge)
             self.output_edges[copy_node].append(edge)
             idx = self.input_edges[output_node].index(output_edge)
+            #print("Variable %s(%s): idx=%d" % (var.varname, var.uuid, idx))
             self.input_edges[output_node][idx] = edge
 
         # Record information about variables.
         self.input_size = sum([var.size for var in old_vars])
         self.output_size = self.end.size
-        self.var_info = {}
-
-        # Make single split node as start node.
-        copy_nodes = []
-        offset = 0
-        for key, val in id2copy.items():
-            copy_nodes.append(val)
-            self.var_info[key] = offset
-            offset += val.size
 
         self.start = split(copy_nodes, implem=implem)
+        self.start.orig_node = None
         self.nodes.append(self.start)
         split_outputs = []
         for copy_node in copy_nodes:
@@ -95,9 +113,21 @@ class CompGraph(object):
 
         self.edges += split_outputs
         self.output_edges[self.start] = split_outputs
+        
+        self.matlab_forward_script = None
+        self.matlab_adjoint_script = None
+        
         # A record of timings.
         self.forward_log = TimingsLog(self.nodes + [self])
         self.adjoint_log = TimingsLog(self.nodes + [self])
+        
+    def get_node_output_name(self, original_node):
+        n = list(filter(lambda x: x.orig_node is original_node, self.nodes))
+        if len(n) != 1:
+            if isinstance(original_node, vstack):
+                return "graphout"
+            raise RuntimeError("Unexpected number of filtered nodes: %s" % len(n))
+        return self.get_output_names(n[0])[0]
 
     def get_inputs(self, node):
         """Returns the input data for a node.
@@ -109,7 +139,101 @@ class CompGraph(object):
         """
         return [e.data for e in self.output_edges[node]]
 
-    def forward(self, x, y):
+    def get_input_names(self, node):
+        """Returns the input data for a node.
+        """
+        return ["obj.d." + e.name for e in self.input_edges[node]]
+
+    def get_output_names(self, node):
+        """Returns the input data for a node.
+        """
+        return ["obj.d." + e.name for e in self.output_edges[node]]
+
+    def genmatlab(self, mlclass):
+        """Generate matlab script to calculate the forward linop.
+        """
+        node_prefixes = {}
+        init = []
+        forward = []
+        adjoint = []
+        
+        def forward_eval(node):
+            if not node in node_prefixes:
+                node_prefixes[node] = "node%d" % len(node_prefixes)
+            if node is self.start:
+                inputs = ["graphin"]
+            else:
+                inputs = self.get_input_names(node)
+            if node is self.end:
+                outputs = ["graphout"]
+            else:
+                outputs = self.get_output_names(node)
+
+            # Run forward op and time it.
+            prefix = node_prefixes[node]
+            icode = node.init_matlab(prefix)
+            assert not icode is NotImplemented and not icode is None
+            init.append("% Init code for " + str(node).replace("\n",";") + "\n")
+            init.append(icode)
+            fcode = node.forward_matlab(prefix, inputs, outputs)
+            assert not fcode is NotImplemented and not fcode is None, str(node)
+            forward.append("% Forward code for " + str(node).replace("\n",";") + "\n")
+            forward.append(fcode)
+
+        def adjoint_eval(node):
+            if not node in node_prefixes:
+                node_prefixes[node] = "node%d" % len(node_prefixes)
+            if node is self.end:
+                outputs = ["graphout"]
+            else:
+                outputs = self.get_output_names(node)
+
+            if node is self.start:
+                inputs = ["graphin"]
+            else:
+                # assign a unique name for each output edge
+                inputs = self.get_input_names(node)
+
+            # Run forward op and time it.
+            prefix = node_prefixes[node]
+            acode = node.adjoint_matlab(prefix, outputs, inputs)
+            assert not acode is NotImplemented and not acode is None, str(node)
+            adjoint.append("% Adjoint code for " + str(node).replace("\n",";") + "\n")
+            adjoint.append(acode)
+
+        # Evaluate forward graph and time it.
+        self.traverse_graph(forward_eval, True)
+        self.traverse_graph(adjoint_eval, False)
+        
+        instanceID = self.instanceID
+        init_code = "    ".join(init)
+        mlclass.add_method("""
+function obj = comp_graph_%(instanceID)d_init(obj)
+    %(init_code)s
+end
+""" % locals(), constructor = "obj = obj.comp_graph_%(instanceID)d_init();" % locals())
+        
+        forward_code = "    ".join(forward)
+        mlclass.add_method("""
+function [obj, graphout] = comp_graph_%(instanceID)d_forward(obj, graphin)
+    graphin = gpuArray(graphin);
+    %(forward_code)s
+end
+""" % locals())
+
+        adjoint_code = "    ".join(adjoint)
+        mlclass.add_method("""
+function [obj, graphin] = comp_graph_%(instanceID)d_adjoint(obj, graphout)
+    graphout = gpuArray(graphout);
+    %(adjoint_code)s
+end
+""" % locals())
+        
+        self.matlab_instance = mlclass.instancename
+        self.matlab_forward_script = "comp_graph_%(instanceID)d_forward" % locals()
+        self.matlab_adjoint_script = "comp_graph_%(instanceID)d_adjoint" % locals()
+        
+    def forward(self, x, y, nocopy=False):
         """Evaluates the forward composition.
 
         Reads from x and writes to y.
@@ -128,13 +252,25 @@ class CompGraph(object):
             self.forward_log[node].tic()
             node.forward(inputs, outputs)
             self.forward_log[node].toc()
-        # Evaluate forward graph and time it.
+            
         self.forward_log[self].tic()
-        self.traverse_graph(forward_eval, True)
+        if self.matlab_forward_script is None:
+            # Evaluate forward graph and time it.
+            self.traverse_graph(forward_eval, True)
+        else:
+            eng = matlab_support.engine()
+            if not nocopy:
+                matlab_support.put_array('graphin_std', x.astype(np.float32))
+            self.forward_log[self].tic()
+            eng.run("[" + self.matlab_instance + ", graphout_std] = gather(" + self.matlab_instance + "." + self.matlab_forward_script + "(graphin_std));", nargout=0)
+            self.forward_log[self].toc()
+            if not nocopy:
+                np.copyto(y, np.reshape(matlab_support.get_array('graphout_std'), y.shape) )
         self.forward_log[self].toc()
+            
         return y
 
-    def adjoint(self, u, v):
+    def adjoint(self, u, v, nocopy=False):
         """Evaluates the adjoint composition.
 
         Reads from u and writes to v.
@@ -149,15 +285,61 @@ class CompGraph(object):
                 inputs = [v]
             else:
                 inputs = self.get_inputs(node)
-            # Run adjoint op and time it.
+            # Run adjoint op and time it.prox
             self.adjoint_log[node].tic()
             node.adjoint(outputs, inputs)
             self.adjoint_log[node].toc()
         # Evaluate adjoint graph and time it.
         self.adjoint_log[self].tic()
-        self.traverse_graph(adjoint_eval, False)
+        if self.matlab_adjoint_script is None:
+            self.traverse_graph(adjoint_eval, False)
+        else:
+            eng = matlab_support.engine()
+            if not nocopy:
+                matlab_support.put_array('graphout_std', u.astype(np.float32))
+            self.adjoint_log[self].tic()
+            eng.run("[" + self.matlab_instance + ", graphin_std] = gather(" + self.matlab_instance + "." + self.matlab_adjoint_script + "(graphout_std));", nargout=0)
+            self.adjoint_log[self].toc()
+            if not nocopy:
+                np.copyto(v, np.reshape(matlab_support.get_array('graphin_std'), v.shape) )
         self.adjoint_log[self].toc()
+            
         return v
+
+    def get_inter_results(self, forward = True):
+        res = {}
+        
+        def inter_python(node):
+            inputs = []
+            if forward:
+                if not node is self.start:
+                    inputs = self.get_inputs(node)
+            else:
+                if not node is self.end:
+                    inputs = self.get_outputs(node)
+            res[("%03d_" % len(res)) + str(node)] = inputs
+                
+        def inter_matlab(node):
+            innames = []
+            if forward:
+                if not node is self.start:
+                    innames = self.get_input_names(node)
+            else:
+                if not node is self.end:
+                    innames = self.get_output_names(node)
+            e = matlab_support.engine()
+            node_ins = []
+            for n in innames:
+                e.run('tmp = gather(%s);' % n)
+                #e.workspace['tmp'] = e.eval('gather(%s);' % n)
+                node_ins.append((matlab_support.get_array('tmp'), n))
+            res[("%03d_" % len(res)) + str(node)] = node_ins
+                
+        if self.matlab_forward is None:
+            self.traverse_graph(inter_python, forward)
+        else:
+            self.traverse_graph(inter_matlab, forward)
+        return res
 
     def traverse_graph(self, node_fn, forward):
         """Traverse the graph and apply the given function at each node.
@@ -201,7 +383,7 @@ class CompGraph(object):
     def norm_bound(self, final_output_mags):
         """Returns fast upper bound on ||K||.
 
-        Parameters
+        Parametersprox
         ----------
         final_output_mags : list
             Place to store final output magnitudes.
@@ -234,6 +416,11 @@ class CompGraph(object):
             offset = self.var_info[var.uuid]
             var.value = np.reshape(val[offset:offset + var.size], var.shape)
             offset += var.size
+            
+    def update_vars_matlab(self, val_var):
+        eng = matlab_support.engine()
+        # make sure that the graph is run in forward direction
+        eng.run("[" + self.matlab_instance + ", ~] = " + self.matlab_instance + "." + self.matlab_forward_script + "(" + val_var + ");", nargout=0)
 
     def x0(self):
         res = np.zeros(self.input_size)

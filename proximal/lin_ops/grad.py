@@ -130,6 +130,62 @@ class grad(LinOp):
 
                 outputs[0] += (-fd)
 
+    def init_matlab(self, prefix):
+        return "%no code\n"
+
+    def forward_matlab(self, prefix, inputs, outputs):
+        def create_open_index(n,k,v):
+            return (":,"*k) + v + (",:"*(n-k-1))
+        f = inputs[0]
+        out = outputs[0]
+        shape = list(self.shape)
+        res = """
+%(out)s = zeros(%(shape)s, 'single', 'gpuArray');
+""" % locals()
+        for j in range(self.dims):
+            
+            res += "%(out)s(" % locals()
+            res += create_open_index(len(shape)-1, j, "1:end-1") + "," + str(j+1)
+            res += ") = %(f)s(" % locals()
+            res += create_open_index(len(shape)-1, j, "2:end")
+            res += ") - %(f)s(" % locals()
+            res += create_open_index(len(shape)-1, j, "1:end-1")
+            res += ");\n"
+        return res
+            
+    def adjoint_matlab(self, prefix, inputs, outputs):
+        def create_open_index(n,k,v):
+            return (":,"*k) + v + (",:"*(n-k-1))
+        g = inputs[0]
+        out = outputs[0]
+        gshape = list(self.shape)
+        fshape = list(self.shape[:-1])
+        res = ""
+        for j in range(self.dims):
+            res += "tmp = zeros(%(fshape)s, 'single', 'gpuArray');\n" % locals()
+            res += "tmp("
+            res += create_open_index(len(fshape), j, "2:end-1")
+            res += ") = %(g)s(" % locals()
+            res += create_open_index(len(fshape), j, "2:end-1") + "," + str(j+1)
+            res += ") - %(g)s(" % locals()
+            res += create_open_index(len(fshape), j, "1:end-2") + "," + str(j+1)
+            res += ");\n"
+            res += "tmp("
+            res += create_open_index(len(fshape), j, "1")
+            res += ") = %(g)s(" % locals()
+            res += create_open_index(len(fshape), j, "1") + "," + str(j+1)
+            res += ");\n"
+            res += "tmp("
+            res += create_open_index(len(fshape), j, "end")
+            res += ") = - %(g)s(" % locals()
+            res += create_open_index(len(fshape), j, "end-1") + "," + str(j+1)
+            res += ");\n"
+            if j > 0:
+                res += "%(out)s = %(out)s - tmp;\n" % locals()
+            else:
+                res += "%(out)s = -tmp;\n" % locals()
+        return res            
+
     def get_dims(self):
         """Return the dimensinonality of the gradient
         """

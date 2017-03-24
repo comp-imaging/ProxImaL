@@ -31,7 +31,18 @@ class Constant(LinOp):
         Reads from inputs and writes to outputs.
         """
         pass
-
+    
+    def init_matlab(self, prefix):
+        from ..utils import matlab_support
+        matlab_support.put_array(prefix + "_value", np.array(self._value, np.float32), globalvar = True)
+        return "global %(prefix)s_value; obj.d.%(prefix)s_value_gpu = gpuArray(%(prefix)s_value);\n" % locals()
+    
+    def forward_matlab(self, prefix, inputs, outputs):
+        return outputs[0] + " = obj.d.%(prefix)s_value_gpu;\n" % locals()
+        
+    def adjoint_matlab(self, prefix, inputs, outputs):
+        return "% no code\n"
+        
     @property
     def value(self):
         return self._value

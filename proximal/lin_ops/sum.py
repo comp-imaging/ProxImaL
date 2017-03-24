@@ -27,6 +27,18 @@ class sum(LinOp):
         """
         for output in outputs:
             np.copyto(output, inputs[0])
+            
+    def init_matlab(self, prefix):
+        return "% no code\n"
+        
+    def forward_matlab(self, prefix, inputs, outputs):
+        return outputs[0] + " = " + " + ".join(inputs) + ";\n"
+        
+    def adjoint_matlab(self, prefix, inputs, outputs):
+        res = ""
+        for o in outputs:
+            res += o + " = " + inputs[0] + ";\n"
+        return res
 
     def is_diag(self, freq=False):
         """Is the lin op diagonal (in the frequency domain)?
@@ -87,6 +99,12 @@ class copy(sum):
         Reads from inputs and writes to outputs.
         """
         super(copy, self).forward(inputs, outputs)
+        
+    def forward_matlab(self, prefix, inputs, outputs):
+        return super(copy, self).adjoint_matlab(prefix, inputs, outputs)
+
+    def adjoint_matlab(self, prefix, inputs, outputs):
+        return super(copy, self).forward_matlab(prefix, inputs, outputs)
 
     def norm_bound(self, input_mags):
         """Gives an upper bound on the magnitudes of the outputs given inputs.
