@@ -55,9 +55,15 @@ class CompGraph(object):
         # Make copy node for each variable.
         old_vars = self.orig_end.variables()
         id2copy = {}
+        copy_nodes = []
+        self.var_info = {}
+        offset = 0
         for var in old_vars:
             copy_node = copy(var.shape, implem=implem)
             id2copy[var.uuid] = copy_node
+            copy_nodes.append(copy_node)
+            self.var_info[var.uuid] = offset
+            offset += copy_node.size
             self.output_edges[copy_node] = []
             self.nodes.append(copy_node)
 
@@ -75,15 +81,6 @@ class CompGraph(object):
         # Record information about variables.
         self.input_size = sum([var.size for var in old_vars])
         self.output_size = self.end.size
-        self.var_info = {}
-
-        # Make single split node as start node.
-        copy_nodes = []
-        offset = 0
-        for key, val in id2copy.items():
-            copy_nodes.append(val)
-            self.var_info[key] = offset
-            offset += val.size
 
         self.start = split(copy_nodes, implem=implem)
         self.nodes.append(self.start)
