@@ -20,7 +20,7 @@ class CompGraph(object):
     
     instanceCnt = 0
 
-    def __init__(self, end, implem=None):
+    def __init__(self, end, implem=None, keep_intermediates=False):
         if implem == 'matlab':
             implem = None
         self.instanceID = CompGraph.instanceCnt
@@ -70,7 +70,7 @@ class CompGraph(object):
                         node.implem = implem
                 if not node in ready and not node in done:
                     ready.append(node)
-                edge = Edge(node, curr, node.shape, resultNeeded = curr is self.end)
+                edge = Edge(node, curr, node.shape, resultNeeded = (curr is self.end) or keep_intermediates)
                 input_edges.append(edge)
                 if not node in self.output_edges:
                     self.output_edges[node] = [edge]
@@ -289,21 +289,23 @@ end
                     np.copyto(outputs[io], outputs[0])
             self.forward_log[node].toc()
             
-        self.forward_log[self].tic()
         if self.matlab_forward_script is None:
+            self.forward_log[self].tic()
             # Evaluate forward graph and time it.
             self.traverse_graph(forward_eval, True)
+            self.forward_log[self].toc()
         else:
             eng = matlab_support.engine()
             if not nocopy:
-                matlab_support.put_array('graphin_std', x.astype(np.float32))
+                xt = self.reorder_x(x, 'C', 'F')
+                matlab_support.put_array('graphin_std', xt.astype(np.float32))
             self.forward_log[self].tic()
-            eng.run("[" + self.matlab_instance + ", graphout_std] = gather(" + self.matlab_instance + "." + self.matlab_forward_script + "(graphin_std));", nargout=0)
+            eng.run("[" + self.matlab_instance + ", graphout] = " + self.matlab_instance + "." + self.matlab_forward_script + "(graphin_std); graphout_std = gather(graphout);", nargout=0)
             self.forward_log[self].toc()
             if not nocopy:
-                np.copyto(y, np.reshape(matlab_support.get_array('graphout_std'), y.shape) )
-        self.forward_log[self].toc()
-            
+                yt = matlab_support.get_array('graphout_std')
+                ytt = self.reorder_y(yt, 'F', 'C')
+                np.copyto(y, np.reshape(ytt, y.shape) )
         return y
 
     def adjoint(self, u, v, nocopy=False):
@@ -325,29 +327,33 @@ end
             self.adjoint_log[node].tic()
             if node in self.split_nodes:
                 for io in range(len(outputs)):
-                    node.adjoint(outputs[io], inputs)
+                    node.adjoint([outputs[io]], inputs)
                     assert(len(inputs) == 1)
                     if io == 0:
                         res = inputs[0].copy()
                     else:
                         res += inputs[0]
+                np.copyto(inputs[0], res)
             else:
                 node.adjoint(outputs, inputs)
             self.adjoint_log[node].toc()
         # Evaluate adjoint graph and time it.
-        self.adjoint_log[self].tic()
         if self.matlab_adjoint_script is None:
+            self.adjoint_log[self].tic()
             self.traverse_graph(adjoint_eval, False)
+            self.adjoint_log[self].toc()
         else:
             eng = matlab_support.engine()
             if not nocopy:
-                matlab_support.put_array('graphout_std', u.astype(np.float32))
+                ut = self.reorder_y(u, 'C', 'F')
+                matlab_support.put_array('graphout_std', ut.astype(np.float32))
             self.adjoint_log[self].tic()
-            eng.run("[" + self.matlab_instance + ", graphin_std] = gather(" + self.matlab_instance + "." + self.matlab_adjoint_script + "(graphout_std));", nargout=0)
+            eng.run("[" + self.matlab_instance + ", graphin] = " + self.matlab_instance + "." + self.matlab_adjoint_script + "(graphout_std); graphin_std = gather(graphin);", nargout=0)
             self.adjoint_log[self].toc()
             if not nocopy:
-                np.copyto(v, np.reshape(matlab_support.get_array('graphin_std'), v.shape) )
-        self.adjoint_log[self].toc()
+                vt = matlab_support.get_array('graphin_std')
+                vt = self.reorder_x(vt, 'F', 'C')
+                np.copyto(v, np.reshape(vt, v.shape) )
             
         return v
 
@@ -375,12 +381,13 @@ end
             e = matlab_support.engine()
             node_ins = []
             for n in innames:
+                n = n.replace('obj', self.matlab_instance)
                 e.run('tmp = gather(%s);' % n)
                 #e.workspace['tmp'] = e.eval('gather(%s);' % n)
                 node_ins.append((matlab_support.get_array('tmp'), n))
             res[("%03d_" % len(res)) + str(node)] = node_ins
                 
-        if self.matlab_forward is None:
+        if self.matlab_forward_script is None:
             self.traverse_graph(inter_python, forward)
         else:
             self.traverse_graph(inter_matlab, forward)
@@ -473,6 +480,27 @@ end
             if var.initval is not None:
                 offset = self.var_info[var.uuid]
                 res[offset:offset + var.size] = np.ravel(var.initval, order=order)
+        return res
+    
+    def reorder_x(self, x, xorder, neworder):
+        res = np.zeros(self.input_size)
+        for var in self.orig_end.variables():
+            offset = self.var_info[var.uuid]
+            val = x[offset:offset + var.size]
+            val = np.reshape(val, var.shape, order=xorder)
+            res[offset:offset + var.size] = np.reshape(val, var.size, order=neworder)
+        return res
+    
+    def reorder_y(self, y, yorder, neworder):
+        res = np.zeros(self.output_size)
+        offset = 0
+        for e in self.input_edges[self.end]:
+            n = e.start
+            size = n.size
+            shape = n.shape
+            val = np.reshape(y[offset:offset+size], shape, order=yorder)
+            res[offset:offset+size] = np.reshape(val, size, order=neworder)
+            offset = offset + size
         return res
         
     def __str__(self):

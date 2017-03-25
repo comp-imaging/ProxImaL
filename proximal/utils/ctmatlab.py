@@ -5,7 +5,7 @@ import numpy as np
 # 0: nothing
 # 1: stdout
 # 2: replay_session
-verbose = 0
+verbose = 2
 
 if verbose == 2:
     var_count = 0

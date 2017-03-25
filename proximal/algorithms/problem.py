@@ -186,22 +186,15 @@ class Problem(object):
                     
             if test_matlab:
                 Lp = CompGraph(vstack([fn.lin_op for fn in psi_fns]))
-                Lm = CompGraph(vstack([fn.lin_op for fn in psi_fns]), implem='matlab')
-                mlclass = matlab_support.MatlabClass()
+                Lm = CompGraph(vstack([fn.lin_op for fn in psi_fns]), implem='matlab', keep_intermediates=True)
+                mlclass = matlab_support.MatlabClass('prox_testlinops_matlab')
                 Lm.genmatlab(mlclass)
-                mlclass.generate("prox_test_matlab")
+                mlclass.generate()
+                from numpy.random import random
                 x = random(Lp.input_size)
                 yt = np.zeros(Lp.output_size)
                 y = random(Lp.output_size)
                 xt = np.zeros(Lp.input_size)
-                import timeit
-                print('python forward exec time: %.1f ms' %( timeit.timeit(lambda: Lp.forward(x, yt), number=100)/100*1000) )
-                print('matlab forward exec time: %.1f ms' %( timeit.timeit(lambda: Lm.forward(x, yt), number=100)/100*1000) )
-                print('matlab forward nocp time: %.1f ms' %( timeit.timeit(lambda: Lm.forward(x, yt, nocopy=True), number=100)/100*1000) )
-                
-                print('python adjoint exec time: %.1f ms' %( timeit.timeit(lambda: Lp.adjoint(y, xt), number=100)/100*1000) )
-                print('matlab adjoint exec time: %.1f ms' %( timeit.timeit(lambda: Lm.adjoint(y, xt), number=100)/100*1000) )
-                print('matlab adjoint nocp time: %.1f ms' %( timeit.timeit(lambda: Lm.adjoint(y, xt, nocopy=True), number=100)/100*1000) )
                 
                 x = random(Lp.input_size)
                 yp = np.zeros(Lp.output_size)
@@ -211,13 +204,12 @@ class Problem(object):
                 xm = np.zeros(Lp.input_size)
                 Lp.forward(x, yp)
                 Lm.forward(x, ym)
-               
-                if 0:
+                epsmax = 1e-4
+                if 1:
                     ip = Lp.get_inter_results(True)
                     im = Lm.get_inter_results(True)
     
                     print("Intermediates forward")                
-                    epsmax = 1e-4
                     for nname in sorted(ip.keys()):
                         for i in range(len(ip[nname])):
                             rp = ip[nname][i]
@@ -236,7 +228,7 @@ class Problem(object):
                 Lp.adjoint(y, xp)
                 Lm.adjoint(y, xm)
                 
-                if 0:
+                if 1:
                     ip = Lp.get_inter_results(False)
                     im = Lm.get_inter_results(False)
                     
@@ -249,6 +241,7 @@ class Problem(object):
                             eps = np.amax(np.abs((rp-rm).flatten()))
                             if eps > epsmax:
                                 print("NOK:", en, nname, i, eps)
+                                xxx
                             else:
                                 print(" OK:", en, nname, i, eps)
                                 
@@ -256,6 +249,14 @@ class Problem(object):
                 assert( not np.all(xm == 0) )
                 assert( np.all(np.abs(xp-xm) < epsmax) )
                 
+                import timeit
+                print('python forward exec time: %.1f ms' %( timeit.timeit(lambda: Lp.forward(x, yt), number=100)/100*1000) )
+                print('matlab forward exec time: %.1f ms' %( timeit.timeit(lambda: Lm.forward(x, yt), number=100)/100*1000) )
+                print('matlab forward nocp time: %.1f ms' %( timeit.timeit(lambda: Lm.forward(x, yt, nocopy=True), number=100)/100*1000) )
+
+                print('python adjoint exec time: %.1f ms' %( timeit.timeit(lambda: Lp.adjoint(y, xt), number=100)/100*1000) )
+                print('matlab adjoint exec time: %.1f ms' %( timeit.timeit(lambda: Lm.adjoint(y, xt), number=100)/100*1000) )
+                print('matlab adjoint nocp time: %.1f ms' %( timeit.timeit(lambda: Lm.adjoint(y, xt, nocopy=True), number=100)/100*1000) )
                 
             opt_val = module.solve(psi_fns, omega_fns,
                                    lin_solver=self.lin_solver,

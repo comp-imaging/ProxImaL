@@ -175,7 +175,7 @@ class grad(LinOp):
                 jp1 = j+1
                 res += "tmp = zeros(%(fshape)s, 'single', 'gpuArray');\n" % locals()
                 res += "tmp("
-                res += create_open_index(len(fshape), j, "1:%d" % (fshape[j]-1))
+                res += create_open_index(len(fshape), j, "2:%d" % (fshape[j]))
                 gidx = create_open_index(len(gshape), len(gshape)-1, str(jp1))
                 res += ") = diff(%(g)s(%(gidx)s), 1, %(jp1)d);\n" % locals()
                 res += "tmp("

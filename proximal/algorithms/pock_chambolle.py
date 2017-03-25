@@ -43,6 +43,27 @@ def partition(prox_fns, try_diagonalize=True):
     return psi_fns, omega_fns
 
 
+def display_matrix(M):
+    # display the corners of M and a point in the middle
+    idx = [0] * len(M.shape)
+    while 1:
+        print(("%3d "*len(idx)) % tuple(idx), "-> %+02.03e" % M.item(*idx))
+        ok = False
+        i = -1
+        while not ok:
+            if idx[i] == 0 and M.shape[i] > 1:
+                ok = True
+                idx[i] = M.shape[i]-1
+            else:
+                idx[i] = 0
+            i = i-1
+            if -i > len(idx):
+                break
+        if not ok:
+            break
+    idx = [s//2 for s in M.shape]
+    print(("%3d "*len(idx)) % tuple(idx), "-> %+02.03e" % M.item(*idx))
+
 def solve(psi_fns, omega_fns, tau=None, sigma=None, theta=None,
           max_iters=1000, eps_abs=1e-3, eps_rel=1e-3, x0=None,
           lin_solver="cg", lin_solver_options=None, conv_check=100,
@@ -127,31 +148,28 @@ def solve(psi_fns, omega_fns, tau=None, sigma=None, theta=None,
         np.copyto(prev_Kx, Kx)
 
         # Compute z
-        #print('xbar ', xbar.flatten(order='F')[0:5])
         K.forward(xbar, Kxbar)
-        #print('Kxbar', Kxbar.flatten(order='F')[0:5])
         z = y + sigma * Kxbar
-        #print('y    ', y.flatten(order='F')[0:5])
-        #print('z    ', z.flatten(order='F')[0:5])
 
         # Update y.
+        #print("--------------- psi_fns --------------------")
         offset = 0
         for fn in psi_fns:
             slc = slice(offset, offset + fn.lin_op.size, None)
             z_slc = np.reshape(z[slc], fn.lin_op.shape)
 
+            #print("z_slc", offset)
+            #display_matrix(z_slc)
+
             # Moreau identity: apply and time prox.
             prox_log[fn].tic()
             y[slc] = (z_slc - sigma * fn.prox(sigma, z_slc / sigma, i)).flatten()
             prox_log[fn].toc()
-            #print('z_slc:', z_slc.flatten(order='F')[0:5])
-            #print('y    :', y.flatten(order='F')[offset:offset+5])
             offset += fn.lin_op.size
         y[offset:] = 0
 
         # Update x
         K.adjoint(y, KTy)
-        #print('KTy  :', KTy.flatten(order='F')[0:5])
         x -= tau * KTy
 
         if len(omega_fns) > 0:
@@ -161,7 +179,6 @@ def solve(psi_fns, omega_fns, tau=None, sigma=None, theta=None,
 
         # Update xbar
         np.copyto(xbar, x)
-        #print('x    :', x.flatten(order='F')[0:5])
         xbar += theta * (x - prev_x)
 
         # Convergence log
@@ -305,14 +322,10 @@ function [obj,x,y,xbar,u,z,Kxbar,Kx,KTy,KTu,s,prev_x,prev_Kx,prev_z,prev_u] = pc
     prev_u = u;
     prev_Kx = Kx;
     
-    %%display('--------------------------- new iteration -----------------------')
-    %%display(['xbar :' sprintf('%%f ', xbar(1:5))]);
     [obj, Kxbar] = %(Kforward)s(xbar);
-    %%display(['Kxbar:' sprintf('%%f ', Kxbar(1:5))]);
     z = y + %(sigmaf)s Kxbar;
-    %%display(['y    :' sprintf('%%f ', y(1:5))]);
-    %%display(['z    :' sprintf('%%f ', z(1:5))]);
 
+    %%display('--------------- psi_fns --------------------')
 """ % locals()
     offset = 0 
     for fn in psi_fns:
@@ -326,10 +339,10 @@ function [obj,x,y,xbar,u,z,Kxbar,Kx,KTy,KTu,s,prev_x,prev_Kx,prev_z,prev_u] = pc
         if sigma == 1:
             pciter += """
         z_slc = reshape( z(%(slc)s), %(shape)s );
+        %%display('z_slc %(offset)d');
+        %%obj.display_matrix(z_slc)
         prox_out = obj.%(script)s(z_slc, 1);
         y(%(slc)s) = (z_slc - %(sigma)f * prox_out);
-        %%display(['z_slc:' sprintf('%%f ', z_slc(1:5))]);
-        %%display(['y    :' sprintf('%%f ', y((%(offset)d+1):(%(offset)d + 5)))]);
 
 """ % locals()
             
@@ -339,8 +352,6 @@ function [obj,x,y,xbar,u,z,Kxbar,Kx,KTy,KTu,s,prev_x,prev_Kx,prev_z,prev_u] = pc
         rho = %(sigma)f;
         prox_out = obj.%(script)s(z_slc ./ rho, rho);
         y(%(slc)s) = (z_slc - %(sigma)f * prox_out);
-        %%display(['z_slc:' sprintf('%%f ', z_slc(1:5))]);
-        %%display(['y    :' sprintf('%%f ', y((%(offset)d+1):(%(offset)d + 5)))]);
 
 """ % locals()
         offset += fn.lin_op.size
@@ -350,7 +361,6 @@ function [obj,x,y,xbar,u,z,Kxbar,Kx,KTy,KTu,s,prev_x,prev_Kx,prev_z,prev_u] = pc
     y(%(offset)d + 1:end) = 0;
     
     [obj, KTy] = %(Kadjoint)s(y);
-    %%display(['KTy  :' sprintf('%%f ', KTy(1:5))]);
     
     x = x - %(tauf)s KTy;
 """ % locals()
@@ -367,11 +377,38 @@ function [obj,x,y,xbar,u,z,Kxbar,Kx,KTy,KTu,s,prev_x,prev_Kx,prev_z,prev_u] = pc
     thetaf = '' if theta == 1 else '%(theta)f *' % locals()
 
     pciter += """
-    %%display(['x    :' sprintf('%%f ', x(1:5))]);
     xbar = x + %(thetaf)s (x - prev_x);
 end""" % locals()
     
     mlclass.add_method(pciter)
+    mlclass.add_method("""
+function display_matrix(obj, M)
+    % display the corners of M and a point in the middle
+    idx = num2cell(ones(length(size(M)), 1));
+    while 1
+        display([sprintf('%3d ', cell2mat(idx)) sprintf(' -> %+02.03e', M(sub2ind(size(M), idx{:})))]);
+        ok = 0;
+        i = length(idx);
+        while ~ok
+            if idx{i} == 1 && size(M,i) > 1
+                ok = 1;
+                idx{i} = size(M,i);
+            else
+                idx{i} = 1;
+            end
+            i = i-1;
+            if i < 1
+                break
+            end
+        end
+        if ~ok
+            break
+        end
+    end
+    idx = num2cell(floor(size(M)/2) + 1);
+    display([sprintf('%3d ', cell2mat(idx)) sprintf(' -> %+02.03e', M(sub2ind(size(M), idx{:})))]);
+end
+""")
     mlclass.generate()
 
     eng = matlab_support.engine()
