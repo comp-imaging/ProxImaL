@@ -14,11 +14,15 @@ class LinOp(object):
     """Represents a linear operator.
     """
     __metaclass__ = abc.ABCMeta
+    
+    instanceCnt = 0
 
     def __init__(self, input_nodes, shape, implem=None):
         self.input_nodes = [cast_to_const(node) for node in input_nodes]
         self.shape = self.format_shape(shape)
         self.orig_node = self
+        self.linop_id = LinOp.instanceCnt
+        LinOp.instanceCnt += 1
         if implem is not None:
             self.set_implementation(implem)
         else:

@@ -1,6 +1,6 @@
 from .lin_op import LinOp
 import numpy as np
-
+from ..utils.codegen import indent
 
 class subsample(LinOp):
     """Samples every steps[i] pixel along axis i,
@@ -32,6 +32,29 @@ class subsample(LinOp):
         outputs[0][:] *= 0
         outputs[0][selection] = inputs[0]
         
+    def forward_cuda(self, cg, num_tmp_vars, abs_idx, parent):
+        #print("subsample:forward:cuda")
+        new_abs_idx = list(["(%s)*%d" % (ai, si) if type(ai) is str else ai*si for (ai,si) in zip(abs_idx, self.steps)])
+        code, var, num_tmp_vars = cg.input_nodes(self)[0].forward_cuda(cg, num_tmp_vars, new_abs_idx, self)
+        return "/*subsample*/\n"+code, var, num_tmp_vars
+    
+    def adjoint_cuda(self, cg, num_tmp_vars, abs_idx, parent):
+        #print("subsample:adjoint:cuda")
+        resvar = "var_%(num_tmp_vars)d" % locals()
+        new_abs_idx = list(["(%s)/%d" % (ai, si) if type(ai) is str else ai//si for (ai,si) in zip(abs_idx, self.steps)])
+        pcode, var, num_tmp_vars = cg.output_nodes(self)[0].adjoint_cuda(cg, num_tmp_vars, new_abs_idx, self)
+        pcode = indent(pcode, 4)
+        sel = " && ". join( ["((%s %% %d) == 0)" % (ai, si) for (ai,si) in zip(abs_idx, self.steps)] )
+        code = """/*subsample*/
+float %(resvar)s = 0.0f;
+if( %(sel)s )
+{
+    %(pcode)s;
+    %(resvar)s = %(var)s;
+}
+""" % locals()
+        return code, resvar, num_tmp_vars
+
     def init_matlab(self, prefix):
         return "% no code\n"
         

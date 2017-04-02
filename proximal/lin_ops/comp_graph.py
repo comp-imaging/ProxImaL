@@ -4,6 +4,7 @@ from .variable import Variable
 from .constant import Constant
 from .vstack import split
 from ..utils import matlab_support
+from ..utils.codegen import indent
 from .vstack import vstack
 from proximal.utils.timings_log import TimingsLog
 import copy as cp
@@ -12,6 +13,12 @@ import os.path
 from collections import defaultdict
 import numpy as np
 from scipy.sparse.linalg import LinearOperator, eigs
+
+import pycuda.driver as cuda
+import pycuda.autoinit
+from pycuda.compiler import SourceModule
+from pycuda import gpuarray
+import pycuda.tools
 
 
 class CompGraph(object):
@@ -53,6 +60,9 @@ class CompGraph(object):
             for node in curr.input_nodes:
                 # Zero out constants.
                 if isinstance(node, Constant):
+                    # if the constants are not zero-ed, the adjoint tests are failing
+                    # but how is that justified ?!?
+                    #node = Constant(node.value)
                     node = Constant(np.zeros(curr.shape))
                     node.orig_node = None
                     self.constants.append(node)
@@ -79,6 +89,28 @@ class CompGraph(object):
 
             self.edges += input_edges
             self.input_edges[curr] = input_edges
+
+        # replace the split nodes with copy nodes
+        for n in self.split_nodes.keys():
+            outedges = self.output_edges[n]
+            outnodes = [e.end for e in outedges]
+            copy_node = copy(n, implem=implem)
+            copy_node.input_nodes += [n]
+            self.output_edges[n] = [Edge(n, copy_node, n.shape, resultNeeded = (n is self.end) or keep_intermediates)]
+            self.input_edges[copy_node] = self.output_edges[n]
+            self.output_edges[copy_node] = []
+            self.nodes.append(copy_node)
+            for ns in outnodes:
+                inedges = self.input_edges[ns]
+                newinedges = []
+                for e in inedges:
+                    if e.start is n:
+                        e = Edge(copy_node, e.end, copy_node.shape)
+                        newinedges.append( e )
+                        self.output_edges[copy_node].append(e)
+                    else:
+                        newinedges.append( e )
+                self.input_edges[ns] = newinedges            
 
         # Make copy node for each variable.
         old_vars = self.orig_end.variables()
@@ -128,6 +160,10 @@ class CompGraph(object):
         self.matlab_forward_script = None
         self.matlab_adjoint_script = None
         
+        self.cuda_func_forward = None
+        self.cuda_func_adjoint = None
+        self.cuda_args = None
+        
         # A record of timings.
         self.forward_log = TimingsLog(self.nodes + [self])
         self.adjoint_log = TimingsLog(self.nodes + [self])
@@ -139,6 +175,12 @@ class CompGraph(object):
                 return "graphout"
             raise RuntimeError("Unexpected number of filtered nodes: %s" % len(n))
         return self.get_output_names(n[0])[0]
+
+    def input_nodes(self, node):
+        return list([e.start for e in self.input_edges[node]])
+
+    def output_nodes(self, node):
+        return list([e.end for e in self.output_edges[node]])
 
     def get_inputs(self, node):
         """Returns the input data for a node.
@@ -187,9 +229,9 @@ class CompGraph(object):
             init.append("% Init code for " + str(node).replace("\n",";") + "\n")
             init.append(icode)
             fcode = node.forward_matlab(prefix, inputs, outputs)
-            if node in self.split_nodes:
-                for io in outputs[1:]:
-                    fcode += ("\n%s = %s;\n" % (io, outputs[0]))
+            #if node in self.split_nodes:
+            #    for io in outputs[1:]:
+            #        fcode += ("\n%s = %s;\n" % (io, outputs[0]))
             invars = list(filter(lambda x: not x.startswith("graph") and not x.startswith("obj.d"), inputs))
             if len(invars) > 0:
                 # delete unneeded variables
@@ -214,16 +256,17 @@ class CompGraph(object):
 
             # Run adjoint op and time it.
             prefix = node_prefixes[node]
-            if node in self.split_nodes:
-                assert len(inputs) == 1
-                acode = ""
-                inputedges = []
-                for i,io in enumerate(outputs):
-                    inputedge = "tmp_sn_adjoint" + "_" + str(i)
-                    inputedges.append(inputedge)
-                    acode += node.adjoint_matlab(prefix, [io], [inputedge])
-                acode += inputs[0] + " = " + ("+".join(inputedges)) + ";\n"
-            else:
+            #if node in self.split_nodes:
+            #    assert len(inputs) == 1
+            #    acode = ""
+            #    inputedges = []
+            #    for i,io in enumerate(outputs):
+            #        inputedge = "tmp_sn_adjoint" + "_" + str(i)
+            #        inputedges.append(inputedge)
+            #        acode += node.adjoint_matlab(prefix, [io], [inputedge])
+            #    acode += inputs[0] + " = " + ("+".join(inputedges)) + ";\n"
+            #else:
+            if 1:
                 inputedges = []
                 acode = node.adjoint_matlab(prefix, outputs, inputs)
             invars = inputedges + list(filter(lambda x: not x.startswith("graph") and not x.startswith("obj.d"), outputs))
@@ -266,6 +309,131 @@ end
         self.matlab_forward_script = "comp_graph_%(instanceID)d_forward" % locals()
         self.matlab_adjoint_script = "comp_graph_%(instanceID)d_adjoint" % locals()
         
+    def gen_cuda_code(self):
+        self.cuda_args = []
+        for n in self.nodes:
+            try:
+                buffers = n.cuda_additional_buffers()
+            except AttributeError:
+                buffers = []
+            for aname, aval in buffers:
+                aval = gpuarray.to_gpu(aval.astype(np.float32))
+                self.cuda_args.append( (aname, aval) )
+        add_args = "".join((", float *%s" % x[0] for x in self.cuda_args))
+        
+        cucode, var, num_tmp_vars = self.start.adjoint_cuda(self, 0, ["yidx"], None)
+        cucode = indent(cucode,8)
+        dimy = self.input_size
+        code = """
+__global__ void adjoint(const float *x, float *y%(add_args)s)
+{
+    int index = blockIdx.x * blockDim.x + threadIdx.x; 
+    int stride = blockDim.x * gridDim.x;
+    for( int yidx = index; yidx < %(dimy)d; yidx += stride )
+    {
+        %(cucode)s
+        y[yidx] = %(var)s;
+    }
+}
+
+""" % locals()
+
+        cucode, var, num_tmp_vars = self.end.forward_cuda(self, 0, ["yidx"], None)
+        cucode = indent(cucode, 8)
+        dimy = self.output_size
+        code += """\
+__global__ void forward(const float *x, float *y%(add_args)s)
+{
+    int index = blockIdx.x * blockDim.x + threadIdx.x; 
+    int stride = blockDim.x * gridDim.x;
+    for( int yidx = index; yidx < %(dimy)d; yidx += stride )
+    {
+        %(cucode)s
+        y[yidx] = %(var)s;
+    }
+}
+    
+""" % locals()
+
+        try:
+            self.cuda_code = code
+            mod = SourceModule(code)
+        except cuda.CompileError as e:
+            print(code)
+            print("CUDA compilation error:")
+            print(e.stderr)
+            raise e
+        cuda_func_forward = mod.get_function("forward")
+        block = (min(int(self.output_size), cuda_func_forward.MAX_THREADS_PER_BLOCK), 1, 1)
+        grid = (int(self.output_size)//block[0],1,1)
+        const_vals = tuple(x[1] for x in self.cuda_args)
+        if 0:
+            prepared_fwd = cuda_func_forward.prepare("PP" + "P"*len(const_vals))
+            self.cuda_func_forward = lambda *args: prepared_fwd.prepared_timed_call(grid, block, *(x.gpudata for x in (args+const_vals)))()
+        else:
+            self.cuda_func_forward = lambda *args: cuda_func_forward(*(args+const_vals), grid=grid, block=block, time_kernel=True)
+        cuda_func_adjoint = mod.get_function("adjoint")
+        block = (min(int(self.input_size), cuda_func_adjoint.MAX_THREADS_PER_BLOCK), 1, 1)
+        grid = (int(self.input_size)//block[0],1,1)
+        if 0:
+            prepared_adj = cuda_func_adjoint.prepare("PP" + "P"*len(const_vals))
+            self.cuda_func_adjoint = lambda *args: prepared_adj.prepared_timed_call(grid, block, *(x.gpudata for x in (args+const_vals)))()
+        else:
+            self.cuda_func_adjoint = lambda *args: cuda_func_adjoint(*(args+const_vals), grid=grid, block=block, time_kernel=True)
+        
+        
+    def forward_cuda(self, x, y, printt=False):
+        if 0:
+            needcopy = False
+            if type(x) is gpuarray.GPUArray:
+                x = x.get()
+            if type(y) is gpuarray.GPUArray:
+                needcopy = True
+                yorig = y
+                y = y.get()
+            self.forward(x, y)
+            if needcopy:
+                yorig[:] = gpuarray.to_gpu(y)
+        else:
+            if self.cuda_func_forward is None:
+                self.gen_cuda_code()
+            if not type(x) is gpuarray.GPUArray:
+                x = gpuarray.to_gpu(x.astype(np.float32))
+            if not type(y) is gpuarray.GPUArray:
+                y = gpuarray.to_gpu(y.astype(np.float32))
+                print("Warning: result y is no GPU array.")
+            self.forward_log[self].tic()
+            t = self.cuda_func_forward(x, y)
+            self.forward_log[self].toc()
+            if printt: print(t)
+        return y
+
+    def adjoint_cuda(self, y, x, printt=False):
+        if 0:
+            needcopy = False
+            if type(x) is gpuarray.GPUArray:
+                needcopy = True
+                xorig = x
+                x = x.get()
+            if type(y) is gpuarray.GPUArray:
+                y = y.get()
+            self.adjoint(y, x)
+            if needcopy:
+                xorig[:] = gpuarray.to_gpu(x)            
+        else:
+            if self.cuda_func_adjoint is None:
+                self.gen_cuda_code()
+            if not type(x) is gpuarray.GPUArray:
+                x = gpuarray.to_gpu(x.astype(np.float32))
+                print("Warning: result x is no GPU array.")
+            if not type(y) is gpuarray.GPUArray:
+                y = gpuarray.to_gpu(y.astype(np.float32))
+            self.adjoint_log[self].tic()
+            t = self.cuda_func_adjoint(y, x)
+            self.adjoint_log[self].toc()
+            if printt: print(t)
+        return x
+        
     def forward(self, x, y, nocopy=False):
         """Evaluates the forward composition.
 
@@ -284,9 +452,9 @@ end
             # Run forward op and time it.
             self.forward_log[node].tic()
             node.forward(inputs, outputs)
-            if node in self.split_nodes:
-                for io in range(1,len(outputs)):
-                    np.copyto(outputs[io], outputs[0])
+            #if node in self.split_nodes:
+            #    for io in range(1,len(outputs)):
+            #        np.copyto(outputs[io], outputs[0])
             self.forward_log[node].toc()
             
         if self.matlab_forward_script is None:
@@ -325,16 +493,17 @@ end
                 inputs = self.get_inputs(node)
             # Run adjoint op and time it.prox
             self.adjoint_log[node].tic()
-            if node in self.split_nodes:
-                for io in range(len(outputs)):
-                    node.adjoint([outputs[io]], inputs)
-                    assert(len(inputs) == 1)
-                    if io == 0:
-                        res = inputs[0].copy()
-                    else:
-                        res += inputs[0]
-                np.copyto(inputs[0], res)
-            else:
+            #if node in self.split_nodes:
+            #    for io in range(len(outputs)):
+            #        node.adjoint([outputs[io]], inputs)
+            #        assert(len(inputs) == 1)
+            #        if io == 0:
+            #            res = inputs[0].copy()
+            #        else:
+            #            res += inputs[0]
+            #    np.copyto(inputs[0], res)
+            #else:
+            if 1:
                 node.adjoint(outputs, inputs)
             self.adjoint_log[node].toc()
         # Evaluate adjoint graph and time it.

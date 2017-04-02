@@ -156,7 +156,9 @@ class Problem(object):
                 for v in K.orig_end.variables():
                     if v.initval is not None:
                         v.initval *= np.sqrt(Knorm)
-            if test_adjoints:
+            if not test_adjoints in [False, None]:
+                if test_adjoints is True:
+                    test_adjoints = 1e-6
                 # test adjoints
                 L = CompGraph(vstack([fn.lin_op for fn in psi_fns]))
                 from numpy.random import random
@@ -175,7 +177,7 @@ class Problem(object):
                 #print("y=", y)
                 r = np.abs( np.dot(np.ravel(y), np.ravel(yt)) - np.dot(np.ravel(x), np.ravel(xt)) )
                 #print( x.shape, y.shape, xt.shape, yt.shape)
-                if r > 1e-6:
+                if r > test_adjoints:
                     #print("yt=", yt)
                     #print("y =", y)
                     #print("xt=", xt)

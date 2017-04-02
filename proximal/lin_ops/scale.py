@@ -1,4 +1,5 @@
 from .lin_op import LinOp
+from ..utils.codegen import ReverseInOut
 import numpy as np
 
 
@@ -25,6 +26,19 @@ class scale(LinOp):
         Reads from inputs and writes to outputs.
         """
         self.forward(inputs, outputs)
+        
+    def forward_cuda(self, cg, num_tmp_vars, abs_idx, parent):
+        #print("scale:forward:cuda")
+        code, var, num_tmp_vars = cg.input_nodes(self)[0].forward_cuda(cg, num_tmp_vars, abs_idx, self)
+        scalar = self.scalar
+        code += """/* scale */
+%(var)s *= %(scalar).10e;
+""" % locals()
+        return code, var, num_tmp_vars
+        
+    def adjoint_cuda(self, cg, num_tmp_vars, abs_idx, parent):
+        #print("scale:adjoint:cuda")
+        return self.forward_cuda(ReverseInOut(cg), num_tmp_vars, abs_idx, parent)
         
     def init_matlab(self, prefix):
         from ..utils import matlab_support

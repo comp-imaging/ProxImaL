@@ -32,6 +32,24 @@ class Constant(LinOp):
         """
         pass
     
+    def cuda_additional_buffers(self):
+        return [("constant_%d" % self.linop_id, self._value)]
+    
+    def forward_cuda(self, cg, num_tmp_vars, abs_idx, parent):
+        #print("constant:forward:cuda")
+        var = "var_%(num_tmp_vars)s" % locals()
+        cname = self.cuda_additional_buffers()[0][0]
+        shape = self._value.shape
+        index = "+".join(["(%s)*%d" % (ai, np.prod(shape[d+1:])) for d,ai in enumerate(abs_idx)])
+        code = """/*constant*/
+float %(var)s = %(cname)s[%(index)s];
+""" % locals()
+        return code, var, num_tmp_vars+1
+    
+    def adjoint_cuda(self, cg, num_tmp_vars, abs_idx, parent):
+        #print("constant:adjoint:cuda")
+        return None, None, num_tmp_vars
+    
     def init_matlab(self, prefix):
         from ..utils import matlab_support
         matlab_support.put_array(prefix + "_value", np.array(self._value, np.float32), globalvar = True)

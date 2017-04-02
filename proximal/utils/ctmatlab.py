@@ -5,7 +5,7 @@ import numpy as np
 # 0: nothing
 # 1: stdout
 # 2: replay_session
-verbose = 2
+verbose = 0
 
 if verbose == 2:
     var_count = 0
@@ -163,9 +163,13 @@ end
         #print(mcode)
         CALL(self.engine.engEvalString(self.eng, ct.c_char_p(mcode.encode('ascii'))))
         print(self.output_buffer.value.decode('ascii'), end='')
-        e = self.getvar('ct_matlab_error', nolog = True)
-        if e:
-            raise RuntimeError("Error while executing matlab code: " + self.output_buffer.value.decode('ascii'))
+        try:
+            e = self.getvar('ct_matlab_error', nolog = True)
+            if e:
+                raise RuntimeError("Error while executing matlab code: " + self.output_buffer.value.decode('ascii'))
+        except RuntimeError:
+            # happens for "clear all", but no error in this case
+            pass
         
     def __del__(self):
         CALL(self.engine.engClose(self.eng))

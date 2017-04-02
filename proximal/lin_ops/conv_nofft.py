@@ -1,5 +1,6 @@
 from ..lin_ops import lin_op
 from ..utils import matlab_support
+from ..utils.codegen import indent
 import numpy as np
 from numpy import random
 import scipy.signal
@@ -29,27 +30,142 @@ class conv_nofft(lin_op.LinOp):
         #print(self.kernel)
         #self.kernel = self.kernel / np.sum(np.abs(kernel))
 
-        if 1: self.check_adjoints(arg)
-        
         # Set implementation in super-class
         super(conv_nofft, self).__init__([arg], arg.shape)
         
-    def check_adjoints(self, arg):
-        # check forward backward operator
-        x = random.rand(*arg.shape)
-        y = random.rand(*arg.shape)
+    def forward_cuda(self, cg, num_tmp_vars, abs_idx, parent):
+        #print("conv_nofft:forward:cuda")
+        in_node = cg.input_nodes(self)[0]
+        var = "var_%d" % num_tmp_vars
+        idxy = "idx_%d" % (num_tmp_vars+1)
+        idxx = "idx_%d" % (num_tmp_vars+2)
+        num_tmp_vars += 3
+        code = """/*conv_nofft*/
+float %(var)s = 0.0f;
+int %(idxy)s;
+int %(idxx)s;
+""" % locals()
         
-        yt = np.zeros(arg.shape)
-        xt = np.zeros(arg.shape)
-        self.forward( [x], [yt] )
-        self.adjoint( [y], [xt] )
+        ski = zip(*np.unravel_index(np.argsort(self.kernel, axis=None), self.kernel.shape))
         
-        r = abs(np.dot( np.ravel(x), np.ravel(xt) ) - np.dot( np.ravel(y), np.ravel(yt) ))
-        if r > 1e-6:
-            raise RuntimeError("Adjoint test of myconv failed: " + str(r))
-        else:
-            print("Adjoint test of myconv passed: " + str(r))
+        for ky,kx in ski:
+            kernelvalue = self.kernel[ky,kx]
+            y = ky - self.kernel.shape[0]//2
+            x = kx - self.kernel.shape[1]//2
+            if y > 0:
+                code += "%s = max(0, (%s) - %d);\n" % (idxy, abs_idx[0], y)
+            elif y < 0:
+                code += "%s = min(%d, (%s) - %d);\n" % (idxy, self.shape[0]-1, abs_idx[0], y)
+            else:
+                code += "%s = %s;\n" % (idxy, abs_idx[0])
+
+            if x > 0:
+                code += "%s = max(0, (%s) - %d);\n" % (idxx, abs_idx[1], x)
+            elif x < 0:
+                code += "%s = min(%d, (%s) - %d);\n" % (idxx, self.shape[1]-1, abs_idx[1], x)
+            else:
+                code += "%s = %s;\n" % (idxx, abs_idx[1])
             
+            new_idx = [idxy, idxx] + abs_idx[2:]
+            scode, svar, num_tmp_vars = in_node.forward_cuda(cg, num_tmp_vars, new_idx, self)
+            code += scode
+            code += "%(var)s += %(svar)s * %(kernelvalue).10e;\n" % locals()
+        return code, var, num_tmp_vars
+    
+    def adjoint_cuda(self, cg, num_tmp_vars, abs_idx, parent):
+        #print("conv_nofft:adjoint:cuda")
+        in_node = cg.output_nodes(self)[0]
+        var = "var_%d" % num_tmp_vars
+        idxy = "idx_%d" % (num_tmp_vars+1)
+        idxx = "idx_%d" % (num_tmp_vars+2)
+        viy1 = "viy1_%d" % (num_tmp_vars+3)
+        vix1 = "vix1_%d" % (num_tmp_vars+4)
+        viy2 = "viy2_%d" % (num_tmp_vars+5)
+        vix2 = "vix2_%d" % (num_tmp_vars+6)
+        viy = "viy_%d" % (num_tmp_vars+7)
+        vix = "vix_%d" % (num_tmp_vars+8)
+        num_tmp_vars += 9
+        code = """/*conv_nofft*/
+float %(var)s = 0.0f;
+int %(idxy)s;
+int %(idxx)s;
+int %(viy1)s, %(viy2)s, %(viy)s;
+int %(vix1)s, %(vix2)s, %(vix)s;
+""" % locals()
+
+        abs_idxy = abs_idx[0]
+        abs_idxx = abs_idx[1]
+        ksyd2 = self.kernel.shape[0]//2
+        ksxd2 = self.kernel.shape[1]//2
+        h = self.shape[0]
+        w = self.shape[1]
+
+        code += """
+if( %(abs_idxy)s == 0 )
+{
+    %(viy1)s = -%(ksyd2)d;
+    %(viy2)s = 0;
+} else if( %(abs_idxy)s == %(h)d-1)
+{
+    %(viy1)s = %(h)d-1;
+    %(viy2)s = %(h)d-1+%(ksyd2)d;
+} else
+{
+    %(viy1)s = %(abs_idxy)s;
+    %(viy2)s = %(abs_idxy)s;
+}
+
+if( %(abs_idxx)s == 0 )
+{
+    %(vix1)s = -%(ksxd2)d;
+    %(vix2)s = 0;
+} else if( %(abs_idxx)s == %(w)d-1)
+{
+    %(vix1)s = %(w)d-1;
+    %(vix2)s = %(w)d-1+%(ksxd2)d;
+} else
+{
+    %(vix1)s = %(abs_idxx)s;
+    %(vix2)s = %(abs_idxx)s;
+}
+
+for( %(viy)s = %(viy1)s; %(viy)s <= %(viy2)s; %(viy)s++ )
+{
+    for( %(vix)s = %(vix1)s; %(vix)s <= %(vix2)s; %(vix)s++ )
+    {
+""" % locals()
+        
+        ski = zip(*np.unravel_index(np.argsort(self.kernel, axis=None), self.kernel.shape))
+        for ky,kx in ski:
+            kernelvalue = self.kernel[ky,kx]
+            y = -(ky - self.kernel.shape[0]//2)
+            x = -(kx - self.kernel.shape[1]//2)
+
+            new_idx = [idxy, idxx] + abs_idx[2:]
+            scode, svar, num_tmp_vars = in_node.adjoint_cuda(cg, num_tmp_vars, new_idx, self)
+            scode = indent(scode, 4)
+            
+            # zero padding in inside/outside region
+            ly = self.shape[0] + y
+            lx = self.shape[1] + x
+            
+            code += indent("""
+%(idxy)s = (%(viy)s) - %(y)d;
+%(idxx)s = (%(vix)s) - %(x)d;
+if( %(idxy)s >= 0 && %(idxy)s < %(h)d && %(idxx)s >= 0 && %(idxx)s < %(w)d )
+{
+    %(scode)s
+    %(var)s += %(svar)s * %(kernelvalue).10e;
+}
+""" % locals(), 8)
+                        
+        code += """
+    }
+}
+"""
+        return code, var, num_tmp_vars
+        
+        
     def forward(self, inputs, outputs):
         """The forward operator.
 

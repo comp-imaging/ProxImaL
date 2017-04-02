@@ -48,6 +48,7 @@ if mlengine == 'matlab.engine':
             _engw = None
     
     def engine():
+        _connect()
         return _engw.get()
     
     def put_array(name, A, globalvar = False):
@@ -102,6 +103,7 @@ elif mlengine == 'ctypes':
             _engw = None
     
     def engine():
+        _connect()
         return _engw.get()
     
     def put_array(name, A, globalvar = False):

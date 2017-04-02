@@ -1,4 +1,5 @@
 from .lin_op import LinOp
+from ..utils.codegen import ReverseInOut
 import numpy as np
 
 
@@ -28,6 +29,23 @@ class sum(LinOp):
         for output in outputs:
             np.copyto(output, inputs[0])
             
+    def forward_cuda(self, cg, num_tmp_variables, abs_idx, parent):
+        #print("sum:forward:cuda")
+        input_nodes = cg.input_nodes(self)
+        res = "var_%d" % num_tmp_variables
+        num_tmp_variables += 1
+        code = "float %(res)s = 0; /*sum/copy*/ \n" % locals()
+        for n in input_nodes:
+            icode, ivar, num_tmp_variables = n.forward_cuda(cg, num_tmp_variables, abs_idx, self)
+            code += icode
+            code += "%(res)s += %(ivar)s;\n" % locals()
+        return code, res, num_tmp_variables 
+    
+    def adjoint_cuda(self, cg, num_tmp_variables, abs_idx, parent):
+        #print("sum:adjoint:cuda")
+        code, var, num_tmp_variables = cg.output_nodes(self)[0].adjoint_cuda(cg, num_tmp_variables, abs_idx, self)
+        return code, var, num_tmp_variables
+
     def init_matlab(self, prefix):
         return "% no code\n"
         
@@ -82,9 +100,12 @@ class sum(LinOp):
 
 class copy(sum):
 
-    def __init__(self, shape, implem=None):
-        self.shape = shape
-        self.input_nodes = []
+    def __init__(self, arg, implem=None):
+        if type(arg) is tuple:
+            self.shape = arg
+            self.input_nodes = []
+        elif isinstance(arg, LinOp):
+            super(copy,self).__init__([arg], arg.shape)
 
     def forward(self, inputs, outputs):
         """The forward operator.
@@ -100,6 +121,14 @@ class copy(sum):
         """
         super(copy, self).forward(inputs, outputs)
         
+    def forward_cuda(self, cg, num_tmp_variables, abs_idx, parent):
+        #print("copy:forward:cuda")
+        return super(copy, self).adjoint_cuda(ReverseInOut(cg), num_tmp_variables, abs_idx, parent)
+        
+    def adjoint_cuda(self, cg, num_tmp_variables, abs_idx, parent):
+        #print("copy:adjoint:cuda")
+        return super(copy, self).forward_cuda(ReverseInOut(cg), num_tmp_variables, abs_idx, parent)
+
     def forward_matlab(self, prefix, inputs, outputs):
         return super(copy, self).adjoint_matlab(prefix, inputs, outputs)
 
