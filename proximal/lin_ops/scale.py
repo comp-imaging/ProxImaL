@@ -27,18 +27,18 @@ class scale(LinOp):
         """
         self.forward(inputs, outputs)
         
-    def forward_cuda(self, cg, num_tmp_vars, abs_idx, parent):
+    def forward_cuda_kernel(self, cg, num_tmp_vars, abs_idx, parent):
         #print("scale:forward:cuda")
-        code, var, num_tmp_vars = cg.input_nodes(self)[0].forward_cuda(cg, num_tmp_vars, abs_idx, self)
+        code, var, num_tmp_vars = cg.input_nodes(self)[0].forward_cuda_kernel(cg, num_tmp_vars, abs_idx, self)
         scalar = self.scalar
         code += """/* scale */
 %(var)s *= %(scalar).10e;
 """ % locals()
         return code, var, num_tmp_vars
         
-    def adjoint_cuda(self, cg, num_tmp_vars, abs_idx, parent):
+    def adjoint_cuda_kernel(self, cg, num_tmp_vars, abs_idx, parent):
         #print("scale:adjoint:cuda")
-        return self.forward_cuda(ReverseInOut(cg), num_tmp_vars, abs_idx, parent)
+        return self.forward_cuda_kernel(ReverseInOut(cg), num_tmp_vars, abs_idx, parent)
         
     def init_matlab(self, prefix):
         from ..utils import matlab_support

@@ -28,13 +28,6 @@ class Variable(LinOp):
         """
         np.copyto(outputs[0], inputs[0])
         
-    def forward_cuda(self, dest_node, num_tmp_vars, abs_idx):
-        uuid = str(self.uuid).replace("-","_")
-        var = "var_%d" % num_tmp_vars
-        code = "float %(var)s = inputvar_%(uuid)s[" % locals() + "+".join(["(%s) * %d" % (abs_idx[i], np.prod(self.shape[(i+1):])) for i in range(len(abs_idx))]) + "];"
-        return code, var, num_tmp_vars+1
-        
-        
     def variables(self):
         return [self]
 

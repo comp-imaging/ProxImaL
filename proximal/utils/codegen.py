@@ -9,13 +9,13 @@ class NodeReverseInOut(object):
         self.n = n
         self.parent = parent
         
-    def adjoint_cuda(self, *args, **kw):
+    def adjoint_cuda_kernel(self, *args, **kw):
         args = (a if not a is self.parent else self.parent.o for a in args)
-        return self.n.forward_cuda(*args, **kw)
+        return self.n.forward_cuda_kernel(*args, **kw)
         
-    def forward_cuda(self, *args,**kw):
+    def forward_cuda_kernel(self, *args,**kw):
         args = (a if not a is self.parent else self.parent.o for a in args)
-        return self.n.adjoint_cuda(*args, **kw)
+        return self.n.adjoint_cuda_kernel(*args, **kw)
     
     @property
     def size(self):

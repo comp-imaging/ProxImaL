@@ -131,7 +131,7 @@ class grad(LinOp):
 
                 outputs[0] += (-fd)
 
-    def forward_cuda(self, cg, num_tmp_vars, absidx, parent):
+    def forward_cuda_kernel(self, cg, num_tmp_vars, absidx, parent):
         innode = cg.input_nodes(self)[0]
         code = """/*grad*/
 """
@@ -145,15 +145,15 @@ class grad(LinOp):
             ed = self.shape[d]-1
             code += "int %(idxvar)s = ((%(selidx)s) == %(d)d) ? min(%(ed)d, (%(cidx)s)+1) : (%(cidx)s);\n" % locals()
             newidx[d] = idxvar
-        icode1,ivar1,num_tmp_vars = innode.forward_cuda(cg, num_tmp_vars, newidx, self)
-        icode2,ivar2,num_tmp_vars = innode.forward_cuda(cg, num_tmp_vars, absidx[:-1], self)
+        icode1,ivar1,num_tmp_vars = innode.forward_cuda_kernel(cg, num_tmp_vars, newidx, self)
+        icode2,ivar2,num_tmp_vars = innode.forward_cuda_kernel(cg, num_tmp_vars, absidx[:-1], self)
         code += icode1 + icode2
         code += """
 float %(var)s = %(ivar1)s - %(ivar2)s;
 """ % locals()        
         return code, var, num_tmp_vars
     
-    def adjoint_cuda(self, cg, num_tmp_vars, absidx, parent):
+    def adjoint_cuda_kernel(self, cg, num_tmp_vars, absidx, parent):
         innode = cg.output_nodes(self)[0]
         dims = self.dims
         nidx = "idx_%d" % num_tmp_vars
@@ -170,8 +170,8 @@ int %(nidx)s;
             code += "%(nidx)s = %(cidx)s-1\n;" % locals()
             newidx[d] = nidx
             
-            icode1,ivar1,num_tmp_vars = innode.adjoint_cuda(cg, num_tmp_vars, absidx + [str(d)], self)
-            icode2,ivar2,num_tmp_vars = innode.adjoint_cuda(cg, num_tmp_vars, newidx + [str(d)], self)
+            icode1,ivar1,num_tmp_vars = innode.adjoint_cuda_kernel(cg, num_tmp_vars, absidx + [str(d)], self)
+            icode2,ivar2,num_tmp_vars = innode.adjoint_cuda_kernel(cg, num_tmp_vars, newidx + [str(d)], self)
             icode1 = indent(icode1, 4)
             icode2 = indent(icode2, 4)
                            

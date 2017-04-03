@@ -47,7 +47,7 @@ class pxwise_matrixmult(lin_op.LinOp):
     def cuda_additional_buffers(self):
         return [("pxwise_matmul_%d" % self.linop_id, self.A)]
         
-    def forward_cuda(self, cg, num_tmp_vars, absidx, parent):
+    def forward_cuda_kernel(self, cg, num_tmp_vars, absidx, parent):
         innode = cg.input_nodes(self)[0]
         A = self.cuda_additional_buffers()[0][0]
         var = "var_%d" % num_tmp_vars
@@ -61,14 +61,14 @@ int %(aidx)s = %(linaidx)s;
         for i in range(self.A.shape[-1]):
             newidx = absidx[:]
             newidx[-1] = "%d" % i
-            icode, ivar, num_tmp_vars = innode.forward_cuda(cg, num_tmp_vars, newidx, self)
+            icode, ivar, num_tmp_vars = innode.forward_cuda_kernel(cg, num_tmp_vars, newidx, self)
             code += """
 %(icode)s
 %(var)s += %(ivar)s * %(A)s[%(aidx)s + %(i)d];
 """ % locals()
         return code, var, num_tmp_vars
 
-    def adjoint_cuda(self, cg, num_tmp_vars, absidx, parent):
+    def adjoint_cuda_kernel(self, cg, num_tmp_vars, absidx, parent):
         innode = cg.output_nodes(self)[0]
         A = self.cuda_additional_buffers()[0][0]
         var = "var_%d" % num_tmp_vars
@@ -82,7 +82,7 @@ int %(aidx)s = %(linaidx)s;
         for i in range(self.A.shape[-2]):
             newidx = absidx[:]
             newidx[-1] = "%d" % i
-            icode, ivar, num_tmp_vars = innode.adjoint_cuda(cg, num_tmp_vars, newidx, self)
+            icode, ivar, num_tmp_vars = innode.adjoint_cuda_kernel(cg, num_tmp_vars, newidx, self)
             aoff = i * self.A.shape[-1]
             code += """
 %(icode)s

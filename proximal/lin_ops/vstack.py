@@ -35,7 +35,7 @@ class vstack(LinOp):
             output_data[:] = np.reshape(data, output_data.shape)
             offset += size
             
-    def forward_cuda(self, cg, num_tmp_vars, abs_idx, parent):
+    def forward_cuda_kernel(self, cg, num_tmp_vars, abs_idx, parent):
         #print("vstack:forward:cuda")
         # multiple reshaped output in, linear index out
         res = "var_%(num_tmp_vars)d" % locals()
@@ -55,7 +55,7 @@ float %(res)s = 0;
             sub_idx_var_defs = "".join("int %(var)s = %(exp)s;\n" % locals() for (var,exp) in zip(sub_idx_vars, sub_expressions))
             sub_idx_var_defs = indent(sub_idx_var_defs,4)
             
-            icode, var, num_tmp_vars = node.forward_cuda(cg, num_tmp_vars, sub_idx_vars, self)
+            icode, var, num_tmp_vars = node.forward_cuda_kernel(cg, num_tmp_vars, sub_idx_vars, self)
             icode = indent(icode, 4)
             code += """\
 if( %(abs_idx)s >= %(offset)d && %(abs_idx)s < %(endoffset)d )
@@ -73,7 +73,7 @@ if( %(abs_idx)s >= %(offset)d && %(abs_idx)s < %(endoffset)d )
                 code += "\n"
         return code, res, num_tmp_vars
     
-    def adjoint_cuda(self, cg, num_tmp_vars, abs_idx, parent):
+    def adjoint_cuda_kernel(self, cg, num_tmp_vars, abs_idx, parent):
         #print("vstack:adjoint:cuda")
         input_nodes = cg.input_nodes(self)
         found = False
@@ -94,7 +94,7 @@ if( %(abs_idx)s >= %(offset)d && %(abs_idx)s < %(endoffset)d )
         code = ("int %(var)s = %(offset)d + (" % locals()) + sub2ind(abs_idx, shape) + ");\n"
         #print(" called by parent %s, idx=%d -> offset=%d, shape=%s, code=%s" % (n, idx, offset, shape,code))
         try:
-            icode, var, num_tmp_vars = cg.output_nodes(self)[0].adjoint_cuda(cg, num_tmp_vars, [var], self)
+            icode, var, num_tmp_vars = cg.output_nodes(self)[0].adjoint_cuda_kernel(cg, num_tmp_vars, [var], self)
         except KeyError:
             res = "var_%(num_tmp_vars)d" % locals()
             num_tmp_vars += 1
@@ -195,13 +195,13 @@ class split(vstack):
         """
         super(split, self).forward(inputs, outputs)
         
-    def forward_cuda(self, cg, num_tmp_variables, abs_idx, parent):
+    def forward_cuda_kernel(self, cg, num_tmp_variables, abs_idx, parent):
         #print("split:forward:cuda")
-        return super(split, self).adjoint_cuda(ReverseInOut(cg), num_tmp_variables, abs_idx, parent)
+        return super(split, self).adjoint_cuda_kernel(ReverseInOut(cg), num_tmp_variables, abs_idx, parent)
         
-    def adjoint_cuda(self, cg, num_tmp_variables, abs_idx, parent):
+    def adjoint_cuda_kernel(self, cg, num_tmp_variables, abs_idx, parent):
         #print("split:adjoint:cuda")
-        return super(split, self).forward_cuda(ReverseInOut(cg), num_tmp_variables, abs_idx, parent)
+        return super(split, self).forward_cuda_kernel(ReverseInOut(cg), num_tmp_variables, abs_idx, parent)
 
     def forward_matlab(self, prefix, inputs, outputs):
         return super(split, self).adjoint_matlab(prefix, inputs, outputs)

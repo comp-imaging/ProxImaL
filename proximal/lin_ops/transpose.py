@@ -30,13 +30,13 @@ class transpose(LinOp):
         shaped_input = np.transpose(inputs[0], self.inverse)
         np.copyto(outputs[0], shaped_input)
 
-    def forward_cuda(self, cg, num_tmp_vars, absidx, parent):
+    def forward_cuda_kernel(self, cg, num_tmp_vars, absidx, parent):
         new_idx = [absidx[i] for i in self.inverse]
-        return cg.input_nodes(self)[0].forward_cuda(cg, num_tmp_vars, new_idx, self)
+        return cg.input_nodes(self)[0].forward_cuda_kernel(cg, num_tmp_vars, new_idx, self)
     
-    def adjoint_cuda(self, cg, num_tmp_vars, absidx, parent):
+    def adjoint_cuda_kernel(self, cg, num_tmp_vars, absidx, parent):
         new_idx = [absidx[i] for i in self.axes]
-        return cg.output_nodes(self)[0].adjoint_cuda(cg, num_tmp_vars, new_idx, self)
+        return cg.output_nodes(self)[0].adjoint_cuda_kernel(cg, num_tmp_vars, new_idx, self)
 
     def init_matlab(self, prefix):
         return "%no code\n"

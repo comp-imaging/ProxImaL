@@ -321,7 +321,7 @@ end
                 self.cuda_args.append( (aname, aval) )
         add_args = "".join((", float *%s" % x[0] for x in self.cuda_args))
         
-        cucode, var, num_tmp_vars = self.start.adjoint_cuda(self, 0, ["yidx"], None)
+        cucode, var, num_tmp_vars = self.start.adjoint_cuda_kernel(self, 0, ["yidx"], None)
         cucode = indent(cucode,8)
         dimy = self.input_size
         code = """
@@ -338,7 +338,7 @@ __global__ void adjoint(const float *x, float *y%(add_args)s)
 
 """ % locals()
 
-        cucode, var, num_tmp_vars = self.end.forward_cuda(self, 0, ["yidx"], None)
+        cucode, var, num_tmp_vars = self.end.forward_cuda_kernel(self, 0, ["yidx"], None)
         cucode = indent(cucode, 8)
         dimy = self.output_size
         code += """\

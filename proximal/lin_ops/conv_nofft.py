@@ -33,7 +33,7 @@ class conv_nofft(lin_op.LinOp):
         # Set implementation in super-class
         super(conv_nofft, self).__init__([arg], arg.shape)
         
-    def forward_cuda(self, cg, num_tmp_vars, abs_idx, parent):
+    def forward_cuda_kernel(self, cg, num_tmp_vars, abs_idx, parent):
         #print("conv_nofft:forward:cuda")
         in_node = cg.input_nodes(self)[0]
         var = "var_%d" % num_tmp_vars
@@ -67,12 +67,12 @@ int %(idxx)s;
                 code += "%s = %s;\n" % (idxx, abs_idx[1])
             
             new_idx = [idxy, idxx] + abs_idx[2:]
-            scode, svar, num_tmp_vars = in_node.forward_cuda(cg, num_tmp_vars, new_idx, self)
+            scode, svar, num_tmp_vars = in_node.forward_cuda_kernel(cg, num_tmp_vars, new_idx, self)
             code += scode
             code += "%(var)s += %(svar)s * %(kernelvalue).10e;\n" % locals()
         return code, var, num_tmp_vars
     
-    def adjoint_cuda(self, cg, num_tmp_vars, abs_idx, parent):
+    def adjoint_cuda_kernel(self, cg, num_tmp_vars, abs_idx, parent):
         #print("conv_nofft:adjoint:cuda")
         in_node = cg.output_nodes(self)[0]
         var = "var_%d" % num_tmp_vars
@@ -142,7 +142,7 @@ for( %(viy)s = %(viy1)s; %(viy)s <= %(viy2)s; %(viy)s++ )
             x = -(kx - self.kernel.shape[1]//2)
 
             new_idx = [idxy, idxx] + abs_idx[2:]
-            scode, svar, num_tmp_vars = in_node.adjoint_cuda(cg, num_tmp_vars, new_idx, self)
+            scode, svar, num_tmp_vars = in_node.adjoint_cuda_kernel(cg, num_tmp_vars, new_idx, self)
             scode = indent(scode, 4)
             
             # zero padding in inside/outside region
