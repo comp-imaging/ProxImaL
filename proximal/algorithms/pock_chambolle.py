@@ -435,12 +435,13 @@ def solve_cuda(psi_fns, omega_fns, tau=None, sigma=None, theta=None,
         error = r_x + r_xbar + r_ybar
         """
 
-        add_timing["conv_check"].tic()
-        # Residual based convergence check
-        K.forward_cuda(x, Kx)
-        u = 1.0 / sigma * y + theta * (Kx - prev_Kx)
-        z = prev_u + prev_Kx - 1.0 / sigma * y
-        add_timing["conv_check"].toc()
+        if i % conv_check in [0, conv_check-1]:
+            add_timing["conv_check"].tic()
+            # Residual based convergence check
+            K.forward_cuda(x, Kx)
+            u = 1.0 / sigma * y + theta * (Kx - prev_Kx)
+            z = prev_u + prev_Kx - 1.0 / sigma * y
+            add_timing["conv_check"].toc()
 
         # Iteration order is different than
         # lin-admm (--> start checking at iteration 1)

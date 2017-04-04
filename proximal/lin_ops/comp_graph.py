@@ -4,7 +4,7 @@ from .variable import Variable
 from .constant import Constant
 from .vstack import split
 from ..utils import matlab_support
-from ..utils.codegen import indent
+from ..utils.codegen import indent, CudaSubGraph
 from .vstack import vstack
 from proximal.utils.timings_log import TimingsLog
 import copy as cp
@@ -160,9 +160,8 @@ class CompGraph(object):
         self.matlab_forward_script = None
         self.matlab_adjoint_script = None
         
-        self.cuda_func_forward = None
-        self.cuda_func_adjoint = None
-        self.cuda_args = None
+        self.cuda_forward_subgraphs = None
+        self.cuda_adjoint_subgraphs = None
         
         # A record of timings.
         self.forward_log = TimingsLog(self.nodes + [self])
@@ -310,78 +309,28 @@ end
         self.matlab_adjoint_script = "comp_graph_%(instanceID)d_adjoint" % locals()
         
     def gen_cuda_code(self):
-        self.cuda_args = []
-        for n in self.nodes:
-            try:
-                buffers = n.cuda_additional_buffers()
-            except AttributeError:
-                buffers = []
-            for aname, aval in buffers:
-                aval = gpuarray.to_gpu(aval.astype(np.float32))
-                self.cuda_args.append( (aname, aval) )
-        add_args = "".join((", float *%s" % x[0] for x in self.cuda_args))
+        # The basic original idea is to generate a cuda kernel for the whole graph
+        # this is done by calling the output node (self.end for forward direction,
+        # self.start for adjoint direction), and these nodes will recursively 
+        # generate the kernel operations also for their input nodes.
+        #
+        # There are certain nodes in the graph which are either not yet ported to
+        # cuda or they don't efficiently fit into the above scheme. For example,
+        # it is not efficient to perform a convolution operation in the middle of
+        # a long linear graph (because the preceding image values have to be 
+        # calculated size(conv_kernel) times). Therefore we need a way to split
+        # the graph into subgraphs, and calculate individual nodes for their own.
+        #
+        # Nodes who want to be isolated can either not implement the forward_cuda_kernel
+        # function or override the function cuda_kernel_available(self) and return false.
         
-        cucode, var, num_tmp_vars = self.start.adjoint_cuda_kernel(self, 0, ["yidx"], None)
-        cucode = indent(cucode,8)
-        dimy = self.input_size
-        code = """
-__global__ void adjoint(const float *x, float *y%(add_args)s)
-{
-    int index = blockIdx.x * blockDim.x + threadIdx.x; 
-    int stride = blockDim.x * gridDim.x;
-    for( int yidx = index; yidx < %(dimy)d; yidx += stride )
-    {
-        %(cucode)s
-        y[yidx] = %(var)s;
-    }
-}
-
-""" % locals()
-
-        cucode, var, num_tmp_vars = self.end.forward_cuda_kernel(self, 0, ["yidx"], None)
-        cucode = indent(cucode, 8)
-        dimy = self.output_size
-        code += """\
-__global__ void forward(const float *x, float *y%(add_args)s)
-{
-    int index = blockIdx.x * blockDim.x + threadIdx.x; 
-    int stride = blockDim.x * gridDim.x;
-    for( int yidx = index; yidx < %(dimy)d; yidx += stride )
-    {
-        %(cucode)s
-        y[yidx] = %(var)s;
-    }
-}
-    
-""" % locals()
-
-        try:
-            self.cuda_code = code
-            mod = SourceModule(code)
-        except cuda.CompileError as e:
-            print(code)
-            print("CUDA compilation error:")
-            print(e.stderr)
-            raise e
-        cuda_func_forward = mod.get_function("forward")
-        block = (min(int(self.output_size), cuda_func_forward.MAX_THREADS_PER_BLOCK), 1, 1)
-        grid = (int(self.output_size)//block[0],1,1)
-        const_vals = tuple(x[1] for x in self.cuda_args)
-        if 0:
-            prepared_fwd = cuda_func_forward.prepare("PP" + "P"*len(const_vals))
-            self.cuda_func_forward = lambda *args: prepared_fwd.prepared_timed_call(grid, block, *(x.gpudata for x in (args+const_vals)))()
-        else:
-            self.cuda_func_forward = lambda *args: cuda_func_forward(*(args+const_vals), grid=grid, block=block, time_kernel=True)
-        cuda_func_adjoint = mod.get_function("adjoint")
-        block = (min(int(self.input_size), cuda_func_adjoint.MAX_THREADS_PER_BLOCK), 1, 1)
-        grid = (int(self.input_size)//block[0],1,1)
-        if 0:
-            prepared_adj = cuda_func_adjoint.prepare("PP" + "P"*len(const_vals))
-            self.cuda_func_adjoint = lambda *args: prepared_adj.prepared_timed_call(grid, block, *(x.gpudata for x in (args+const_vals)))()
-        else:
-            self.cuda_func_adjoint = lambda *args: cuda_func_adjoint(*(args+const_vals), grid=grid, block=block, time_kernel=True)
+        # forward direction
+        self.cuda_forward_subgraphs = CudaSubGraph(self.input_nodes, self.output_nodes, self.end)
+        self.cuda_forward_subgraphs.gen_code("forward_cuda_kernel")
         
-        
+        self.cuda_adjoint_subgraphs = CudaSubGraph(self.output_nodes, self.input_nodes, self.start)
+        self.cuda_adjoint_subgraphs.gen_code("adjoint_cuda_kernel")
+                                                                         
     def forward_cuda(self, x, y, printt=False):
         if 0:
             needcopy = False
@@ -395,7 +344,7 @@ __global__ void forward(const float *x, float *y%(add_args)s)
             if needcopy:
                 yorig[:] = gpuarray.to_gpu(y)
         else:
-            if self.cuda_func_forward is None:
+            if self.cuda_forward_subgraphs is None:
                 self.gen_cuda_code()
             if not type(x) is gpuarray.GPUArray:
                 x = gpuarray.to_gpu(x.astype(np.float32))
@@ -403,7 +352,7 @@ __global__ void forward(const float *x, float *y%(add_args)s)
                 y = gpuarray.to_gpu(y.astype(np.float32))
                 print("Warning: result y is no GPU array.")
             self.forward_log[self].tic()
-            t = self.cuda_func_forward(x, y)
+            t = self.cuda_forward_subgraphs.apply(x, y)
             self.forward_log[self].toc()
             if printt: print(t)
         return y
@@ -421,7 +370,7 @@ __global__ void forward(const float *x, float *y%(add_args)s)
             if needcopy:
                 xorig[:] = gpuarray.to_gpu(x)            
         else:
-            if self.cuda_func_adjoint is None:
+            if self.cuda_adjoint_subgraphs is None:
                 self.gen_cuda_code()
             if not type(x) is gpuarray.GPUArray:
                 x = gpuarray.to_gpu(x.astype(np.float32))
@@ -429,7 +378,7 @@ __global__ void forward(const float *x, float *y%(add_args)s)
             if not type(y) is gpuarray.GPUArray:
                 y = gpuarray.to_gpu(y.astype(np.float32))
             self.adjoint_log[self].tic()
-            t = self.cuda_func_adjoint(y, x)
+            t = self.cuda_adjoint_subgraphs.apply(y, x)
             self.adjoint_log[self].toc()
             if printt: print(t)
         return x

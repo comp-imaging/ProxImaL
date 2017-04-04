@@ -35,12 +35,24 @@ def generic_check_adjoint(f, inshape, outshape, s,
         y2 = in_out_sample[2] # adjoint in
         x2s = in_out_sample[3] # adjoint out
         
-        y1a = G.forward_cuda(x1.astype(np.float32),y1s.astype(np.float32)).get()
+        y1a = G.forward_cuda(gpuarray.to_gpu(x1.astype(np.float32)),gpuarray.to_gpu(y1s.astype(np.float32))).get()
         if not np.all(np.abs(y1a - y1s) < eps):
+            print("forward CUDA code:")
+            print(G.cuda_forward_subgraphs.cuda_code)
+            print("backward CUDA code:")
+            print(G.cuda_adjoint_subgraphs.cuda_code)
             assert(False)
             
-        x2a = G.adjoint_cuda(y2.astype(np.float32),x2s.astype(np.float32)).get()
+        x2a = G.adjoint_cuda(gpuarray.to_gpu(y2.astype(np.float32)),gpuarray.to_gpu(x2s.astype(np.float32))).get()
         if not np.all(np.abs(x2a - x2s) < eps):
+            print("forward CUDA code:")
+            print(G.cuda_forward_subgraphs.cuda_code)
+            print("backward CUDA code:")
+            print(G.cuda_adjoint_subgraphs.cuda_code)
+            print("x2a")
+            print(x2a)
+            print("x2s")
+            print(x2s)
             assert(False)
     
         
@@ -52,22 +64,27 @@ def generic_check_adjoint(f, inshape, outshape, s,
         y1 = np.zeros(nout, dtype=np.float32)
         x2 = np.zeros(nin, dtype=np.float32)
         
+        if printt: print("forward: ", end="")
+        y1 = G.forward_cuda(gpuarray.to_gpu(x1),gpuarray.to_gpu(y1),printt=printt).get()
+        if printt: print("adjoint: ", end="")
+        x2 = G.adjoint_cuda(gpuarray.to_gpu(y2),gpuarray.to_gpu(x2),printt=printt).get()
+        
+        assert not np.all(y1 == 0) and not np.all(x2 == 0)
+        
         y1o = G.forward(x1,y1.copy())
         x2o = G.adjoint(y2,x2.copy())
         erro = abs(np.dot(x1.flatten().astype(np.float64), x2o.flatten().astype(np.float64)) - 
                    np.dot(y1o.flatten().astype(np.float64), y2.flatten().astype(np.float64)))
-        
-        if printt: print("forward: ", end="")
-        y1 = G.forward_cuda(x1,y1,printt=printt).get()
-        if printt: print("adjoint: ", end="")
-        x2 = G.adjoint_cuda(y2,x2,printt=printt).get()
         
         err = abs(np.dot(x1.flatten().astype(np.float64),x2.flatten().astype(np.float64)) - 
                   np.dot(y1.flatten().astype(np.float64),y2.flatten().astype(np.float64)))
         if err > maxerr:
             maxerr = err
         if err > eps:
-            print(G.cuda_code)
+            print("forward CUDA code:")
+            print(G.cuda_forward_subgraphs.cuda_code)
+            print("backward CUDA code:")
+            print(G.cuda_adjoint_subgraphs.cuda_code)
             print("x1\n",np.reshape(x1, inshape))
             print("y1\n",np.reshape(y1, outshape))
             print("y1o\n",np.reshape(y1o, outshape))            
@@ -123,9 +140,6 @@ def check_grad():
     generic_check_adjoint(lambda x: grad(x), (10,10), (10,10,2), "grad", in_out_sample = (fin,fout, ain,aout))
     
 def check_conv_nofft():
-    K = np.abs(random.rand(5,3))
-    generic_check_adjoint(lambda x: conv_nofft(K,x), (10,10), (10,10), "conv_nofft")
-    
     K = np.reshape((np.arange(9)), (3,3))
     
     fin = np.arange(25)
@@ -133,7 +147,33 @@ def check_conv_nofft():
     
     ain = fin
     aout = np.array([[0+8+40+88, 23+142,44+175,65+208,46+136+24+66],[105+210,312,348,384,240+111],[180+345,492,528,564,345+156],[255+480,672,708,744,450+201],[130+40+62+232,304+65,319+68,334+71,184+24+0+72]])
-    generic_check_adjoint(lambda x: conv_nofft(K,x), (5,5), (5,5), "conv_nofft2", in_out_sample = (fin,fout,ain,aout), eps=1e-4)    
+    generic_check_adjoint(lambda x: conv_nofft(K,x), (5,5), (5,5), "conv_nofft1", in_out_sample = (fin,fout,ain,aout), eps=1e-4)  
+    
+    fin2 = np.zeros((5,5,2))
+    fin2[:,:,0] = np.reshape(fin, (5,5))
+    fin2[:,:,1] = fin2[:,:,0]
+    fout2 = np.zeros((5,5,2))
+    fout2[:,:,0] = np.reshape(fout, (5,5))
+    fout2[:,:,1] = fout2[:,:,0]
+    
+    ain2 = np.zeros((5,5,2))
+    ain2[:,:,0] = np.reshape(ain, (5,5))
+    ain2[:,:,1] = ain2[:,:,0]
+    aout2 = np.zeros((5,5,2))
+    aout2[:,:,0] = np.reshape(aout, (5,5))
+    aout2[:,:,1] = aout2[:,:,0]
+    generic_check_adjoint(lambda x: conv_nofft(K,x), (5,5,2), (5,5,2), "conv_nofft2", in_out_sample = (fin2,fout2,ain2,aout2), eps=1e-4)  
+
+    K1 = np.array([[1,2,3]])
+    K2 = np.array([[5],[3],[1]])
+    fin = np.arange(25)
+    fout = np.array([[159,186,240,294,339],[399,426,480,534,579],[669,696,750,804,849],[939,966,1020,1074,1119],[1059,1086,1140,1194,1239]])
+    ain = fin
+    aout = np.array([[55,70,100,130,95],[227,222,276,330,235],[587,492,546,600,415],[947,762,816,870,595],[1919,1514,1592,1670,1135]])
+    generic_check_adjoint(lambda x: conv_nofft(K1,conv_nofft(K2, x)), (5,5), (5,5), "conv_nofft3", in_out_sample = (fin,fout,ain,aout), eps=1e-4)      
+
+    K = np.abs(random.rand(5,3))
+    generic_check_adjoint(lambda x: conv_nofft(K,x), (10,10), (10,10), "conv_nofft4")    
     
 def check_vstack():
     generic_check_adjoint(lambda x: (x, x*5), (10,10), (10*10+10*10,), "vstack")
@@ -155,10 +195,27 @@ def check_pxwise_matmul():
     
     
 def check_complex_graph():
-    K = np.abs(random.rand(5,5))
+    # easier debugging, start with small dimensions
+    x = Variable((5,5))
+    cx = conv_nofft(np.array([[1,1,1]])/3, conv_nofft(np.array([[1],[1],[1]])/3, x))
+    scx = subsample(cx, (2,2))
+    ed = scx - np.reshape(np.arange(3*3), (3,3))
+    w = Variable(x.shape + (2,))
+    gw = grad(w,2)
+    Ew = gw + transpose(gw, (0,1,3,2))
+    gx = grad(x,2)
+    tgx = pxwise_matrixmult(np.reshape(np.arange(5*5*2*2), (5,5,2,2)), gx)
+    e1 = tgx - w
+    inshape = (5*5 + 5*5*2,)
+    outshape = (3*3 + 5*5*2*2 + 5*5*2,)
+    generic_check_adjoint(lambda x: (ed,e1,Ew), inshape, outshape, "complex", eps=5e-4, printt=1)    
+    
+    # continue with more values
+    K1 = np.abs(random.rand(1,5))
+    K2 = np.abs(random.rand(5,1))
     
     x = Variable((320,240,2))
-    cx = conv_nofft(K, x)
+    cx = conv_nofft(K1,conv_nofft(K2, x))
     scx = subsample(cx, (5,5,1))
     ed = scx - random.rand(64,48,2)
     
@@ -171,7 +228,7 @@ def check_complex_graph():
     
     inshape = (320*240*2 + 320*240*2*2,)
     outshape = (64*48*2 + 320*240*2*2*2 + 320*240*2*2,)
-    generic_check_adjoint(lambda x: (ed,e1,Ew), inshape, outshape, "complex", eps=5e-4, printt=1)
+    generic_check_adjoint(lambda x: (ed,e1,Ew), inshape, outshape, "complex2", eps=5e-4, printt=1)
     
 if __name__ == "__main__":
     check_scale()
@@ -184,8 +241,7 @@ if __name__ == "__main__":
     check_transpose()
     check_pxwise_matmul()
     
-    check_complex_graph()
-    
+    check_complex_graph()    
     
     c = random.rand(2000,2000)
     x = Variable([2000,2000])

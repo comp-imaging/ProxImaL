@@ -53,7 +53,6 @@ class Problem(object):
             psi_fns = [fn for fn in prox_fns if fn not in omega_fns]
         elif omega_fns is None:
             omega_fns = [fn for fn in prox_fns if fn not in psi_fns]
-        else:
             assert set(psi_fns + omega_fns) == set(prox_fns)
         self.omega_fns = omega_fns
         self.psi_fns = psi_fns
@@ -184,7 +183,29 @@ class Problem(object):
                     #print("x =", x)
                     raise RuntimeError("Unmatched adjoints: " + str(r))
                 else:
-                    print("Adjoint test passed.")
+                    print("Adjoint test passed.", r)
+                if kwargs.get('use_cuda', False):
+                    from pycuda import gpuarray
+                    x = gpuarray.to_gpu(x.astype(np.float32))
+                    ytt = gpuarray.zeros(yt.shape, dtype=np.float32)
+                    ytt = L.forward_cuda(x, ytt)
+                    
+                    y = gpuarray.to_gpu(y.astype(np.float32))
+                    xtt = gpuarray.zeros(xt.shape, dtype=np.float32)
+                    xtt = L.adjoint_cuda(y, xtt)
+                    r = np.abs(np.dot(np.ravel(y.get().astype(np.float64)), np.ravel(ytt.get().astype(np.float64)) )  - 
+                               np.dot(np.ravel(x.get().astype(np.float64)), np.ravel(xtt.get().astype(np.float64)) ) )
+                    if r > test_adjoints:
+                        #print("yt=", yt)
+                        #print("y =", y)
+                        #print("xt=", xt)
+                        #print("x =", x)
+                        raise RuntimeError("Unmatched adjoints (cuda): " + str(r))
+                    else:
+                        print("Adjoint test passed (cuda).", r)
+                        
+                    print("max(abs(ytt - yt)): ", np.amax(np.abs(np.ravel(ytt.get().astype(np.float64)) - np.ravel(yt))))
+                    print("max(abs(xtt - xt)): ", np.amax(np.abs(np.ravel(xtt.get().astype(np.float64)) - np.ravel(xt))))
                     
             if test_matlab:
                 Lp = CompGraph(vstack([fn.lin_op for fn in psi_fns]))

@@ -1,9 +1,14 @@
 from ..lin_ops import lin_op
 from ..utils import matlab_support
-from ..utils.codegen import indent
+from ..utils.codegen import indent, ind2sub, sub2ind
 import numpy as np
 from numpy import random
 import scipy.signal
+
+import pycuda.driver as cuda
+import pycuda.autoinit
+from pycuda.compiler import SourceModule
+from pycuda import gpuarray
 
 class conv_nofft(lin_op.LinOp):
     def trunc0_2D(self, x, s):
@@ -27,65 +32,95 @@ class conv_nofft(lin_op.LinOp):
         self.pad0_2D = lambda x, s: np.pad(x, [[s[0],s[0]], [s[1],s[1]]], mode='constant')
 
         self.kernel = np.array(kernel, np.float32)
+        self.cuda_source = None
         #print(self.kernel)
         #self.kernel = self.kernel / np.sum(np.abs(kernel))
 
         # Set implementation in super-class
         super(conv_nofft, self).__init__([arg], arg.shape)
         
-    def forward_cuda_kernel(self, cg, num_tmp_vars, abs_idx, parent):
-        #print("conv_nofft:forward:cuda")
-        in_node = cg.input_nodes(self)[0]
-        var = "var_%d" % num_tmp_vars
-        idxy = "idx_%d" % (num_tmp_vars+1)
-        idxx = "idx_%d" % (num_tmp_vars+2)
-        num_tmp_vars += 3
-        code = """/*conv_nofft*/
-float %(var)s = 0.0f;
-int %(idxy)s;
-int %(idxx)s;
-""" % locals()
+    def cuda_kernel_available(self):
+        # it is better to split up the comp graph, and do the convolution 
+        # "manually"
+        return False
+                
+    def gen_cuda(self):
+        abs_idxt = ind2sub("yidx", self.shape)
+        idxdecl = indent("".join(["int idx%d = %s;\n" % (i,s) for i,s in enumerate(abs_idxt)]), 8)
+        abs_idx = ["idx%d" % i for i in range(len(self.shape))]
+        height = self.shape[0]
+        width = self.shape[1]
+        dimy = self.size
+        code = """
+__global__ void conv_nofft_forward(const float *x, float *y)
+{
+    int index = blockIdx.x * blockDim.x + threadIdx.x; 
+    int stride = blockDim.x * gridDim.x;
+    for( int yidx = index; yidx < %(dimy)d; yidx += stride )
+    {
+        %(idxdecl)s
         
+        int idxx, idxy;
+        float res = 0.0f;
+""" % locals()
+
         ski = zip(*np.unravel_index(np.argsort(self.kernel, axis=None), self.kernel.shape))
         
+        idxx = "idxx"
+        idxy = "idxy"
+        
+        kcode = "\n"
         for ky,kx in ski:
             kernelvalue = self.kernel[ky,kx]
             y = ky - self.kernel.shape[0]//2
             x = kx - self.kernel.shape[1]//2
             if y > 0:
-                code += "%s = max(0, (%s) - %d);\n" % (idxy, abs_idx[0], y)
+                kcode += "%s = max(0, (%s) - %d);\n" % (idxy, abs_idx[0], y)
             elif y < 0:
-                code += "%s = min(%d, (%s) - %d);\n" % (idxy, self.shape[0]-1, abs_idx[0], y)
+                kcode += "%s = min(%d, (%s) - %d);\n" % (idxy, height-1, abs_idx[0], y)
             else:
-                code += "%s = %s;\n" % (idxy, abs_idx[0])
+                kcode += "%s = %s;\n" % (idxy, abs_idx[0])
 
             if x > 0:
-                code += "%s = max(0, (%s) - %d);\n" % (idxx, abs_idx[1], x)
+                kcode += "%s = max(0, (%s) - %d);\n" % (idxx, abs_idx[1], x)
             elif x < 0:
-                code += "%s = min(%d, (%s) - %d);\n" % (idxx, self.shape[1]-1, abs_idx[1], x)
+                kcode += "%s = min(%d, (%s) - %d);\n" % (idxx, width-1, abs_idx[1], x)
             else:
-                code += "%s = %s;\n" % (idxx, abs_idx[1])
+                kcode += "%s = %s;\n" % (idxx, abs_idx[1])
             
             new_idx = [idxy, idxx] + abs_idx[2:]
-            scode, svar, num_tmp_vars = in_node.forward_cuda_kernel(cg, num_tmp_vars, new_idx, self)
-            code += scode
-            code += "%(var)s += %(svar)s * %(kernelvalue).10e;\n" % locals()
-        return code, var, num_tmp_vars
-    
-    def adjoint_cuda_kernel(self, cg, num_tmp_vars, abs_idx, parent):
-        #print("conv_nofft:adjoint:cuda")
-        in_node = cg.output_nodes(self)[0]
-        var = "var_%d" % num_tmp_vars
-        idxy = "idx_%d" % (num_tmp_vars+1)
-        idxx = "idx_%d" % (num_tmp_vars+2)
-        viy1 = "viy1_%d" % (num_tmp_vars+3)
-        vix1 = "vix1_%d" % (num_tmp_vars+4)
-        viy2 = "viy2_%d" % (num_tmp_vars+5)
-        vix2 = "vix2_%d" % (num_tmp_vars+6)
-        viy = "viy_%d" % (num_tmp_vars+7)
-        vix = "vix_%d" % (num_tmp_vars+8)
-        num_tmp_vars += 9
-        code = """/*conv_nofft*/
+            svar = "x[%s]" % sub2ind(new_idx, self.shape)
+            kcode += "res += %(svar)s * %(kernelvalue).10e;\n" % locals()
+        
+        code += indent(kcode, 8)
+        code += """
+        y[yidx] = res;
+    }
+}
+"""
+
+        code += """        
+__global__ void conv_nofft_adjoint(const float *x, float *y)
+{
+    int index = blockIdx.x * blockDim.x + threadIdx.x; 
+    int stride = blockDim.x * gridDim.x;
+    for( int yidx = index; yidx < %(dimy)d; yidx += stride )
+    {
+        %(idxdecl)s
+
+""" % locals()
+        var = "res"
+        idxy = "idxy"
+        idxx = "idxx"
+        viy1 = "viy1"
+        vix1 = "vix1"
+        viy2 = "viy2"
+        vix2 = "vix2"
+        viy = "viy"
+        vix = "vix"
+
+        kcode = """
+/*conv_nofft*/
 float %(var)s = 0.0f;
 int %(idxy)s;
 int %(idxx)s;
@@ -100,7 +135,7 @@ int %(vix1)s, %(vix2)s, %(vix)s;
         h = self.shape[0]
         w = self.shape[1]
 
-        code += """
+        kcode += """
 if( %(abs_idxy)s == 0 )
 {
     %(viy1)s = -%(ksyd2)d;
@@ -142,29 +177,56 @@ for( %(viy)s = %(viy1)s; %(viy)s <= %(viy2)s; %(viy)s++ )
             x = -(kx - self.kernel.shape[1]//2)
 
             new_idx = [idxy, idxx] + abs_idx[2:]
-            scode, svar, num_tmp_vars = in_node.adjoint_cuda_kernel(cg, num_tmp_vars, new_idx, self)
-            scode = indent(scode, 4)
+            svar = "x[%s]" % sub2ind(new_idx, self.shape)
             
-            # zero padding in inside/outside region
-            ly = self.shape[0] + y
-            lx = self.shape[1] + x
-            
-            code += indent("""
+            kcode += indent("""
 %(idxy)s = (%(viy)s) - %(y)d;
 %(idxx)s = (%(vix)s) - %(x)d;
 if( %(idxy)s >= 0 && %(idxy)s < %(h)d && %(idxx)s >= 0 && %(idxx)s < %(w)d )
 {
-    %(scode)s
     %(var)s += %(svar)s * %(kernelvalue).10e;
 }
 """ % locals(), 8)
                         
+        kcode += """
+    }
+}
+y[yidx] = %(var)s;
+""" % locals()
+        code += indent(kcode, 8)
         code += """
     }
 }
 """
-        return code, var, num_tmp_vars
-        
+        #print(code)
+        try:
+            self.cuda_source = code
+            self.cuda_mod = SourceModule(code)
+        except cuda.CompileError as e:
+            print("\n".join("(%4d) %s" % (i,s) for i,s in enumerate(code.split("\n"))))
+            print("CUDA compilation error:")
+            print(e.stderr)
+            raise e
+
+        cuda_forward_func = self.cuda_mod.get_function("conv_nofft_forward")
+        block = (min(int(dimy), cuda_forward_func.MAX_THREADS_PER_BLOCK), 1, 1)
+        grid = (int(dimy)//block[0],1,1)
+        setattr(self, "cuda_conv_nofft_forward", lambda *args: cuda_forward_func(*args, grid=grid, block=block, time_kernel=True))                    
+    
+        cuda_adjoint_func = self.cuda_mod.get_function("conv_nofft_adjoint")
+        block = (min(int(dimy), cuda_adjoint_func.MAX_THREADS_PER_BLOCK), 1, 1)
+        grid = (int(dimy)//block[0],1,1)
+        setattr(self, "cuda_conv_nofft_adjoint", lambda *args: cuda_adjoint_func(*args, grid=grid, block=block, time_kernel=True))                    
+
+    def forward_cuda(self, inputs, outputs):
+        if self.cuda_source is None:
+            self.gen_cuda()
+        self.cuda_conv_nofft_forward(inputs[0], outputs[0])
+            
+    def adjoint_cuda(self, inputs, outputs):
+        if self.cuda_source is None:
+            self.gen_cuda()
+        self.cuda_conv_nofft_adjoint(inputs[0], outputs[0])
         
     def forward(self, inputs, outputs):
         """The forward operator.
@@ -193,7 +255,7 @@ if( %(idxy)s >= 0 && %(idxy)s < %(h)d && %(idxx)s >= 0 && %(idxx)s < %(w)d )
 
         Reads from inputs and writes to outputs.
         """
-        arg = outputs[0]       
+        arg = outputs[0]
         if len(arg.shape) == 2:
             ts = [s//2 for s in self.kernel.shape]
             padded = self.pad0_2D(arg, ts)
