@@ -4,10 +4,40 @@ import os
 from proximal.lin_ops import (CompGraph, est_CompGraph_norm, Variable,
                               vstack)
 from proximal.utils.timings_log import TimingsLog, TimingsEntry
+from proximal.utils.utils import graph_visualize
 from proximal.utils import matlab_support
 from .invert import get_least_squares_inverse, max_diag_set
 import numpy as np
 
+class PCUniformConvexGorF:
+    """This class can be used to implement algorithm 2 of the Pock Chambolle 
+    paper for 1/N^2 convergence rate if either Psi or Omega is uniformly convex.
+    """
+    def __init__(self, gamma, tau0):
+        self._lastIt = 0
+        self._gamma = gamma
+        self._tau = tau0
+        self._theta = 1.0 / np.sqrt(1 + 2*gamma*tau0)
+        
+    def _recalculate(self, it, L):
+        self._lastIt = it
+        self._tau = self._theta*self._tau
+        self._theta = 1.0 / np.sqrt(1 + 2*self._gamma*self._tau)
+        
+    def tau(self, it, L):
+        if self._lastIt != it:
+            self._recalculate(it,L)
+        return self._tau
+            
+    def sigma(self, it, L):
+        if self._lastIt != it:
+            self._recalculate(it,L)
+        return 1.0/((L**2)*self._tau)
+    
+    def theta(self, it, L):
+        if self._lastIt != it:
+            self._recalculate(it,L)
+        return self._theta
 
 def partition(prox_fns, try_diagonalize=True):
     """Divide the proxable functions into sets Psi and Omega.
@@ -74,7 +104,7 @@ def solve(psi_fns, omega_fns, tau=None, sigma=None, theta=None,
           max_iters=1000, eps_abs=1e-3, eps_rel=1e-3, x0=None,
           lin_solver="cg", lin_solver_options=None, conv_check=100,
           try_diagonalize=True, try_fast_norm=False, scaled=True,
-          metric=None, convlog=None, verbose=0, callback=None, use_matlab=False, use_cuda=False):
+          metric=None, convlog=None, verbose=0, callback=None, use_matlab=False, use_cuda=False, show_graph = False):
     
     if use_matlab:
         return solve_matlab(psi_fns, omega_fns, tau, sigma, theta,
@@ -87,7 +117,7 @@ def solve(psi_fns, omega_fns, tau=None, sigma=None, theta=None,
               max_iters, eps_abs, eps_rel, x0,
               lin_solver, lin_solver_options, conv_check,
               try_diagonalize, try_fast_norm, scaled,
-              metric, convlog, verbose, callback)
+              metric, convlog, verbose, callback, show_graph)
     
     # Can only have one omega function.
     assert len(omega_fns) <= 1
@@ -96,12 +126,20 @@ def solve(psi_fns, omega_fns, tau=None, sigma=None, theta=None,
     K = CompGraph(stacked_ops)
     v = np.zeros(K.input_size)
     # Select optimal parameters if wanted
-    if tau is None or sigma is Nomatlabne or theta is None:
+    if tau is None or sigma is None or theta is None:
         tau, sigma, theta = est_params_pc(K, tau, sigma, verbose, scaled, try_fast_norm)
-        
+    elif callable(tau) or callable(sigma) or callable(theta):
+        if scaled:
+            L = 1
+        else:
+            L = est_CompGraph_norm(K, try_fast_norm)
+    
     if verbose > 0:
         print("psi_fns:", [str(f) for f in psi_fns])
         print("omega_fns:", [str(f) for f in omega_fns])
+    if show_graph:
+        print("Computational graph after optimizing:")
+        graph_visualize(prox_fns)
 
     # Initialize
     x = np.zeros(K.input_size)
@@ -136,7 +174,7 @@ def solve(psi_fns, omega_fns, tau=None, sigma=None, theta=None,
     iter_timing = TimingsEntry("PC iteration")
 
     # Convergence log for initial iterate
-    if 1: #convlog is not None:
+    if convlog is not None:
         K.update_vars(x)
         objval = 0.0
         for f in prox_fns:
@@ -153,6 +191,19 @@ def solve(psi_fns, omega_fns, tau=None, sigma=None, theta=None,
         if convlog is not None:
             convlog.tic()
 
+        if callable(sigma):
+            csigma = sigma(i, L)
+        else:
+            csigma = sigma
+        if callable(tau):
+            ctau = tau(i, L)
+        else:
+            ctau = tau
+        if callable(theta):
+            ctheta = theta(i, L)
+        else:
+            ctheta = theta
+            
         # Keep track of previous iterates
         np.copyto(prev_x, x)
         np.copyto(prev_z, z)
@@ -161,7 +212,7 @@ def solve(psi_fns, omega_fns, tau=None, sigma=None, theta=None,
 
         # Compute z
         K.forward(xbar, Kxbar)
-        z = y + sigma * Kxbar
+        z = y + csigma * Kxbar
 
         # Update y.
         #print("--------------- psi_fns --------------------")
@@ -171,11 +222,11 @@ def solve(psi_fns, omega_fns, tau=None, sigma=None, theta=None,
             z_slc = np.reshape(z[slc], fn.lin_op.shape)
 
             #print("prox", offset)
-            #display_matrix(z_slc / sigma)
+            #display_matrix(z_slc / csigma)
 
             # Moreau identity: apply and time prox.
             prox_log[fn].tic()
-            y[slc] = (z_slc - sigma * fn.prox(sigma, z_slc / sigma, i)).flatten()
+            y[slc] = (z_slc - csigma * fn.prox(csigma, z_slc / csigma, i)).flatten()
             prox_log[fn].toc()
             #print("y_slc", fn)
             #display_matrix(y[slc])
@@ -184,16 +235,16 @@ def solve(psi_fns, omega_fns, tau=None, sigma=None, theta=None,
 
         # Update x
         K.adjoint(y, KTy)
-        x -= tau * KTy
+        x -= ctau * KTy
 
         if len(omega_fns) > 0:
             xtmp = np.reshape(x, omega_fns[0].lin_op.shape)
-            x[:] = omega_fns[0].prox(1.0 / tau, xtmp, x_init=prev_x,
+            x[:] = omega_fns[0].prox(1.0 / ctau, xtmp, x_init=prev_x,
                                      lin_solver=lin_solver, options=lin_solver_options).flatten()
 
         # Update xbar
         np.copyto(xbar, x)
-        xbar += theta * (x - prev_x)
+        xbar += ctheta * (x - prev_x)
 
         # Convergence log
         if convlog is not None:
@@ -213,8 +264,8 @@ def solve(psi_fns, omega_fns, tau=None, sigma=None, theta=None,
 
         # Residual based convergence check
         K.forward(x, Kx)
-        u = 1.0 / sigma * y + theta * (Kx - prev_Kx)
-        z = prev_u + prev_Kx - 1.0 / sigma * y
+        u = 1.0 / csigma * y + ctheta * (Kx - prev_Kx)
+        z = prev_u + prev_Kx - 1.0 / csigma * y
 
         # Iteration order is different than
         # lin-admm (--> start checking at iteration 1)
@@ -222,12 +273,12 @@ def solve(psi_fns, omega_fns, tau=None, sigma=None, theta=None,
 
             # Check convergence
             r = prev_Kx - z
-            K.adjoint(sigma * (z - prev_z), s)
+            K.adjoint(csigma * (z - prev_z), s)
             eps_pri = np.sqrt(K.output_size) * eps_abs + eps_rel * \
                 max([np.linalg.norm(prev_Kx), np.linalg.norm(z)])
 
             K.adjoint(u, KTu)
-            eps_dual = np.sqrt(K.input_size) * eps_abs + eps_rel * np.linalg.norm(KTu) / sigma
+            eps_dual = np.sqrt(K.input_size) * eps_abs + eps_rel * np.linalg.norm(KTu) / csigma
 
             if not callback is None or verbose == 2:
                 K.update_vars(x)
@@ -294,7 +345,7 @@ def solve_cuda(psi_fns, omega_fns, tau=None, sigma=None, theta=None,
                max_iters=1000, eps_abs=1e-3, eps_rel=1e-3, x0=None,
                lin_solver="cg", lin_solver_options=None, conv_check=100,
                try_diagonalize=True, try_fast_norm=False, scaled=True,
-               metric=None, convlog=None, verbose=0, callback=None):
+               metric=None, convlog=None, verbose=0, callback=None, show_graph=False):
     import pycuda.gpuarray as gpuarray
     
     # Can only have one omega function.
@@ -306,11 +357,21 @@ def solve_cuda(psi_fns, omega_fns, tau=None, sigma=None, theta=None,
     # Select optimal parameters if wanted
     if tau is None or sigma is None or theta is None:
         tau, sigma, theta = est_params_pc(K, tau, sigma, verbose, scaled, try_fast_norm)
+    elif callable(tau) or callable(sigma) or callable(theta):
+        if scaled:
+            L = 1
+        else:
+            L = est_CompGraph_norm(K, try_fast_norm)
         
     if verbose > 0:
         print("psi_fns:", [str(f) for f in psi_fns])
         print("omega_fns:", [str(f) for f in omega_fns])
 
+    if show_graph:
+        print("Computational graph after optimizing:")
+        graph_visualize(prox_fns)
+        
+        
     # Initialize
     x = gpuarray.to_gpu(np.zeros(K.input_size, dtype=np.float32))
     y = gpuarray.to_gpu(np.zeros(K.output_size, dtype=np.float32))
@@ -370,10 +431,23 @@ def solve_cuda(psi_fns, omega_fns, tau=None, sigma=None, theta=None,
         prev_Kx[:] = Kx
         add_timing["copyprev"].toc()
 
+        if callable(sigma):
+            csigma = np.float32(sigma(i, L))
+        else:
+            csigma = np.float32(sigma)
+        if callable(tau):
+            ctau = np.float32(tau(i, L))
+        else:
+            ctau = np.float32(tau)
+        if callable(theta):
+            ctheta = np.float32(theta(i, L))
+        else:
+            ctheta = np.float32(theta)
+            
         # Compute z
         add_timing["calcz"].tic()
         K.forward_cuda(xbar, Kxbar)
-        z = y + sigma * Kxbar
+        z = y + csigma * Kxbar
         add_timing["calcz"].toc()
 
         # Update y.
@@ -389,7 +463,7 @@ def solve_cuda(psi_fns, omega_fns, tau=None, sigma=None, theta=None,
 
             # Moreau identity: apply and time prox.
             prox_log[fn].tic()
-            y[slc] = gpuarray.reshape((z_slc - sigma * fn.prox_cuda(sigma, z_slc / sigma, i)), int(np.prod(z_slc.shape)) )
+            y[slc] = gpuarray.reshape((z_slc - csigma * fn.prox_cuda(csigma, z_slc / csigma, i)), int(np.prod(z_slc.shape)) )
             prox_log[fn].toc()
             #print("y_slc", fn)
             #display_matrix(y[slc].get())
@@ -402,13 +476,13 @@ def solve_cuda(psi_fns, omega_fns, tau=None, sigma=None, theta=None,
         K.adjoint_cuda(y, KTy)
         #print("KTy")
         #display_matrix(KTy.get())
-        x -= tau * KTy
+        x -= ctau * KTy
         add_timing["calcx"].toc()
 
         add_timing["omega_fn"].tic()
         if len(omega_fns) > 0:
             xtmp = np.reshape(x, omega_fns[0].lin_op.shape)
-            x[:] = omega_fns[0].prox_cuda(1.0 / tau, xtmp, x_init=prev_x,
+            x[:] = omega_fns[0].prox_cuda(np.float32(1.0) / ctau, xtmp, x_init=prev_x,
                                          lin_solver=lin_solver, options=lin_solver_options).flatten()
         add_timing["omega_fn"].toc()
 
@@ -416,7 +490,7 @@ def solve_cuda(psi_fns, omega_fns, tau=None, sigma=None, theta=None,
         # Update xbar
         xbar[:] = x
         #np.copyto(xbar, x)
-        xbar += theta * (x - prev_x)
+        xbar += ctheta * (x - prev_x)
         add_timing["xbar"].toc()
 
         # Convergence log
@@ -439,8 +513,8 @@ def solve_cuda(psi_fns, omega_fns, tau=None, sigma=None, theta=None,
             add_timing["conv_check"].tic()
             # Residual based convergence check
             K.forward_cuda(x, Kx)
-            u = 1.0 / sigma * y + theta * (Kx - prev_Kx)
-            z = prev_u + prev_Kx - 1.0 / sigma * y
+            u = np.float32(1.0) / csigma * y + ctheta * (Kx - prev_Kx)
+            z = prev_u + prev_Kx - np.float32(1.0) / csigma * y
             add_timing["conv_check"].toc()
 
         # Iteration order is different than
@@ -449,12 +523,12 @@ def solve_cuda(psi_fns, omega_fns, tau=None, sigma=None, theta=None,
 
             # Check convergence
             r = prev_Kx - z
-            K.adjoint_cuda(sigma * (z - prev_z), s)
+            K.adjoint_cuda(csigma * (z - prev_z), s)
             eps_pri = np.sqrt(K.output_size) * eps_abs + eps_rel * \
                 max([np.linalg.norm(prev_Kx.get()), np.linalg.norm(z.get())])
 
             K.adjoint_cuda(u, KTu)
-            eps_dual = np.sqrt(K.input_size) * eps_abs + eps_rel * np.linalg.norm(KTu.get()) / sigma
+            eps_dual = np.sqrt(K.input_size) * eps_abs + eps_rel * np.linalg.norm(KTu.get()) / csigma
 
             if not callback is None or verbose == 2:
                 K.update_vars(x.get())

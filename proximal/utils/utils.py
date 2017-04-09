@@ -260,3 +260,35 @@ def estimate_std(z, method='daub_reflect'):
 
     # Return standard deviation
     return dev
+
+def graph_visualize(prox_fns, filename = None):
+    import graphviz
+    from IPython.display import display
+    dot = graphviz.Digraph()
+    nodes = {}
+    def node(obj):
+        if not obj in nodes:
+            nodes[obj] = 'N%d' % len(nodes)
+        return nodes[obj]
+    for pfn in prox_fns:
+        dot.node(node(pfn), str(pfn))
+        activenodes = [pfn.lin_op]
+        while len(activenodes) > 0:
+            n = activenodes.pop(0)
+            if not n in nodes:
+                dot.node(node(n), str(type(n)))
+                activenodes.extend(n.input_nodes)
+        dot.edge(nodes[pfn.lin_op], nodes[pfn])
+        activenodes = [pfn.lin_op]
+        visited = set()
+        while len(activenodes) > 0:
+            n = activenodes.pop(0)
+            if not n in visited:
+                visited.add(n)
+                activenodes.extend(n.input_nodes)
+                for inn in n.input_nodes:
+                    dot.edge(nodes[inn], nodes[n])
+    if filename is None:
+        display(dot)
+    else:
+        dot.render(filename)

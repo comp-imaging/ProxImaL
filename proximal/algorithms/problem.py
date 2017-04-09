@@ -2,7 +2,7 @@ from . import admm
 from . import pock_chambolle as pc
 from . import half_quadratic_splitting as hqs
 from . import linearized_admm as ladmm
-from proximal.utils.utils import Impl
+from proximal.utils.utils import Impl, graph_visualize
 from proximal.utils import matlab_support
 from proximal.lin_ops import Variable, CompGraph, est_CompGraph_norm, vstack
 from proximal.prox_fns import ProxFn
@@ -88,7 +88,7 @@ class Problem(object):
         """
         self.lin_solver = lin_solver
 
-    def solve(self, solver=None, test_adjoints = False, test_norm = False, test_matlab = False, *args, **kwargs):
+    def solve(self, solver=None, test_adjoints = False, test_norm = False, test_matlab = False, show_graph = False, *args, **kwargs):
         if solver is None:
             solver = self.solver
 
@@ -106,6 +106,11 @@ class Problem(object):
         # Absorb offsets.
         prox_fns = [absorb.absorb_offset(fn) for fn in prox_fns]
         # TODO more analysis of what solver to use.
+        
+        if show_graph:
+            print("Computational graph before optimizing:")
+            graph_visualize(prox_fns)
+        
         # Short circuit with one function.
         if len(prox_fns) == 1 and type(prox_fns[0].lin_op) == Variable:
             fn = prox_fns[0]
@@ -121,6 +126,9 @@ class Problem(object):
                 else:
                     psi_fns = prox_fns
                     omega_fns = []
+            else:
+                psi_fns = self.psi_fns
+                omega_fns = self.omega_fns
             if test_norm:
                 L = CompGraph(vstack([fn.lin_op for fn in psi_fns]))
                 from numpy.random import random
@@ -286,6 +294,7 @@ class Problem(object):
                                    try_diagonalize=self.try_diagonalize,
                                    try_fast_norm=self.try_fast_norm,
                                    scaled=self.scale,
+                                   show_graph = show_graph,
                                    *args, **kwargs)
             # Unscale the variables.
             if self.scale:
