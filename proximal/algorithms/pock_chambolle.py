@@ -262,7 +262,7 @@ def solve(psi_fns, omega_fns, tau=None, sigma=None, theta=None,
 
         # Iteration order is different than
         # lin-admm (--> start checking at iteration 1)
-        if i % conv_check == 0:
+        if i > 0 and i % conv_check == 0:
 
             # Check convergence
             r = prev_Kx - z
@@ -512,7 +512,7 @@ def solve_cuda(psi_fns, omega_fns, tau=None, sigma=None, theta=None,
 
         # Iteration order is different than
         # lin-admm (--> start checking at iteration 1)
-        if i % conv_check == 0:
+        if i > 0 and i % conv_check == 0:
 
             # Check convergence
             r = prev_Kx - z

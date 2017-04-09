@@ -52,6 +52,7 @@ class Problem(object):
             psi_fns = [fn for fn in prox_fns if fn not in omega_fns]
         elif omega_fns is None:
             omega_fns = [fn for fn in prox_fns if fn not in psi_fns]
+        else:
             assert set(psi_fns + omega_fns) == set(prox_fns)
         self.omega_fns = omega_fns
         self.psi_fns = psi_fns
