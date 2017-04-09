@@ -1,3 +1,4 @@
+from __future__ import print_function
 from .lin_op import LinOp
 import numpy as np
 import sys
