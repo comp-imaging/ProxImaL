@@ -3,7 +3,6 @@ from . import pock_chambolle as pc
 from . import half_quadratic_splitting as hqs
 from . import linearized_admm as ladmm
 from proximal.utils.utils import Impl, graph_visualize
-from proximal.utils import matlab_support
 from proximal.lin_ops import Variable, CompGraph, est_CompGraph_norm, vstack
 from proximal.prox_fns import ProxFn
 from . import absorb
@@ -88,7 +87,7 @@ class Problem(object):
         """
         self.lin_solver = lin_solver
 
-    def solve(self, solver=None, test_adjoints = False, test_norm = False, test_matlab = False, show_graph = False, *args, **kwargs):
+    def solve(self, solver=None, test_adjoints = False, test_norm = False, show_graph = False, *args, **kwargs):
         if solver is None:
             solver = self.solver
 
@@ -214,81 +213,7 @@ class Problem(object):
                         
                     print("max(abs(ytt - yt)): ", np.amax(np.abs(np.ravel(ytt.get().astype(np.float64)) - np.ravel(yt))))
                     print("max(abs(xtt - xt)): ", np.amax(np.abs(np.ravel(xtt.get().astype(np.float64)) - np.ravel(xt))))
-                    
-            if test_matlab:
-                Lp = CompGraph(vstack([fn.lin_op for fn in psi_fns]))
-                Lm = CompGraph(vstack([fn.lin_op for fn in psi_fns]), implem='matlab', keep_intermediates=True)
-                mlclass = matlab_support.MatlabClass('prox_testlinops_matlab')
-                Lm.genmatlab(mlclass)
-                mlclass.generate()
-                from numpy.random import random
-                x = random(Lp.input_size)
-                yt = np.zeros(Lp.output_size)
-                y = random(Lp.output_size)
-                xt = np.zeros(Lp.input_size)
-                
-                x = random(Lp.input_size)
-                yp = np.zeros(Lp.output_size)
-                ym = np.zeros(Lp.output_size)
-                y = random(Lp.output_size)
-                xp = np.zeros(Lp.input_size)
-                xm = np.zeros(Lp.input_size)
-                Lp.forward(x, yp)
-                Lm.forward(x, ym)
-                epsmax = 1e-4
-                if 1:
-                    ip = Lp.get_inter_results(True)
-                    im = Lm.get_inter_results(True)
-    
-                    print("Intermediates forward")                
-                    for nname in sorted(ip.keys()):
-                        for i in range(len(ip[nname])):
-                            rp = ip[nname][i]
-                            rm = im[nname][i][0]
-                            en = im[nname][i][1]
-                            eps = np.amax(np.abs((rp-rm).flatten()))
-                            if eps > epsmax:
-                                print("NOK:", en, nname, i, eps)
-                            else:
-                                print(" OK:", en, nname, i, eps)
-                
-                assert( not np.all(yp == 0) )
-                assert( not np.all(ym == 0) )
-                assert( np.all(np.abs(yp-ym) < epsmax) )
-
-                Lp.adjoint(y, xp)
-                Lm.adjoint(y, xm)
-                
-                if 1:
-                    ip = Lp.get_inter_results(False)
-                    im = Lm.get_inter_results(False)
-                    
-                    print("Intermediates adjoint")                
-                    for nname in sorted(ip.keys()):
-                        for i in range(len(ip[nname])):
-                            rp = ip[nname][i]
-                            rm = im[nname][i][0]
-                            en = im[nname][i][1]
-                            eps = np.amax(np.abs((rp-rm).flatten()))
-                            if eps > epsmax:
-                                print("NOK:", en, nname, i, eps)
-                                xxx
-                            else:
-                                print(" OK:", en, nname, i, eps)
-                                
-                assert( not np.all(xp == 0) )
-                assert( not np.all(xm == 0) )
-                assert( np.all(np.abs(xp-xm) < epsmax) )
-                
-                import timeit
-                print('python forward exec time: %.1f ms' %( timeit.timeit(lambda: Lp.forward(x, yt), number=100)/100*1000) )
-                print('matlab forward exec time: %.1f ms' %( timeit.timeit(lambda: Lm.forward(x, yt), number=100)/100*1000) )
-                print('matlab forward nocp time: %.1f ms' %( timeit.timeit(lambda: Lm.forward(x, yt, nocopy=True), number=100)/100*1000) )
-
-                print('python adjoint exec time: %.1f ms' %( timeit.timeit(lambda: Lp.adjoint(y, xt), number=100)/100*1000) )
-                print('matlab adjoint exec time: %.1f ms' %( timeit.timeit(lambda: Lm.adjoint(y, xt), number=100)/100*1000) )
-                print('matlab adjoint nocp time: %.1f ms' %( timeit.timeit(lambda: Lm.adjoint(y, xt, nocopy=True), number=100)/100*1000) )
-                
+                                    
             opt_val = module.solve(psi_fns, omega_fns,
                                    lin_solver=self.lin_solver,
                                    try_diagonalize=self.try_diagonalize,

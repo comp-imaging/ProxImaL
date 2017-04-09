@@ -116,39 +116,6 @@ class LinOp(object):
         """
         return NotImplemented
     
-    @abc.abstractmethod
-    def init_matlab(self, prefix):
-        """Generate matlab code executed once before the forward / adjoint operators 
-        can be called.
-        
-        prefix is a unique prefix for this instance
-        """
-        raise NotImplemented
-            
-    @abc.abstractmethod
-    def forward_matlab(self, prefix, inputs, outputs):
-        """Generate matlab code for the forward operator
-        
-        prefix is a unique prefix for this instance
-        inputs is a list of matlab variable names containing the operator inputs
-        outputs is a list of matlab variable names containing the operator outputs
-        
-        Returns a string with matlab code.
-        """
-        raise NotImplemented
-
-    @abc.abstractmethod
-    def adjoint_matlab(self, prefix, inputs, outputs):
-        """Generate matlab code for the adjoint operator
-        
-        prefix is a unique prefix for this instance
-        inputs is a list of matlab variable names containing the operator inputs
-        outputs is a list of matlab variable names containing the operator outputs
-        
-        Returns a string with matlab code.
-        """
-        raise NotImplemented
-
     def is_gram_diag(self, freq=False):
         """Is the lin op's Gram matrix diagonal (in the frequency domain)?
         """

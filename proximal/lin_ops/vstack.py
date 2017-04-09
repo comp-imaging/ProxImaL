@@ -102,34 +102,6 @@ if( %(abs_idx)s >= %(offset)d && %(abs_idx)s < %(endoffset)d )
             var = res
         return code + icode, var, num_tmp_vars
     
-    def init_matlab(self, prefix):
-        return "%no code\n"
-        
-    def forward_matlab(self, prefix, inputs, outputs):
-        # matlab uses another way of matrix alignment, so we can't just 
-        # do an implicit reshape of our data, but we have to transpose it first
-        out = outputs[0]
-        res  = "osize = " + "+".join([("numel("+x+")") for x in inputs]) + ";\n"
-        res += "o=1;\n"
-        res += "%(out)s = zeros([osize, 1], 'single', 'gpuArray');\n" % locals()
-        for i in inputs:
-            res += "%(out)s(o:o+numel(%(i)s)-1) = %(i)s;\n" % locals()
-            res += "o = o + numel(%(i)s);\n" % locals()
-        return res
-         
-    def adjoint_matlab(self, prefix, inputs, outputs):
-        # matlab uses another way of matrix alignment, so we can't just 
-        # do an implicit reshape of our data, but we have to transpose it first
-        arg = inputs[0]
-        res = "o=1;\n"
-        for i,o in enumerate(outputs):
-            shape = list(self.input_shapes[i])
-            perm = list(range(len(shape), 0, -1))
-            osize = np.prod(shape)
-            res += o + " = reshape(%(arg)s(o:o+%(osize)d-1), %(shape)s);\n" % locals()
-            res += "o = o + %(osize)d;\n" % locals()
-        return res
-    
     def is_gram_diag(self, freq=False):
         """Is the lin op's Gram matrix diagonal (in the frequency domain)?
         """
@@ -202,12 +174,6 @@ class split(vstack):
     def adjoint_cuda_kernel(self, cg, num_tmp_variables, abs_idx, parent):
         #print("split:adjoint:cuda")
         return super(split, self).forward_cuda_kernel(ReverseInOut(cg), num_tmp_variables, abs_idx, parent)
-
-    def forward_matlab(self, prefix, inputs, outputs):
-        return super(split, self).adjoint_matlab(prefix, inputs, outputs)
-
-    def adjoint_matlab(self, prefix, inputs, outputs):
-        return super(split, self).forward_matlab(prefix, inputs, outputs)
 
     def norm_bound(self, input_mags):
         """Gives an upper bound on the magnitudes of the outputs given inputs.

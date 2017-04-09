@@ -5,7 +5,6 @@ import numpy as np
 from proximal.utils.utils import Impl, fftd, ifftd
 from scipy.sparse.linalg import lsqr, LinearOperator
 from proximal.halide.halide import Halide
-from proximal.utils import matlab_support
 
 class sum_squares(ProxFn):
     """The function ||x||_2^2.
@@ -24,13 +23,6 @@ class sum_squares(ProxFn):
         """
         v *= rho / (2 + rho)
         return v
-
-    def _prox_matlab(self, prefix, output_var, rho_var, v_var, *args, **kwargs):
-        """Returns matlab code for this prox function"""
-        return "%(output_var)s = %(v_var)s * %(rho_var)s / (2 + %(rho_var)s);\n" % locals()
-
-    def _eval_matlab(self, prefix, output_var, v_var):
-        return "%(output_var)s = gather(sum( %(v_var)s(:) .^ 2 ));\n" % locals()
 
     def _eval(self, v):
         """Evaluate the function on v (ignoring parameters).
@@ -61,26 +53,6 @@ class weighted_sum_squares(sum_squares):
         rho_vec = rho / np.square(self.weight[self.weight != 0])
         v[self.weight != 0] *= rho_vec / (2 + rho_vec)
         return v
-
-    def _init_matlab(self, prefix):
-        matlab_support.put_array(prefix + "_weight_std", self.weight.astype(np.float32), globalvar = True)
-        return """
-global %(prefix)s_weight_std;
-obj.d.%(prefix)s_weight = gpuArray(%(prefix)s_weight_std .^ 2);
-obj.d.%(prefix)s_nonzero = obj.d.%(prefix)s_weight ~= 0;
-""" % locals()
-    
-    def _prox_matlab(self, prefix, output_var, rho_var, v_var, *args, **kwargs):
-        """Returns matlab code for this prox function"""
-        w = self.weight
-        res = """
-rho_vec = %(rho_var)s ./ obj.d.%(prefix)s_weight(obj.d.%(prefix)s_nonzero);
-%(output_var)s = %(v_var)s;
-%(output_var)s(obj.d.%(prefix)s_nonzero) = %(v_var)s(obj.d.%(prefix)s_nonzero) * rho_vec ./ (2 + rho_vec);
-""" % locals()
-
-    def _eval_matlab(self, prefix, output_var, v_var):
-        return "%(output_var)s = gather(sum( (%(v_var)s(:) * obj.d.%(prefix)s_weight(:)) .^ 2 ));\n" % locals()
 
     def _eval(self, v):
         """Evaluate the function on v (ignoring parameters).
@@ -161,9 +133,6 @@ class least_squares(sum_squares):
         self.K.forward(v.ravel(), Kv)
         return super(least_squares, self)._eval(Kv - self.offset)
     
-    def _prox_matlab(self, *args, **kw):
-        raise NotImplemented
-
     def solve(self, b, rho=None, v=None, lin_solver="lsqr", *args, **kwargs):
         # KtK Operator is diagonal
         if self.diag is not None:

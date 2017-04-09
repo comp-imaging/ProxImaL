@@ -1,5 +1,4 @@
 from ..lin_ops import lin_op
-from ..utils import matlab_support
 from ..utils.codegen import indent, ind2sub, sub2ind
 import numpy as np
 from numpy import random
@@ -39,9 +38,52 @@ class conv_nofft(lin_op.LinOp):
         # Set implementation in super-class
         super(conv_nofft, self).__init__([arg], arg.shape)
         
+    def forward(self, inputs, outputs):
+        """The forward operator.
+
+        Reads from inputs and writes to outputs.
+        """
+        arg = inputs[0]
+        if len(arg.shape) == 2:
+            ts = [s//2 for s in self.kernel.shape]
+            padded = self.padr_2D(arg, ts)
+            convolved = scipy.signal.convolve2d(padded, self.kernel, mode='same')
+            truncated = self.trunc0_2D(convolved, ts)
+            np.copyto(outputs[0], truncated)
+        else:
+            res = np.zeros(arg.shape)
+            res_t = np.zeros(arg.shape[:2])
+            for i in range(arg.shape[2]):
+                self.forward([arg[:,:,i]], [res_t])
+                res[:,:,i] = res_t
+            np.copyto(outputs[0], res)
+        
+        #print("myconv:forward", arg, outputs[0])
+
+    def adjoint(self, outputs, inputs):
+        """The adjoint operator.
+
+        Reads from inputs and writes to outputs.
+        """
+        arg = outputs[0]
+        if len(arg.shape) == 2:
+            ts = [s//2 for s in self.kernel.shape]
+            padded = self.pad0_2D(arg, ts)
+            convolved = scipy.signal.convolve2d(padded, self.kernel[::-1, ::-1], mode='same')
+            truncated = self.truncr_2D(convolved, ts)
+            np.copyto(inputs[0], truncated)
+        else:
+            res = np.zeros(arg.shape)
+            res_t = np.zeros(arg.shape[:2])
+            for i in range(arg.shape[2]):
+                self.adjoint([arg[:,:,i]], [res_t])
+                res[:,:,i] = res_t
+            np.copyto(inputs[0], res)
+        #print("myconv:adjoint", arg, inputs[0])
+
     def cuda_kernel_available(self):
         # it is better to split up the comp graph, and do the convolution 
-        # "manually"
+        # on dedicated input/output buffers than in-place in the comp graph
         return False
                 
     def gen_cuda(self):
@@ -228,109 +270,6 @@ y[yidx] = %(var)s;
             self.gen_cuda()
         self.cuda_conv_nofft_adjoint(inputs[0], outputs[0])
         
-    def forward(self, inputs, outputs):
-        """The forward operator.
-
-        Reads from inputs and writes to outputs.
-        """
-        arg = inputs[0]
-        if len(arg.shape) == 2:
-            ts = [s//2 for s in self.kernel.shape]
-            padded = self.padr_2D(arg, ts)
-            convolved = scipy.signal.convolve2d(padded, self.kernel, mode='same')
-            truncated = self.trunc0_2D(convolved, ts)
-            np.copyto(outputs[0], truncated)
-        else:
-            res = np.zeros(arg.shape)
-            res_t = np.zeros(arg.shape[:2])
-            for i in range(arg.shape[2]):
-                self.forward([arg[:,:,i]], [res_t])
-                res[:,:,i] = res_t
-            np.copyto(outputs[0], res)
-        
-        #print("myconv:forward", arg, outputs[0])
-
-    def adjoint(self, outputs, inputs):
-        """The adjoint operator.
-
-        Reads from inputs and writes to outputs.
-        """
-        arg = outputs[0]
-        if len(arg.shape) == 2:
-            ts = [s//2 for s in self.kernel.shape]
-            padded = self.pad0_2D(arg, ts)
-            convolved = scipy.signal.convolve2d(padded, self.kernel[::-1, ::-1], mode='same')
-            truncated = self.truncr_2D(convolved, ts)
-            np.copyto(inputs[0], truncated)
-        else:
-            res = np.zeros(arg.shape)
-            res_t = np.zeros(arg.shape[:2])
-            for i in range(arg.shape[2]):
-                self.adjoint([arg[:,:,i]], [res_t])
-                res[:,:,i] = res_t
-            np.copyto(inputs[0], res)
-        #print("myconv:adjoint", arg, inputs[0])
-
-    def init_matlab(self, prefix):
-        matlab_support.put_array(prefix + "_kernel_raw", self.kernel, globalvar = True)
-        res  = "global %(prefix)s_kernel_raw;" % locals()
-        res += "obj.d.%(prefix)s_kernel = gpuArray(%(prefix)s_kernel_raw);\n" % locals()
-        res += "obj.d.%(prefix)s_truncy = @(c, s) cat(1, sum(c(1:(1+s),:),1), c((1+s+1):(end-s-1),:), sum(c((end-s):end,:),1));\n" % locals()
-        res += "obj.d.%(prefix)s_truncx = @(c, s) cat(2, sum(c(:,1:(1+s)),2), c(:,(1+s+1):(end-s-1)), sum(c(:,(end-s):end),2));\n" % locals()
-        return res
-            
-    def forward_matlab(self, prefix, inputs, outputs):
-        arg = inputs[0]
-        out = outputs[0]
-
-        ts = str([s//2 for s in self.kernel.shape])
-        
-        res = """
-if numel(size(%(arg)s)) == 2
-    padded = padarray(%(arg)s, %(ts)s, 'replicate');
-    %(out)s = conv2(padded, obj.d.%(prefix)s_kernel, 'valid');
-else
-    padded = padarray(%(arg)s, [%(ts)s, 0], 'replicate');
-    %(out)s = zeros(size(%(arg)s), 'single', 'gpuArray');
-    for i=1:size(%(arg)s, 3)
-        %(out)s(:,:,i) = conv2(padded(:,:,i), obj.d.%(prefix)s_kernel, 'valid');
-    end
-end
-clear padded;
-""" % locals()
-        return res
-        
-    def adjoint_matlab(self, prefix, outputs, inputs):
-        arg = outputs[0]
-        out = inputs[0]
-        
-        ts = list([s//2 for s in self.kernel.shape])
-        ts1 = ts[0]
-        ts2 = ts[1]
-        ts1p1 = ts1+1
-        ts2p1 = ts2+1
-        
-        ts = str(ts)
-        
-        res = """
-if numel(size(%(arg)s)) == 2
-    padded = padarray(%(arg)s, %(ts)s, 0);
-    c = conv2(padded, obj.d.%(prefix)s_kernel(end:-1:1, end:-1:1), 'same');
-    t = obj.d.%(prefix)s_truncy(c, %(ts1)s);
-    %(out)s = obj.d.%(prefix)s_truncx(t, %(ts2)s);
-else
-    padded = padarray(%(arg)s, [%(ts)s, 0], 0);
-    %(out)s = zeros(size(%(arg)s), 'single', 'gpuArray');
-    for i=1:size(%(arg)s, 3)
-        c = conv2(padded(:,:,i), obj.d.%(prefix)s_kernel(end:-1:1, end:-1:1), 'same');
-        t = obj.d.%(prefix)s_truncy(c, %(ts1)s);
-        %(out)s(:,:,i) = obj.d.%(prefix)s_truncx(t, %(ts2)s);
-    end
-end
-clear padded;
-""" % locals()
-        return res
-
     def norm_bound(self, input_mags):
         """Gives an upper bound on the magnitudes of the outputs given inputs.
 

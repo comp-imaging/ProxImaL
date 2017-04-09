@@ -4,7 +4,6 @@ import tempfile
 import os.path
 import numpy as np
 from proximal.utils import Impl
-from proximal.utils import matlab_support
 from proximal.utils.codegen import sub2ind, ind2sub, indent, replace_local_floats_with_double
 
 import pycuda.driver as cuda
@@ -211,115 +210,7 @@ __global__ void prox(const float *v, float *xhat, float rho%(argstring)s)
             xhat += b
             xhat /= self.beta
             return xhat        
-    
-    def _init_matlab(self, prefix):
-        return ""
-        
-    @abc.abstractmethod
-    def _prox_matlab(self, prefix, output_var, rho_var, v_var, *args, **kwargs):
-        """Returns matlab code for this prox function"""
-        return NotImplemented
-        
-    @abc.abstractmethod
-    def _eval_matlab(self, prefix, output_var, v_var):
-        """Returns matlab code for this prox function"""
-        return NotImplemented
-
-    def init_matlab(self, prefix):
-        res = """
-global %(prefix)s_proxint_alpha %(prefix)s_proxint_beta %(prefix)s_proxint_gamma %(prefix)s_proxint_b %(prefix)s_proxint_c %(prefix)s_proxint_d
-obj.d.%(prefix)s_proxint_alpha = %(prefix)s_proxint_alpha;
-obj.d.%(prefix)s_proxint_beta = %(prefix)s_proxint_beta;
-obj.d.%(prefix)s_proxint_gamma = %(prefix)s_proxint_gamma;
-obj.d.%(prefix)s_proxint_d = gpuArray(%(prefix)s_proxint_d);
-""" % locals()
-        matlab_support.put_array(prefix + "_proxint_alpha", np.array(self.alpha, np.float32), globalvar = True)
-        matlab_support.put_array(prefix + "_proxint_beta", np.array(self.beta, np.float32), globalvar = True)
-        matlab_support.put_array(prefix + "_proxint_gamma", np.array(self.gamma, np.float32), globalvar = True)
-        if not np.all(self.b == 0):
-            matlab_support.put_array(prefix + "_proxint_b", np.array(self.b, np.float32), globalvar = True)
-            res += "obj.d.%(prefix)s_proxint_b = gpuArray(%(prefix)s_proxint_b);\n" % locals()
-        if not np.all(self.c == 0):
-            matlab_support.put_array(prefix + "_proxint_c", np.array(self.c, np.float32), globalvar = True)
-            res += "obj.d.%(prefix)s_proxint_c = gpuArray(%(prefix)s_proxint_c);\n" % locals()
-        matlab_support.put_array(prefix + "_proxint_d", np.array(self.d, np.float32), globalvar = True)
-        res += self._init_matlab(prefix)
-        return res
-        
-    def prox_matlab(self, prefix, output_var, rho_var, v_var, *args, **kwargs):
-        if np.all(self.c == 0):
-            minus_c = ''
-        else:
-            minus_c = ' - obj.d.%(prefix)s_proxint_c' % locals()
             
-        if np.all(self.b == 0):
-            minus_b = ''
-            plus_b = ''
-        else:
-            minus_b = ' - obj.d.%(prefix)s_proxint_b' % locals()
-            plus_b = ' + obj.d.%(prefix)s_proxint_b' % locals()
-        
-        if self.beta == 1:
-            div_beta = ''
-        else:
-            div_beta = ' / obj.d.%(prefix)s_proxint_beta' % locals()
-        
-        res = """
-rho_hat = (%(rho_var)s + 2 * obj.d.%(prefix)s_proxint_gamma) / (obj.d.%(prefix)s_proxint_alpha * obj.d.%(prefix)s_proxint_beta^2);
-v_hat = ((%(v_var)s * %(rho_var)s)%(minus_c)s) * (obj.d.%(prefix)s_proxint_beta / (%(rho_var)s + 2 * obj.d.%(prefix)s_proxint_gamma ) )%(minus_b)s;
-""" % locals()
-        res += self._prox_matlab(prefix, "x_hat", "rho_hat", "v_hat", *args, **kwargs)
-        res += """
-%(output_var)s = (x_hat%(plus_b)s)%(div_beta)s;
-""" % locals()
-        return res
-
-    def eval_matlab(self, prefix, v_var):
-        if np.all(self.c == 0):
-            cdotv = ''
-        else:
-            cdotv = 'dot(obj.d.%(prefix)s_proxint_c(:), %(v_var)s(:)) +' % locals()
-            
-        if np.all(self.b == 0):
-            minus_b = ''
-            plus_b = ''
-        else:
-            minus_b = ' - obj.d.%(prefix)s_proxint_b' % locals()
-            plus_b = ' + obj.d.%(prefix)s_proxint_b' % locals()
-
-        res = """
-tmp = %(v_var)s * obj.d.%(prefix)s_proxint_beta%(minus_b)s;
-""" %locals()
-        res += self._eval_matlab(prefix, "evp", "tmp")
-        res += """
-evp = gather(obj.d.%(prefix)s_proxint_alpha * evp + %(cdotv)s obj.d.%(prefix)s_proxint_gamma * sum(reshape(%(v_var)s.^2, 1, [])) + obj.d.%(prefix)s_proxint_d);
-""" % locals()
-        return res
-
-    def genmatlab(self, prefix, mlclass):
-        init_code = self.init_matlab(prefix)
-        mlclass.add_method("""
-function obj = %(prefix)s_init(obj)
-    %(init_code)s
-end
-""" % locals(), constructor="obj = obj.%(prefix)s_init();" % locals())
-        
-        self.matlab_prox_script = "%(prefix)s_prox" % locals()
-        prox_code = self.prox_matlab(prefix, "prox_out", "rho", "prox_in")
-        mlclass.add_method("""
-function prox_out = %(prefix)s_prox(obj, prox_in, rho)
-    %(prox_code)s
-end
-""" % locals())
-        
-        self.matlab_eval_script = "%(prefix)s_eval" % locals()
-        eval_code = self.eval_matlab(prefix, "prox_eval_in")
-        mlclass.add_method("""
-function evp = %(prefix)s_eval(obj, prox_eval_in)
-    %(eval_code)s
-end
-""" % locals())
-        
     @abc.abstractmethod
     def _eval(self, v):
         """Evaluate the function on v (ignoring parameters).

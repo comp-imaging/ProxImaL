@@ -3,7 +3,6 @@ from .edge import Edge
 from .variable import Variable
 from .constant import Constant
 from .vstack import split
-from ..utils import matlab_support
 from ..utils.codegen import indent, CudaSubGraph
 from .vstack import vstack
 from proximal.utils.timings_log import TimingsLog
@@ -28,8 +27,6 @@ class CompGraph(object):
     instanceCnt = 0
 
     def __init__(self, end, implem=None, keep_intermediates=False):
-        if implem == 'matlab':
-            implem = None
         self.instanceID = CompGraph.instanceCnt
         CompGraph.instanceCnt += 1
         self.orig_end = end
@@ -58,11 +55,8 @@ class CompGraph(object):
             self.nodes.append(curr)
             input_edges = []
             for node in curr.input_nodes:
-                # Zero out constants.
+                # Zero out constants. Constants are handled in absorb_offset
                 if isinstance(node, Constant):
-                    # if the constants are not zero-ed, the adjoint tests are failing
-                    # but how is that justified ?!?
-                    #node = Constant(node.value)
                     node = Constant(np.zeros(curr.shape))
                     node.orig_node = None
                     self.constants.append(node)
@@ -157,9 +151,6 @@ class CompGraph(object):
         self.edges += split_outputs
         self.output_edges[self.start] = split_outputs
         
-        self.matlab_forward_script = None
-        self.matlab_adjoint_script = None
-        
         self.cuda_forward_subgraphs = None
         self.cuda_adjoint_subgraphs = None
         
@@ -200,113 +191,6 @@ class CompGraph(object):
         """Returns the input data for a node.
         """
         return [("obj.d." if e.resultNeeded else '') + e.name for e in self.output_edges[node]]
-
-    def genmatlab(self, mlclass):
-        """Generate matlab script to calculate the forward linop.
-        """
-        node_prefixes = {}
-        init = []
-        forward = []
-        adjoint = []
-        
-        def forward_eval(node):
-            if not node in node_prefixes:
-                node_prefixes[node] = "node%d" % len(node_prefixes)
-            if node is self.start:
-                inputs = ["graphin"]
-            else:
-                inputs = self.get_input_names(node)
-            if node is self.end:
-                outputs = ["graphout"]
-            else:
-                outputs = self.get_output_names(node)
-
-            # Run forward op and time it.
-            prefix = node_prefixes[node]
-            icode = node.init_matlab(prefix)
-            assert not icode is NotImplemented and not icode is None
-            init.append("% Init code for " + str(node).replace("\n",";") + "\n")
-            init.append(icode)
-            fcode = node.forward_matlab(prefix, inputs, outputs)
-            #if node in self.split_nodes:
-            #    for io in outputs[1:]:
-            #        fcode += ("\n%s = %s;\n" % (io, outputs[0]))
-            invars = list(filter(lambda x: not x.startswith("graph") and not x.startswith("obj.d"), inputs))
-            if len(invars) > 0:
-                # delete unneeded variables
-                fcode += "clear " + (" ".join(invars)) + ";\n";
-            assert not fcode is NotImplemented and not fcode is None, str(node)
-            forward.append("% Forward code for " + str(node).replace("\n",";") + "\n")
-            forward.append(fcode)
-
-        def adjoint_eval(node):
-            if not node in node_prefixes:
-                node_prefixes[node] = "node%d" % len(node_prefixes)
-            if node is self.end:
-                outputs = ["graphout"]
-            else:
-                outputs = self.get_output_names(node)
-
-            if node is self.start:
-                inputs = ["graphin"]
-            else:
-                # assign a unique name for each output edge
-                inputs = self.get_input_names(node)
-
-            # Run adjoint op and time it.
-            prefix = node_prefixes[node]
-            #if node in self.split_nodes:
-            #    assert len(inputs) == 1
-            #    acode = ""
-            #    inputedges = []
-            #    for i,io in enumerate(outputs):
-            #        inputedge = "tmp_sn_adjoint" + "_" + str(i)
-            #        inputedges.append(inputedge)
-            #        acode += node.adjoint_matlab(prefix, [io], [inputedge])
-            #    acode += inputs[0] + " = " + ("+".join(inputedges)) + ";\n"
-            #else:
-            if 1:
-                inputedges = []
-                acode = node.adjoint_matlab(prefix, outputs, inputs)
-            invars = inputedges + list(filter(lambda x: not x.startswith("graph") and not x.startswith("obj.d"), outputs))
-            if len(invars) > 0:
-                # delete unneeded variables
-                acode += "clear " + (" ".join(invars)) + ";\n";
-            assert not acode is NotImplemented and not acode is None, str(node)
-            adjoint.append("% Adjoint code for " + str(node).replace("\n",";") + "\n")
-            adjoint.append(acode)
-
-        # Evaluate forward graph and time it.
-        self.traverse_graph(forward_eval, True)
-        self.traverse_graph(adjoint_eval, False)
-        
-        instanceID = self.instanceID
-        init_code = "    ".join(init)
-        mlclass.add_method("""
-function obj = comp_graph_%(instanceID)d_init(obj)
-    %(init_code)s
-end
-""" % locals(), constructor = "obj = obj.comp_graph_%(instanceID)d_init();" % locals())
-        
-        forward_code = "    ".join(forward)
-        mlclass.add_method("""
-function [obj, graphout] = comp_graph_%(instanceID)d_forward(obj, graphin)
-    graphin = gpuArray(graphin);
-    %(forward_code)s
-end
-""" % locals())
-
-        adjoint_code = "    ".join(adjoint)
-        mlclass.add_method("""
-function [obj, graphin] = comp_graph_%(instanceID)d_adjoint(obj, graphout)
-    graphout = gpuArray(graphout);
-    %(adjoint_code)s
-end
-""" % locals())
-        
-        self.matlab_instance = mlclass.instancename
-        self.matlab_forward_script = "comp_graph_%(instanceID)d_forward" % locals()
-        self.matlab_adjoint_script = "comp_graph_%(instanceID)d_adjoint" % locals()
         
     def gen_cuda_code(self):
         # The basic original idea is to generate a cuda kernel for the whole graph
@@ -406,23 +290,10 @@ end
             #        np.copyto(outputs[io], outputs[0])
             self.forward_log[node].toc()
             
-        if self.matlab_forward_script is None:
-            self.forward_log[self].tic()
-            # Evaluate forward graph and time it.
-            self.traverse_graph(forward_eval, True)
-            self.forward_log[self].toc()
-        else:
-            eng = matlab_support.engine()
-            if not nocopy:
-                xt = self.reorder_x(x, 'C', 'F')
-                matlab_support.put_array('graphin_std', xt.astype(np.float32))
-            self.forward_log[self].tic()
-            eng.run("[" + self.matlab_instance + ", graphout] = " + self.matlab_instance + "." + self.matlab_forward_script + "(graphin_std); graphout_std = gather(graphout);", nargout=0)
-            self.forward_log[self].toc()
-            if not nocopy:
-                yt = matlab_support.get_array('graphout_std')
-                ytt = self.reorder_y(yt, 'F', 'C')
-                np.copyto(y, np.reshape(ytt, y.shape) )
+        self.forward_log[self].tic()
+        # Evaluate forward graph and time it.
+        self.traverse_graph(forward_eval, True)
+        self.forward_log[self].toc()
         return y
 
     def adjoint(self, u, v, nocopy=False):
@@ -456,60 +327,10 @@ end
                 node.adjoint(outputs, inputs)
             self.adjoint_log[node].toc()
         # Evaluate adjoint graph and time it.
-        if self.matlab_adjoint_script is None:
-            self.adjoint_log[self].tic()
-            self.traverse_graph(adjoint_eval, False)
-            self.adjoint_log[self].toc()
-        else:
-            eng = matlab_support.engine()
-            if not nocopy:
-                ut = self.reorder_y(u, 'C', 'F')
-                matlab_support.put_array('graphout_std', ut.astype(np.float32))
-            self.adjoint_log[self].tic()
-            eng.run("[" + self.matlab_instance + ", graphin] = " + self.matlab_instance + "." + self.matlab_adjoint_script + "(graphout_std); graphin_std = gather(graphin);", nargout=0)
-            self.adjoint_log[self].toc()
-            if not nocopy:
-                vt = matlab_support.get_array('graphin_std')
-                vt = self.reorder_x(vt, 'F', 'C')
-                np.copyto(v, np.reshape(vt, v.shape) )
-            
+        self.adjoint_log[self].tic()
+        self.traverse_graph(adjoint_eval, False)
+        self.adjoint_log[self].toc()
         return v
-
-    def get_inter_results(self, forward = True):
-        res = {}
-        
-        def inter_python(node):
-            inputs = []
-            if forward:
-                if not node is self.start:
-                    inputs = self.get_inputs(node)
-            else:
-                if not node is self.end:
-                    inputs = self.get_outputs(node)
-            res[("%03d_" % len(res)) + str(node)] = inputs
-                
-        def inter_matlab(node):
-            innames = []
-            if forward:
-                if not node is self.start:
-                    innames = self.get_input_names(node)
-            else:
-                if not node is self.end:
-                    innames = self.get_output_names(node)
-            e = matlab_support.engine()
-            node_ins = []
-            for n in innames:
-                n = n.replace('obj', self.matlab_instance)
-                e.run('tmp = gather(%s);' % n)
-                #e.workspace['tmp'] = e.eval('gather(%s);' % n)
-                node_ins.append((matlab_support.get_array('tmp'), n))
-            res[("%03d_" % len(res)) + str(node)] = node_ins
-                
-        if self.matlab_forward_script is None:
-            self.traverse_graph(inter_python, forward)
-        else:
-            self.traverse_graph(inter_matlab, forward)
-        return res
 
     def traverse_graph(self, node_fn, forward):
         """Traverse the graph and apply the given function at each node.
@@ -579,48 +400,22 @@ end
 
         self.traverse_graph(node_norm_bound, True)
 
-    def update_vars(self, val, order='C'):
+    def update_vars(self, val):
         """Map sections of val to variables.
         """
         for var in self.orig_end.variables():
             offset = self.var_info[var.uuid]
-            var.value = np.reshape(val[offset:offset + var.size], var.shape, order=order)
+            var.value = np.reshape(val[offset:offset + var.size], var.shape)
             offset += var.size
             
-    def update_vars_matlab(self, val_var):
-        eng = matlab_support.engine()
-        # make sure that the graph is run in forward direction
-        eng.run("[" + self.matlab_instance + ", ~] = " + self.matlab_instance + "." + self.matlab_forward_script + "(" + val_var + ");", nargout=0)
-
-    def x0(self, order='C'):
+    def x0(self):
         res = np.zeros(self.input_size)
         for var in self.orig_end.variables():
             if var.initval is not None:
                 offset = self.var_info[var.uuid]
-                res[offset:offset + var.size] = np.ravel(var.initval, order=order)
+                res[offset:offset + var.size] = np.ravel(var.initval)
         return res
     
-    def reorder_x(self, x, xorder, neworder):
-        res = np.zeros(self.input_size)
-        for var in self.orig_end.variables():
-            offset = self.var_info[var.uuid]
-            val = x[offset:offset + var.size]
-            val = np.reshape(val, var.shape, order=xorder)
-            res[offset:offset + var.size] = np.reshape(val, var.size, order=neworder)
-        return res
-    
-    def reorder_y(self, y, yorder, neworder):
-        res = np.zeros(self.output_size)
-        offset = 0
-        for e in self.input_edges[self.end]:
-            n = e.start
-            size = n.size
-            shape = n.shape
-            val = np.reshape(y[offset:offset+size], shape, order=yorder)
-            res[offset:offset+size] = np.reshape(val, size, order=neworder)
-            offset = offset + size
-        return res
-        
     def __str__(self):
         return self.__class__.__name__
 

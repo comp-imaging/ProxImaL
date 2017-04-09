@@ -40,19 +40,6 @@ class scale(LinOp):
         #print("scale:adjoint:cuda")
         return self.forward_cuda_kernel(ReverseInOut(cg), num_tmp_vars, abs_idx, parent)
         
-    def init_matlab(self, prefix):
-        from ..utils import matlab_support
-        matlab_support.put_array(prefix + "_value", np.array(self.scalar, np.float32), globalvar = True)
-        return "global %(prefix)s_value; obj.d.%(prefix)s_value = %(prefix)s_value;" % locals()
-        
-    def forward_matlab(self, prefix, inputs, outputs):
-        arg = inputs[0]
-        out = outputs[0]
-        return "%(out)s = obj.d.%(prefix)s_value .* %(arg)s;\n" % locals()
-
-    def adjoint_matlab(self, prefix, inputs, outputs):
-        return self.forward_matlab(prefix, inputs, outputs)
-
     def is_gram_diag(self, freq=False):
         """Is the lin  Gram diagonal (in the frequency domain)?
         """

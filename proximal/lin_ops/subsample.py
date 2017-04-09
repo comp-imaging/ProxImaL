@@ -55,24 +55,6 @@ if( %(sel)s )
 """ % locals()
         return code, resvar, num_tmp_vars
 
-    def init_matlab(self, prefix):
-        return "% no code\n"
-        
-    def forward_matlab(self, prefix, inputs, outputs):
-        indices = ",".join(["1:"+str(s)+":end" for s in self.steps])
-        return outputs[0] + " = " + inputs[0] + "(" + indices + ");\n"
-        
-    def adjoint_matlab(self, prefix, inputs, outputs):
-        out = outputs[0]
-        arg = inputs[0]
-        shape = list(self.orig_shape)
-        indices = ",".join(["1:"+str(s)+":end" for s in self.steps])
-        res = """
-%(out)s = zeros(%(shape)s, 'single', 'gpuArray');
-%(out)s(%(indices)s) = %(arg)s;
-""" % locals()        
-        return res
-
     def get_selection(self):
         """Return a tuple of slices to index into numpy arrays.
         """

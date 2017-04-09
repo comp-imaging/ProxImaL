@@ -38,21 +38,6 @@ class transpose(LinOp):
         new_idx = [absidx[i] for i in self.axes]
         return cg.output_nodes(self)[0].adjoint_cuda_kernel(cg, num_tmp_vars, new_idx, self)
 
-    def init_matlab(self, prefix):
-        return "%no code\n"
-        
-    def forward_matlab(self, prefix, inputs, outputs):
-        arg = inputs[0]
-        out = outputs[0]
-        order = list(a + 1 for a in self.axes)
-        return "%(out)s = permute(%(arg)s, %(order)s);\n" % locals()
-    
-    def adjoint_matlab(self, prefix, inputs, outputs):
-        arg = inputs[0]
-        out = outputs[0]
-        order = list(i + 1 for i in self.inverse)
-        return "%(out)s = permute(%(arg)s, %(order)s);\n" % locals()
-
     def is_gram_diag(self, freq=False):
         """Is the lin op diagonal (in the frequency domain)?
         """

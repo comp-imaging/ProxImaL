@@ -1,5 +1,4 @@
 from ..lin_ops import lin_op
-from ..utils import matlab_support
 from ..utils.codegen import sub2ind
 import numpy as np
 
@@ -89,46 +88,6 @@ int %(aidx)s = %(linaidx)s;
 %(var)s += %(ivar)s * %(A)s[%(aidx)s + %(aoff)d];
 """ % locals()
         return code, var, num_tmp_vars
-
-    def init_matlab(self, prefix):
-        matlab_support.put_array(prefix + "_A_raw", self.A, globalvar = True)
-        res  = "global %(prefix)s_A_raw;" % locals()
-        res += "obj.d.%(prefix)s_A = gpuArray(%(prefix)s_A_raw);\n" % locals()
-        return res
-            
-    def forward_matlab(self, prefix, inputs, outputs):
-        arg = inputs[0]
-        out = outputs[0]
-
-        resshape = list(self.A.shape[:-1])
-        ddim = len(self.A.shape) - 1
-        N = self.A.shape[-2]
-        M = self.A.shape[-1]
-        ppp = ",".join(":"*(len(self.A.shape)-2))
-        res = """
-%(out)s = zeros(%(resshape)s, 'single', 'gpuArray');
-for i=1:%(N)d
-    %(out)s(%(ppp)s, i) = dot(squeeze(obj.d.%(prefix)s_A(%(ppp)s,i,:)), %(arg)s, %(ddim)d);
-end
-""" % locals()
-        return res
-        
-    def adjoint_matlab(self, prefix, outputs, inputs):
-        arg = outputs[0]
-        out = inputs[0]
-        
-        resshape = list(self.A.shape[:-2]) + [self.A.shape[-1]]
-        ddim = len(self.A.shape) - 1
-        N = self.A.shape[-1]
-        M = self.A.shape[-2]
-        ppp = ",".join(":"*(len(self.A.shape)-2))
-        res = """
-%(out)s = zeros(%(resshape)s, 'single', 'gpuArray');
-for i=1:%(N)d
-    %(out)s(%(ppp)s, i) = dot(squeeze(obj.d.%(prefix)s_A(%(ppp)s,:,i)), %(arg)s, %(ddim)d);
-end
-""" % locals()
-        return res
 
     def norm_bound(self, input_mags):
         """Gives an upper bound on the magnitudes of the outputs given inputs.
