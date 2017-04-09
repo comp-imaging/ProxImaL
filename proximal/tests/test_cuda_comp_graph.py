@@ -44,6 +44,8 @@ class TestCudaCompGraphs(BaseTest):
             x2s = in_out_sample[3] # adjoint out
             
             y1a = G.forward_cuda(gpuarray.to_gpu(x1.astype(np.float32)),gpuarray.to_gpu(y1s.astype(np.float32))).get()
+            #print(y1s)
+            #print(y1a)
             self.assertTrue(np.amax(np.abs(y1a-y1s)) < eps)
                 
             x2a = G.adjoint_cuda(gpuarray.to_gpu(y2.astype(np.float32)),gpuarray.to_gpu(x2s.astype(np.float32))).get()
@@ -156,7 +158,7 @@ class TestCudaCompGraphs(BaseTest):
         aout2 = np.zeros((5,5,2))
         aout2[:,:,0] = np.reshape(aout, (5,5))
         aout2[:,:,1] = aout2[:,:,0]
-        self._generic_check_adjoint(lambda x: conv_nofft(K,x), (5,5,2), (5,5,2), "conv_nofft2", in_out_sample = (fin2,fout2,ain2,aout2), eps=1e-4)  
+        self._generic_check_adjoint(lambda x: conv_nofft(np.reshape(K, K.shape + (1,)),x), (5,5,2), (5,5,2), "conv_nofft2", in_out_sample = (fin2,fout2,ain2,aout2), eps=1e-4)  
     
         K1 = np.array([[1,2,3]])
         K2 = np.array([[5],[3],[1]])
@@ -205,8 +207,8 @@ class TestCudaCompGraphs(BaseTest):
         self._generic_check_adjoint(lambda x: (ed,e1,Ew), inshape, outshape, "complex", eps=5e-4)    
         
         # continue with more values
-        K1 = np.abs(random.rand(1,5))
-        K2 = np.abs(random.rand(5,1))
+        K1 = np.abs(random.rand(1,5,1))
+        K2 = np.abs(random.rand(5,1,1))
         
         x = Variable((320,240,2))
         cx = conv_nofft(K1,conv_nofft(K2, x))
@@ -265,3 +267,6 @@ class TestCudaCompGraphs(BaseTest):
 
         #print( G.start.adjoint_cuda(G, 0, "i", None)[0] )
                 
+if __name__ == "__main__":
+    import unittest
+    unittest.main()

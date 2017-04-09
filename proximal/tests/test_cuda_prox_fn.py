@@ -57,4 +57,4 @@ class TestCudaProxFn(BaseTest):
             self.assertTrue(err < eps)
             maxeps = max(err,maxeps)
         
-        print(maxeps)
+        print("Max proxfn error: %.2e" % maxeps)

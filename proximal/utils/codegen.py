@@ -1,12 +1,17 @@
 import re
 import numpy as np
 import functools
+import struct
 
 import pycuda.driver as cuda
 import pycuda.autoinit
 from pycuda.compiler import SourceModule
 from pycuda import gpuarray
 import pycuda.tools
+
+def float_constant(v):
+    # TODO maybe use hexadecimal floating point constants here
+    return "%.10e" % v
 
 def indent(code, level):
     return code.replace("\n", "\n" + (" "*level))
