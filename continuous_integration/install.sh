@@ -26,7 +26,7 @@ if [[ "$DISTRIB" == "conda" ]]; then
     # Configure the conda environment and put it in the path using the
     # provided versions
     conda create -n testenv --yes python=$PYTHON_VERSION pip nose \
-        numpy scipy pillow
+        numpy scipy pillow libgcc
     source activate testenv
     # if [[ "$PYTHON_VERSION" == "3.5" ]]; then
     #     conda install --yes -c https://conda.binstar.org/menpo opencv3

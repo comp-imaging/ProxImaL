@@ -110,7 +110,6 @@ class CompGraph(object):
             copy_nodes.append(copy_node)
             self.var_info[var.uuid] = offset
             offset += copy_node.size
-            #print("Variable %s(%s): offset=%d size=%d" % (var.varname, var.uuid, self.var_info[var.uuid], copy_node.size))
             self.output_edges[copy_node] = []
             self.nodes.append(copy_node)
 
