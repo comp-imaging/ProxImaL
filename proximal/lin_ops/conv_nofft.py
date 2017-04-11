@@ -4,30 +4,12 @@ import numpy as np
 import scipy.ndimage.filters
 
 class conv_nofft(lin_op.LinOp):
-    def trunc0_ND(self, x, s):
-        slices = [slice(s[i],x.shape[i]-s[i]) for i in range(len(s))]
-        return x[slices]
-        if s[0] == 0 and s[1] == 0:
-            return x
-        if s[0] == 0:
-            return x[:,s[1]:-s[1]]
-        if s[1] == 0:
-            return x[s[0]:-s[0],:]
-        return x[s[0]:-s[0],s[1]:-s[1]]
+    """
+    Convolution designed for small kernels. A 'replicate' padding is applied to the input image.
     
-    def truncr(self, x, s):
-        if s == 0:
-            return x
-        return np.concatenate((np.array([np.sum(x[:(s+1),...], 0)]), x[(s+1):-(s+1),...], np.array([np.sum(x[-(s+1):,...], 0)])), axis=0)
-    
-    def truncr_ND(self, x, s):
-        for a in range(len(s)):
-            t = list(range(len(s)))
-            t[0] = a
-            t[a] = 0
-            x = np.transpose(self.truncr(np.transpose(x, t), s[a]), t)
-        return x
-
+    Note: If the kernel is seperable (i.e. K = v.T * v for a vector v), you might want to 
+    use conv_nofft(v.T, conv_nofft(v, I))
+    """
     def __init__(self, kernel, arg):
     
         #self.truncr_2D = lambda x, s: np.transpose(self.truncr(np.transpose(self.truncr(x, s[0])), s[1]))
@@ -72,6 +54,30 @@ class conv_nofft(lin_op.LinOp):
         truncated = self.truncr_ND(convolved, ts)
         np.copyto(inputs[0], truncated)
         #print("myconv:adjoint", arg, inputs[0])
+
+    def trunc0_ND(self, x, s):
+        slices = [slice(s[i],x.shape[i]-s[i]) for i in range(len(s))]
+        return x[slices]
+        if s[0] == 0 and s[1] == 0:
+            return x
+        if s[0] == 0:
+            return x[:,s[1]:-s[1]]
+        if s[1] == 0:
+            return x[s[0]:-s[0],:]
+        return x[s[0]:-s[0],s[1]:-s[1]]
+    
+    def truncr(self, x, s):
+        if s == 0:
+            return x
+        return np.concatenate((np.array([np.sum(x[:(s+1),...], 0)]), x[(s+1):-(s+1),...], np.array([np.sum(x[-(s+1):,...], 0)])), axis=0)
+    
+    def truncr_ND(self, x, s):
+        for a in range(len(s)):
+            t = list(range(len(s)))
+            t[0] = a
+            t[a] = 0
+            x = np.transpose(self.truncr(np.transpose(x, t), s[a]), t)
+        return x
 
     def cuda_kernel_available(self):
         # it is better to split up the comp graph, and do the convolution 
