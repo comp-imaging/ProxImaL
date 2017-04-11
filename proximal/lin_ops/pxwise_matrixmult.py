@@ -1,5 +1,5 @@
 from ..lin_ops import lin_op
-from ..utils.codegen import sub2ind
+from ..utils.cuda_codegen import sub2ind
 import numpy as np
 
 class pxwise_matrixmult(lin_op.LinOp):

@@ -1,5 +1,5 @@
 from .lin_op import LinOp
-from ..utils.codegen import ReverseInOut
+from ..utils.cuda_codegen import ReverseInOut, float_constant
 import numpy as np
 
 
@@ -30,9 +30,9 @@ class scale(LinOp):
     def forward_cuda_kernel(self, cg, num_tmp_vars, abs_idx, parent):
         #print("scale:forward:cuda")
         code, var, num_tmp_vars = cg.input_nodes(self)[0].forward_cuda_kernel(cg, num_tmp_vars, abs_idx, self)
-        scalar = self.scalar
+        scalar = float_constant(self.scalar)
         code += """/* scale */
-%(var)s *= %(scalar).10e;
+%(var)s *= %(scalar)s;
 """ % locals()
         return code, var, num_tmp_vars
         

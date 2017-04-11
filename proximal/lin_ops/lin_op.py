@@ -1,7 +1,7 @@
 import abc
 import numpy as np
 from proximal.utils import Impl
-from pycuda import gpuarray
+from proximal.utils.cuda_codegen import PyCudaAdapter
 
 def cast_to_const(expr):
     """Converts a non-LinOp to a Constant.
@@ -82,19 +82,21 @@ class LinOp(object):
         # the gpu. Not the fastest implementation, but it works. To be fast,
         # either implement the forward_cuda_kernel or overwrite this method
         # to operate on the gpu arrays.
-        inputs_cpu = [i.get() for i in inputs]
+        a = PyCudaAdapter()
+        inputs_cpu = [a.to_np(i) for i in inputs]
         outputs_cpu = [np.zeros(o.shape) for o in outputs]
         self.forward(inputs_cpu, outputs_cpu)
         for i,o in enumerate(outputs_cpu):
-            outputs[i][:] = gpuarray.to_gpu(o.astype(np.float32))
+            outputs[i][:] = a.from_np(o)
 
     def adjoint_cuda(self, inputs, outputs):
         # similar to forward_cuda
-        inputs_cpu = [i.get() for i in inputs]
+        a = PyCudaAdapter()
+        inputs_cpu = [a.to_np(i) for i in inputs]
         outputs_cpu = [np.zeros(o.shape) for o in outputs]
         self.adjoint(inputs_cpu, outputs_cpu)
         for i,o in enumerate(outputs_cpu):
-            outputs[i][:] = gpuarray.to_gpu(o.astype(np.float32))
+            outputs[i][:] = a.from_np(o)
 
     @property
     def size(self):

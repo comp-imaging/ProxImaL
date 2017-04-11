@@ -5,7 +5,7 @@ from proximal.lin_ops import (CompGraph, est_CompGraph_norm, Variable,
                               vstack)
 from proximal.utils.timings_log import TimingsLog, TimingsEntry
 from proximal.utils.utils import graph_visualize
-from proximal.utils.codegen import NumpyAdapter
+from proximal.utils.cuda_codegen import NumpyAdapter
 from .invert import get_least_squares_inverse, max_diag_set
 import numpy as np
 
@@ -178,14 +178,14 @@ def solve(psi_fns, omega_fns, tau=None, sigma=None, theta=None,
                               "conv_check"])
 
     # Convergence log for initial iterate
-    if 1: # convlog is not None:
+    if convlog is not None:
         K.update_vars(adapter.to_np(x))
         objval = 0.0
         for f in prox_fns:
             evp = f.value
             #print(str(f), '->', f.value)
             objval += evp
-        print("Initial objval: ", objval)
+        #print("Initial objval: ", objval)
         if convlog is not None:
             convlog.record_objective(objval)
             convlog.record_timing(0.0)

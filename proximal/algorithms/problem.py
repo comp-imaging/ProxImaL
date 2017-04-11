@@ -3,7 +3,7 @@ from . import pock_chambolle as pc
 from . import half_quadratic_splitting as hqs
 from . import linearized_admm as ladmm
 from proximal.utils.utils import Impl, graph_visualize
-from proximal.utils.codegen import PyCudaAdapter
+from proximal.utils.cuda_codegen import PyCudaAdapter
 from proximal.lin_ops import Variable, CompGraph, est_CompGraph_norm, vstack
 from proximal.prox_fns import ProxFn
 from . import absorb
@@ -193,28 +193,6 @@ class Problem(object):
                     raise RuntimeError("Unmatched adjoints: " + str(r))
                 else:
                     print("Adjoint test passed.", r)
-                if kwargs.get('use_cuda', False):
-                    from pycuda import gpuarray
-                    x = gpuarray.to_gpu(x.astype(np.float32))
-                    ytt = gpuarray.zeros(yt.shape, dtype=np.float32)
-                    ytt = L.forward_cuda(x, ytt)
-                    
-                    y = gpuarray.to_gpu(y.astype(np.float32))
-                    xtt = gpuarray.zeros(xt.shape, dtype=np.float32)
-                    xtt = L.adjoint_cuda(y, xtt)
-                    r = np.abs(np.dot(np.ravel(y.get().astype(np.float64)), np.ravel(ytt.get().astype(np.float64)) )  - 
-                               np.dot(np.ravel(x.get().astype(np.float64)), np.ravel(xtt.get().astype(np.float64)) ) )
-                    if r > test_adjoints:
-                        #print("yt=", yt)
-                        #print("y =", y)
-                        #print("xt=", xt)
-                        #print("x =", x)
-                        raise RuntimeError("Unmatched adjoints (cuda): " + str(r))
-                    else:
-                        print("Adjoint test passed (cuda).", r)
-                        
-                    print("max(abs(ytt - yt)): ", np.amax(np.abs(np.ravel(ytt.get().astype(np.float64)) - np.ravel(yt))))
-                    print("max(abs(xtt - xt)): ", np.amax(np.abs(np.ravel(xtt.get().astype(np.float64)) - np.ravel(xt))))
                                     
             if self.implem == Impl['pycuda']:
                 kwargs['adapter'] = PyCudaAdapter()

@@ -1,6 +1,6 @@
 from .lin_op import LinOp
 import numpy as np
-from ..utils.codegen import indent
+from ..utils.cuda_codegen import indent
 
 class subsample(LinOp):
     """Samples every steps[i] pixel along axis i,

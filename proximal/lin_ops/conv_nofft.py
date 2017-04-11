@@ -1,6 +1,5 @@
 from ..lin_ops import lin_op
-from ..utils.codegen import indent, ind2sub, sub2ind
-from ..utils import codegen
+from ..utils.cuda_codegen import indent, ind2sub, sub2ind, float_constant, compile_cuda_kernel, cuda_function
 import numpy as np
 import scipy.ndimage.filters
 
@@ -108,7 +107,7 @@ __global__ void %(func_name)s(const float *x, float *y)
         
         ki = [0] * len(kernel.shape)
         while ki[0] < kernel.shape[0]:
-            kernelvalue = codegen.float_constant(kernel.item(tuple(ki)))
+            kernelvalue = float_constant(kernel.item(tuple(ki)))
             relcoord = [i-o for i,o in zip(ki,offsets)]
             linoff = sum([c*s for c,s in zip(relcoord,strides)])
             
@@ -163,7 +162,7 @@ __global__ void %(func_name)s(const float *x, float *y)
             bshape = [cb[1] - cb[0] for cb in currb]
             nelem = int(np.prod(bshape))
             
-            idx = codegen.ind2sub("relidx", bshape)
+            idx = ind2sub("relidx", bshape)
             idxdecl = indent("\n".join(["idx%d = %d + (%s);" % (i,currb[i][0], s) for i,s in enumerate(idx)]), 12)
             
             icode = indent(generator(["idx%d" % i for i in range(len(self.shape))]), 12)
@@ -190,7 +189,7 @@ res = 0.0f;
         ki = [0] * len(kernel.shape)
         offsets = [k//2 for k in kernel.shape]
         while ki[0] < kernel.shape[0]:
-            kernelvalue = codegen.float_constant(kernel.item(tuple(ki)))
+            kernelvalue = float_constant(kernel.item(tuple(ki)))
             relcoord = [i-o for i,o in zip(ki, offsets)]
             sidx = []
             for i,r in enumerate(relcoord):
@@ -245,7 +244,7 @@ res = 0.0f;
         offsets = [k//2 for k in kernel.shape]
         cidx = ["idxl_%d" % d for d in range(len(self.shape))]
         while ki[0] < kernel.shape[0]:
-            kernelvalue = codegen.float_constant(kernel.item(tuple(ki)))
+            kernelvalue = float_constant(kernel.item(tuple(ki)))
             relcoord = [i-o for i,o in zip(ki, offsets)]
             sidx = []
             for i,r in enumerate(relcoord):
@@ -285,33 +284,17 @@ if( %(valididx)s )
         code4, n4 = self._gen_cuda_outer("cuda_conv_nofft_adjoint_outer", lambda x: self._zerosum_outer_generator(x, kernelM))
         
         #print(code1+code2+code3+code4)
-        try:
-            import pycuda.driver as cuda
-            from pycuda.compiler import SourceModule            
-            self.cuda_source = code1 + code2 + code3 + code4
-            self.cuda_mod = SourceModule(self.cuda_source)
-        except cuda.CompileError as e:
-            print("\n".join("(%4d) %s" % (i,s) for i,s in enumerate(self.cuda_source.split("\n"))))
-            print("CUDA compilation error:")
-            print(e.stderr)
-            raise e
+        self.cuda_source = code1 + code2 + code3 + code4
+        mod = compile_cuda_kernel(self.cuda_source)
+        cuda_forward_func_inner = cuda_function(mod, "cuda_conv_nofft_forward_inner", n1)
+        cuda_forward_func_outer = cuda_function(mod, "cuda_conv_nofft_forward_outer", n2)
+        cuda_adjoint_func_inner = cuda_function(mod, "cuda_conv_nofft_adjoint_inner", n3)
+        cuda_adjoint_func_outer = cuda_function(mod, "cuda_conv_nofft_adjoint_outer", n4)
 
-        cuda_forward_func_inner = self.cuda_mod.get_function("cuda_conv_nofft_forward_inner")
-        cuda_forward_func_outer = self.cuda_mod.get_function("cuda_conv_nofft_forward_outer")
-        block1 = (min(n1, cuda_forward_func_inner.MAX_THREADS_PER_BLOCK), 1, 1)
-        grid1 = (n1//block1[0],1,1)
-        block2 = (min(n2, cuda_forward_func_outer.MAX_THREADS_PER_BLOCK), 1, 1)
-        grid2 = (n2//block2[0],1,1)
-        cuda_forward_func = lambda *args: cuda_forward_func_inner(*args, grid=grid1, block=block1, time_kernel=True) + cuda_forward_func_outer(*args, grid=grid2, block=block2, time_kernel=True)
+        cuda_forward_func = lambda *args: cuda_forward_func_inner(*args) + cuda_forward_func_outer(*args)
         setattr(self, "cuda_conv_nofft_forward", cuda_forward_func)
     
-        cuda_adjoint_func_inner = self.cuda_mod.get_function("cuda_conv_nofft_adjoint_inner")
-        block3 = (min(n3, cuda_adjoint_func_inner.MAX_THREADS_PER_BLOCK), 1, 1)
-        grid3 = (n3//block3[0],1,1)
-        cuda_adjoint_func_outer = self.cuda_mod.get_function("cuda_conv_nofft_adjoint_outer")
-        block4 = (min(n4, cuda_adjoint_func_outer.MAX_THREADS_PER_BLOCK), 1, 1)
-        grid4 = (n4//block4[0],1,1)
-        cuda_adjoint_func = lambda *args: cuda_adjoint_func_inner(*args, grid=grid3, block=block3, time_kernel=True) + cuda_adjoint_func_outer(*args, grid=grid4, block=block4, time_kernel=True)
+        cuda_adjoint_func = lambda *args: cuda_adjoint_func_inner(*args) + cuda_adjoint_func_outer(*args)
         setattr(self, "cuda_conv_nofft_adjoint", cuda_adjoint_func)                    
 
     def forward_cuda(self, inputs, outputs):

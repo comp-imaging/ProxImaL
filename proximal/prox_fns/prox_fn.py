@@ -4,13 +4,8 @@ import tempfile
 import os.path
 import numpy as np
 from proximal.utils import Impl
-from proximal.utils.codegen import sub2ind, ind2sub, indent, replace_local_floats_with_double
-
-import pycuda.driver as cuda
-import pycuda.autoinit
-from pycuda.compiler import SourceModule
-from pycuda import gpuarray
-import pycuda.tools
+from proximal.utils.cuda_codegen import (sub2ind, ind2sub, indent, gpuarray,
+     replace_local_floats_with_double, compile_cuda_kernel, cuda_function)
 
 class ProxFn(object):
     """Represents alpha*f(beta*x - b) + <c,x> + gamma*<x,x> + d
@@ -165,24 +160,10 @@ __global__ void prox(const float *v, float *xhat, float rho%(argstring)s)
 }
 """ % locals()
         #print(code)
-        try:
-            self.cuda_code = code if 1 else replace_local_floats_with_double(code)
-            mod = SourceModule(code)
-        except cuda.CompileError as e:
-            print(code)
-            print("CUDA compilation error:")
-            print(e.stderr)
-            raise e
-        cuda_func_prox = mod.get_function("prox")            
-        block = (min(int(np.prod(shape)), cuda_func_prox.MAX_THREADS_PER_BLOCK), 1, 1)
-        grid = (int(np.prod(shape))//block[0],1,1)
+        self.cuda_source = code
+        mod = compile_cuda_kernel(self.cuda_source)
         const_vals = tuple(x[1] for x in self.cuda_args)
-        if 0:
-            prepared_prox = cuda_func_prox.prepare("PPf" + "P"*len(const_vals))
-            self.kernel_cuda_prox = lambda *args: prepared_prox.prepared_timed_call(grid, block, *(x.gpudata for x in (args+const_vals)))()
-        else:
-            self.kernel_cuda_prox = lambda *args: cuda_func_prox(*(args+const_vals), grid=grid, block=block, time_kernel=True)
-        
+        self.kernel_cuda_prox = cuda_function(mod, "prox", int(np.prod(shape)), const_vals)        
         
     def prox_cuda(self, rho, v, *args, **kwargs):
         if hasattr(self, "_prox_cuda"):

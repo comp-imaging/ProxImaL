@@ -3,12 +3,48 @@ import numpy as np
 import functools
 import struct
 
-import pycuda.driver as cuda
-import pycuda.autoinit
-from pycuda.compiler import SourceModule
-from pycuda import gpuarray
-import pycuda.tools
+try:
+    import pycuda.driver as cuda
+    import pycuda.autoinit
+    from pycuda.compiler import SourceModule
+    from pycuda import gpuarray
+    import pycuda.tools
+    
+    cuda_available = True
+    
+except ImportError:
+    cuda_available = False
+    
+    class gpuarray:
+        pass
 
+def compile_cuda_kernel(cuda_kernel_code):
+    """
+    compiles a cuda kernel and return compiled module
+    """
+    try:
+        cuda_code = cuda_kernel_code if 1 else replace_local_floats_with_double(cuda_kernel_code)
+        mod = SourceModule(cuda_code)
+    except cuda.CompileError as e:
+        print(cuda_code)
+        print("CUDA compilation error:")
+        print(e.stderr)
+        raise e
+    return mod
+        
+def cuda_function(mod, function_name, datadim, additional_arguments = ()):
+    """
+    Returns a callable for function <function_name> from the compile cuda kernel <mod>
+    setting up block and grid sizes for a 1D data block with datadim elements.
+    
+    The callable's signature matches the cuda kernel signature (additional_arguments are appended).
+    """
+    cuda_func = mod.get_function(function_name)            
+    block = (min(datadim, cuda_func.MAX_THREADS_PER_BLOCK), 1, 1)
+    grid = (datadim//block[0],1,1)
+    result = lambda *args: cuda_func(*(args+additional_arguments), grid=grid, block=block, time_kernel=True)
+    return result
+    
 class NumpyAdapter:
     """
     To keep algorithms free of cuda clutter, we use these adapter classes to map

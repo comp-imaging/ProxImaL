@@ -1,7 +1,8 @@
 from proximal.tests.base_test import BaseTest
 import proximal as px
+from proximal.lin_ops.vstack import vstack
 from proximal.algorithms import admm, pc, hqs, ladmm, absorb_offset
-from proximal.utils.codegen import PyCudaAdapter
+from proximal.utils.cuda_codegen import PyCudaAdapter
 import cvxpy as cvx
 import numpy as np
 
@@ -97,12 +98,12 @@ class TestAlgs(BaseTest):
     def _test_pock_chambolle(self, impl):
         """Test pock chambolle algorithm.
         """
-        print()
-        print("----------------------",impl,"-------------------------")
+        #print()
+        #print("----------------------",impl,"-------------------------")
         if impl == 'pycuda':
-            kw = {'verbose': 2, 'adapter': PyCudaAdapter()}
+            kw = {'adapter': PyCudaAdapter()}
         else:
-            kw = {'verbose': 2}
+            kw = {}
         X = px.Variable((10, 5))
         B = np.reshape(np.arange(50), (10, 5))
         prox_fns = [px.sum_squares(X, b=B)]
@@ -116,8 +117,8 @@ class TestAlgs(BaseTest):
         self.assertAlmostEqual(sltn, 0, places=2)
 
         prox_fns = [px.norm1(X), px.sum_squares(X, b=B)]
-        print("----------------------------------------------------")
-        print("----------------------------------------------------")
+        #print("----------------------------------------------------")
+        #print("----------------------------------------------------")
         sltn = pc.solve(prox_fns, [], 0.5, 1.0, 1.0, eps_rel=1e-5, eps_abs=1e-5, conv_check=1, **kw)
 
         cvx_X = cvx.Variable(10, 5)
@@ -152,20 +153,20 @@ class TestAlgs(BaseTest):
                         eps_abs=1e-5, eps_rel=1e-5, **kw)
         self.assertItemsAlmostEqual(x.value, cvx_X.value, places=2)
 
-        # # TODO
-        # # Multiple variables.
-        # x = px.Variable(1)
-        # y = px.Variable(1)
-        # prox_fns = [px.nonneg(x), px.sum_squares(vstack([x,y]), b=np.arange(2))]
-        # sltn = pc(prox_fns, [prox_fns[-1]], 0.1, 0.1, 1.0,
-        #     max_iters=3000,  eps_abs=1e-5, eps_rel=1e-5, try_diagonalize=False)
-        # self.assertItemsAlmostEqual(x.value, [0])
-        # self.assertItemsAlmostEqual(y.value, [1])
+        # TODO
+        # Multiple variables.
+        x = px.Variable(1)
+        y = px.Variable(1)
+        prox_fns = [px.nonneg(x), px.sum_squares(vstack([x,y]), b=np.arange(2))]
+        sltn = pc.solve(prox_fns, [prox_fns[-1]], 0.1, 0.1, 1.0,
+            max_iters=3000,  eps_abs=1e-5, eps_rel=1e-5, try_diagonalize=False)
+        self.assertItemsAlmostEqual(x.value, [0])
+        self.assertItemsAlmostEqual(y.value, [1])
 
-        # sltn = pc(prox_fns, [prox_fns[-1]], 0.1, 0.1, 1.0,
-        #     max_iters=3000,  eps_abs=1e-5, eps_rel=1e-5, try_diagonalize=True)
-        # self.assertItemsAlmostEqual(x.value, [0])
-        # self.assertItemsAlmostEqual(y.value, [1])
+        sltn = pc.solve(prox_fns, [prox_fns[-1]], 0.1, 0.1, 1.0,
+            max_iters=3000,  eps_abs=1e-5, eps_rel=1e-5, try_diagonalize=True)
+        self.assertItemsAlmostEqual(x.value, [0])
+        self.assertItemsAlmostEqual(y.value, [1])
 
     def test_half_quadratic_splitting(self):
         """Test half quadratic splitting.

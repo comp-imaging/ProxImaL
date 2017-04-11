@@ -3,22 +3,13 @@ from .edge import Edge
 from .variable import Variable
 from .constant import Constant
 from .vstack import split
-from ..utils.codegen import indent, CudaSubGraph
+from ..utils.cuda_codegen import CudaSubGraph, gpuarray
 from .vstack import vstack
 from proximal.utils.timings_log import TimingsLog
 import copy as cp
-import tempfile
-import os.path
 from collections import defaultdict
 import numpy as np
 from scipy.sparse.linalg import LinearOperator, eigs
-
-import pycuda.driver as cuda
-import pycuda.autoinit
-from pycuda.compiler import SourceModule
-from pycuda import gpuarray
-import pycuda.tools
-
 
 class CompGraph(object):
     """A computation graph representing a composite lin op.
@@ -211,12 +202,12 @@ class CompGraph(object):
         # forward direction
         self.cuda_forward_subgraphs = CudaSubGraph(self.input_nodes, self.output_nodes, self.end)
         self.cuda_forward_subgraphs.gen_code("forward_cuda_kernel")
-        print("Forward subgraphs:")
+        #print("Forward subgraphs:")
         #self.cuda_forward_subgraphs.visualize()
         
         self.cuda_adjoint_subgraphs = CudaSubGraph(self.output_nodes, self.input_nodes, self.start)
         self.cuda_adjoint_subgraphs.gen_code("adjoint_cuda_kernel")
-        print("Adjoint subgraphs:")
+        #print("Adjoint subgraphs:")
         #self.cuda_adjoint_subgraphs.visualize()
                                                                          
     def forward_cuda(self, x, y, printt=False):

@@ -2,7 +2,7 @@ from .lin_op import LinOp
 import numpy as np
 from proximal.utils.utils import Impl
 from proximal.halide.halide import Halide
-from ..utils.codegen import indent
+from ..utils.cuda_codegen import indent
 
 
 class grad(LinOp):

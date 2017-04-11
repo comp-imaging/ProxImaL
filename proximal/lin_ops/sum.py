@@ -1,5 +1,5 @@
 from .lin_op import LinOp
-from ..utils.codegen import ReverseInOut
+from ..utils.cuda_codegen import ReverseInOut
 import numpy as np
 
 

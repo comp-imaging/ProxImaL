@@ -1,5 +1,5 @@
 from .lin_op import LinOp
-from ..utils.codegen import indent, sub2ind, ind2sub, NodeReverseInOut, ReverseInOut
+from ..utils.cuda_codegen import indent, sub2ind, ind2sub, NodeReverseInOut, ReverseInOut
 import numpy as np
 
 
