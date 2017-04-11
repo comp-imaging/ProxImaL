@@ -243,7 +243,7 @@ class CompGraph(object):
             if printt: print(t)
         return x
         
-    def forward(self, x, y, nocopy=False):
+    def forward(self, x, y):
         """Evaluates the forward composition.
 
         Reads from x and writes to y.
@@ -272,7 +272,7 @@ class CompGraph(object):
         self.forward_log[self].toc()
         return y
 
-    def adjoint(self, u, v, nocopy=False):
+    def adjoint(self, u, v):
         """Evaluates the adjoint composition.
 
         Reads from u and writes to v.
