@@ -17,7 +17,7 @@ class CompGraph(object):
     
     instanceCnt = 0
 
-    def __init__(self, end, implem=None, keep_intermediates=False):
+    def __init__(self, end, implem=None):
         self.instanceID = CompGraph.instanceCnt
         CompGraph.instanceCnt += 1
         self.orig_end = end
@@ -65,7 +65,7 @@ class CompGraph(object):
                         node.implem = implem
                 if not node in ready and not node in done:
                     ready.append(node)
-                edge = Edge(node, curr, node.shape, resultNeeded = (curr is self.end) or keep_intermediates)
+                edge = Edge(node, curr, node.shape)
                 input_edges.append(edge)
                 if not node in self.output_edges:
                     self.output_edges[node] = [edge]
@@ -81,7 +81,7 @@ class CompGraph(object):
             outnodes = [e.end for e in outedges]
             copy_node = copy(n, implem=implem)
             copy_node.input_nodes += [n]
-            self.output_edges[n] = [Edge(n, copy_node, n.shape, resultNeeded = (n is self.end) or keep_intermediates)]
+            self.output_edges[n] = [Edge(n, copy_node, n.shape)]
             self.input_edges[copy_node] = self.output_edges[n]
             self.output_edges[copy_node] = []
             self.nodes.append(copy_node)
@@ -148,14 +148,6 @@ class CompGraph(object):
         self.forward_log = TimingsLog(self.nodes + [self])
         self.adjoint_log = TimingsLog(self.nodes + [self])
         
-    def get_node_output_name(self, original_node):
-        n = list(filter(lambda x: x.orig_node is original_node, self.nodes))
-        if len(n) != 1:
-            if isinstance(original_node, vstack):
-                return "graphout"
-            raise RuntimeError("Unexpected number of filtered nodes: %s" % len(n))
-        return self.get_output_names(n[0])[0]
-
     def input_nodes(self, node):
         return list([e.start for e in self.input_edges[node]])
 
@@ -172,16 +164,6 @@ class CompGraph(object):
         """
         return [e.data for e in self.output_edges[node]]
 
-    def get_input_names(self, node):
-        """Returns the input data for a node.
-        """
-        return [("obj.d." if e.resultNeeded else '') + e.name for e in self.input_edges[node]]
-
-    def get_output_names(self, node):
-        """Returns the input data for a node.
-        """
-        return [("obj.d." if e.resultNeeded else '') + e.name for e in self.output_edges[node]]
-        
     def gen_cuda_code(self):
         # The basic original idea is to generate a cuda kernel for the whole graph
         # this is done by calling the output node (self.end for forward direction,
