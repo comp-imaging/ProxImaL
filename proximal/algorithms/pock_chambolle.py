@@ -134,10 +134,6 @@ def solve(psi_fns, omega_fns, tau=None, sigma=None, theta=None,
         else:
             L = est_CompGraph_norm(K, try_fast_norm)
     
-    if verbose > 0:
-        print("psi_fns:", [str(f) for f in psi_fns])
-        print("omega_fns:", [str(f) for f in omega_fns])
-
     # Initialize
     x = adapter.zeros(K.input_size)
     y = adapter.zeros(K.output_size)
