@@ -287,7 +287,7 @@ class CompGraph(object):
                 inputs = [v]
             else:
                 inputs = self.get_inputs(node)
-            # Run adjoint op and time it.prox
+            # Run adjoint op and time it.
             self.adjoint_log[node].tic()
             #if node in self.split_nodes:
             #    for io in range(len(outputs)):
