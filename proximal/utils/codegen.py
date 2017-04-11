@@ -9,14 +9,127 @@ from pycuda.compiler import SourceModule
 from pycuda import gpuarray
 import pycuda.tools
 
+class NumpyAdapter:
+    """
+    To keep algorithms free of cuda clutter, we use these adapter classes to map
+    calls to either numpy or gpuarray.
+    """
+    def __init__(self, floattype = np.float64):
+        self.floattype = floattype
+        
+    def zeros(self, *args, **kw):
+        kw['dtype'] = self.floattype
+        return np.zeros(*args, **kw)
+    
+    def to_np(self, matrix):
+        return matrix
+    
+    def from_np(self, matrix):
+        return matrix.astype(self.floattype)
+    
+    def scalar(self, s):
+        return self.floattype(s)
+    
+    def reshape(self, *args):
+        return np.reshape(*args)
+    
+    def flatten(self, matrix):
+        return matrix.flatten()
+    
+    def copyto(self, tgt, src):
+        np.copyto(tgt, src)
+
+    def implem(self):
+        return 'numpy'        
+
+class PyCudaAdapter:
+    """
+    To keep algorithms free of cuda clutter, we use these adapter classes to map
+    calls to either numpy or gpuarray.
+    """
+    def __init__(self, floattype = np.float32):
+        self.floattype = floattype
+        
+    def zeros(self, *args, **kw):
+        kw['dtype'] = self.floattype
+        return gpuarray.zeros(*args, **kw)
+        
+    def to_np(self, matrix):
+        return matrix.get()
+    
+    def from_np(self, matrix):
+        return gpuarray.to_gpu(matrix.astype(self.floattype))
+    
+    def scalar(self, s):
+        return self.floattype(s)
+    
+    def reshape(self, *args):
+        return gpuarray.reshape(*args)
+    
+    def flatten(self, matrix):
+        return gpuarray.reshape(matrix, int(np.prod(matrix.shape)))
+    
+    def copyto(self, tgt, src):
+        tgt[:] = src
+
+    def implem(self):
+        return 'pycuda'
+
 def float_constant(v):
+    """
+    return a floating point constant for usage in cuda kernels (a string).
+    """
     # TODO maybe use hexadecimal floating point constants here
     return "%.10e" % v
 
 def indent(code, level):
+    """
+    indent code to the given level
+    """
     return code.replace("\n", "\n" + (" "*level))
 
+def sub2ind(idx, shape):
+    """
+    Calculates a linear index from multuple sub indices (like the matlab function).
+    Intended to be used in cuda kernel generators.
+    """
+    if all([not isinstance(i, str) for i in idx]):
+        res = 0
+        for d,i in enumerate(idx):
+            res += i*np.prod(shape[(d+1):])
+        return res
+    else:
+        res = "(" + ("+".join(["(%s)*%d" % (i, np.prod(shape[(d+1):])) for d,i in enumerate(idx)])) + ")"
+    return res
+        
+def ind2sub(ind, shape):
+    """
+    Calculates a sub indices from a linear index (like the matlab function).
+    Intended to be used in cuda kernel generators.
+    """
+    if not isinstance(ind, str):
+        res = []
+        for d in range(len(shape)):
+            res.append( (ind % int(np.prod(shape[d:])) // int(np.prod(shape[d+1:]))) )
+    else:
+        res = []
+        for d in range(len(shape)):
+            exp1 = ""
+            exp2 = ""
+            if d > 0:
+                exp1 = " %% %d" % int(np.prod(shape[d:]))
+            if d < len(shape)-1:
+                exp2 = "/ %d" % int(np.prod(shape[(d+1):]))
+            res.append( "((%(ind)s)%(exp1)s)%(exp2)s" % locals() )
+    return res
+
 class NodeReverseInOut(object):
+    """
+    When generating cuda kernels, the graphs are traversed implicitely.
+    Sometimes it is necessary to "reverse" the node such that the forward
+    operation gets the adjoint and vice versa. This class simulates a single 
+    reversed node.
+    """
     def __init__(self, n, parent):
         self.n = n
         self.parent = parent
@@ -37,6 +150,12 @@ class NodeReverseInOut(object):
         return self.n.size
 
 class ReverseInOut(object):
+    """
+    When generating cuda kernels, the graphs are traversed implicitely.
+    Sometimes it is necessary to "reverse" the node such that the forward
+    operation gets the adjoint and vice versa. This is the helper class for 
+    the operation.
+    """
     def __init__(self, o, reverseNodes = True):
         self.o = o
         self.reverseNodes = reverseNodes
@@ -59,40 +178,21 @@ class ReverseInOut(object):
         else:
             return self.o.input_nodes(n)
 
-def sub2ind(idx, shape):
-    if all([not isinstance(i, str) for i in idx]):
-        res = 0
-        for d,i in enumerate(idx):
-            res += i*np.prod(shape[(d+1):])
-        return res
-    else:
-        res = "(" + ("+".join(["(%s)*%d" % (i, np.prod(shape[(d+1):])) for d,i in enumerate(idx)])) + ")"
-    return res
-        
-def ind2sub(ind, shape):
-    if not isinstance(ind, str):
-        res = []
-        for d in range(len(shape)):
-            res.append( (ind % int(np.prod(shape[d:])) // int(np.prod(shape[d+1:]))) )
-    else:
-        res = []
-        for d in range(len(shape)):
-            exp1 = ""
-            exp2 = ""
-            if d > 0:
-                exp1 = " %% %d" % int(np.prod(shape[d:]))
-            if d < len(shape)-1:
-                exp2 = "/ %d" % int(np.prod(shape[(d+1):]))
-            res.append( "((%(ind)s)%(exp1)s)%(exp2)s" % locals() )
-    return res
-
 def replace_local_floats_with_double(src):
+    """
+    This function replaces all internal float variables and constants with doubles, 
+    but keeps the pointer types.
+    """
     Rd = re.compile(r"\bfloat\b(?! *[*])")
     Rc = re.compile(r"\b(-?(0(\.\d*)?|([1-9]\d*\.?\d*)|(\.\d+))([Ee][+-]?\d+)?)f\b")
     
     return Rc.subn(r"\1", Rd.subn("double",src)[0])[0]
 
 class ProxyNode:
+    """
+    This class is used as a dummy node when the computation graph is split up 
+    into multiple parts.
+    """
     def __init__(self, n, argname):
         self.n = n
         self.argname = argname
@@ -115,6 +215,9 @@ class ProxyNode:
 class CudaSubGraph:
     """
     This class splits a linear operation graph into multiple computable subgraphs.
+    The constructor is intended to be called with the end node of a comp graph.
+    The comp graph is split in pieces with single kernels, and the pieces
+    are recursively stored in the "dependent_subgraphs" member.
     """
     instance_cnt = 0
     
@@ -133,21 +236,52 @@ class CudaSubGraph:
         active_nodes = [self.end]
         visited_nodes = {}
         nokernel_innodes = []
+        from ..lin_ops.sum import copy
+        from ..lin_ops.vstack import vstack
         while len(active_nodes) > 0:
             n = active_nodes.pop(0)
             if n in visited_nodes:
                 continue
             visited_nodes[n] = True
             try:
-                self._output_nodes[n] = get_output_nodes(n)
+                if not n in self._output_nodes:
+                    self._output_nodes[n] = get_output_nodes(n)
             except KeyError:
                 pass
             if n.cuda_kernel_available():
                 self.kernel_nodes.append(n)
                 try:
                     innodes = get_input_nodes(n)
-                    self._input_nodes[n] = innodes
-                    active_nodes.extend(innodes)
+                    # avoid situations where the same node instance is referenced
+                    # multiple times in innodes. This situation is solved by 
+                    # inserting copy nodes
+                    new_innodes = []                    
+                    replacements = {}
+                    for innidx, inn in enumerate(innodes):
+                        if not isinstance(n, vstack) and inn in innodes[innidx+1:]:
+                            # insert a copy node between inn and n
+                            nn = copy(n.shape)
+                            if not inn in replacements: replacements[inn] = []
+                            replacements[inn].append(nn)
+                            new_innodes.append(nn)
+                            self._output_nodes[nn] = [n]
+                            self._input_nodes[nn] = [inn]
+                            active_nodes.append(inn)
+                        else:
+                            new_innodes.append(inn)
+                            active_nodes.append(inn)
+                    for inn in replacements:
+                        output_nodes = get_output_nodes(inn)
+                        new_output_nodes = []
+                        idx = 0
+                        for onn in output_nodes:
+                            if onn is n and idx < len(replacements[inn]):
+                                new_output_nodes.append(replacements[inn][idx])
+                                idx += 1
+                            else:
+                                new_output_nodes.append(onn)
+                        self._output_nodes[inn] = new_output_nodes
+                    self._input_nodes[n] = new_innodes
                 except KeyError:
                     pass
             else:       
@@ -166,8 +300,6 @@ class CudaSubGraph:
             dsg = CudaSubGraph(get_input_nodes, get_output_nodes, n)
             self.dependent_subgraphs.append(dsg)
         
-        #print(str(self))
-        
     def __str__(self):
         res = "CudaSubGraph(\n"
         for n in self.kernel_nodes:
@@ -177,7 +309,48 @@ class CudaSubGraph:
         res += ")"
         return res
     
+    def visualize(self, dot = None):
+        import graphviz
+        from IPython.display import display
+        root = False
+        if not dot:
+            root = True
+            dot = graphviz.Digraph()
+        for csg in self.dependent_subgraphs:
+            csg.visualize(dot)
+        nodes = {}
+        visited = {}
+        active = [self.end]
+        while len(active) > 0:
+            n = active.pop(0)
+            if not n in nodes: 
+                nodes[n] = 'N%d' % len(nodes)
+                dot.node(nodes[n], str(type(n)))
+                try:
+                    innodes = self.input_nodes(n)
+                    for inn in innodes:
+                        active.append(inn)
+                except KeyError:
+                    pass
+        active = [self.end]
+        while len(active) > 0:
+            n = active.pop(0)
+            if not n in visited:
+                visited[n] = True
+                try:
+                    innodes = self.input_nodes(n)                
+                    for inn in self.input_nodes(n):
+                        active.append(inn)
+                        dot.edge(nodes[inn], nodes[n])
+                except KeyError:
+                    pass
+        if root:
+            display(dot)
+    
     def input_nodes(self, n):
+        """
+        returns the input nodes of node n using proxy nodes wherever necessary
+        """
         innodes = self._input_nodes[n]
         res = []
         for inn in innodes:
@@ -192,7 +365,10 @@ class CudaSubGraph:
         #print("innodes(%s) -> %s" % (repr(n), res))
         return res
     
-    def output_nodes(self, n): # this is called for adjoint operation
+    def output_nodes(self, n):
+        """
+        returns the output nodes of node n (this is called seldomly)
+        """
         return self._output_nodes[n]
         
     def gen_code(self, fcn, parent = None):
@@ -201,6 +377,7 @@ class CudaSubGraph:
         """
         self.cuda_args = []
         self.fcn = fcn
+        # do we need additional arguments for the kernel except x (=input) and y (=output)
         for n in self.kernel_nodes:
             try:
                 buffers = n.cuda_additional_buffers()
@@ -222,6 +399,7 @@ class CudaSubGraph:
         
         cg = self if fcn == "forward_cuda_kernel" else ReverseInOut(self, reverseNodes=False)
         self.shape = parent.shape if not parent is None else self.end.shape
+        # generate the cuda kernel for this subgraph
         cucode, var, num_tmp_vars = getattr(self.end, fcn)(cg, 0, ind2sub("yidx", self.shape), parent)
         cucode = indent(cucode, 8)
         dimy = int(np.prod(self.shape))
@@ -240,6 +418,7 @@ __global__ void %(fcn)s_%(subgraph_id)d(const float *x, float *y%(add_args)s)
     
 """ % locals()
 
+        # generate the cuda kernels for the dependent subgraphs
         for i,dsg in enumerate(self.dependent_subgraphs):
             cn = self.nokernel_nodes[i]
             dsg.gen_code(fcn, cn[0])
@@ -248,6 +427,7 @@ __global__ void %(fcn)s_%(subgraph_id)d(const float *x, float *y%(add_args)s)
                 self.nokernel_inputs[n] = gpuarray.zeros(lastShape, dtype=np.float32) if ni == 0 else self.nokernel_results[cn[ni-1]]
                 lastShape = n.shape
         
+        # compile and create the function
         try:
             self._cuda_code = code
             self.cuda_mod = SourceModule(code)
@@ -256,7 +436,7 @@ __global__ void %(fcn)s_%(subgraph_id)d(const float *x, float *y%(add_args)s)
             print("CUDA compilation error:")
             print(e.stderr)
             raise e
-                    
+        
         cuda_func = self.cuda_mod.get_function("%(fcn)s_%(subgraph_id)d" % locals())
         block = (min(int(dimy), cuda_func.MAX_THREADS_PER_BLOCK), 1, 1)
         grid = (int(dimy)//block[0],1,1)
@@ -264,6 +444,9 @@ __global__ void %(fcn)s_%(subgraph_id)d(const float *x, float *y%(add_args)s)
         self.cuda_kernel_func = lambda *args: cuda_func(*(args+arg_vals), grid=grid, block=block, time_kernel=True)
         
     def apply(self, x, y):
+        """
+        apply the compiled cuda kernels and all dependent subgraphs
+        """
         t = 0.0
         for i,dsg in enumerate(self.dependent_subgraphs):
             cn = self.nokernel_nodes[i]
@@ -282,5 +465,8 @@ __global__ void %(fcn)s_%(subgraph_id)d(const float *x, float *y%(add_args)s)
         
     @property
     def cuda_code(self):
+        """
+        return the cuda code for this and the dependent kernels
+        """
         return self._cuda_code + "\n".join([x.cuda_code for x in self.dependent_subgraphs])
 

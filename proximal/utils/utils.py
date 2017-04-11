@@ -11,7 +11,7 @@ import sys
 # Implementations supported
 ###############################################################################
 
-Impl = {'numpy': 0, 'halide': 1}
+Impl = {'numpy': 0, 'halide': 1, 'pycuda': 2}
 
 ###############################################################################
 # TODO: DIRTY HACK FOR BACKWARDS COMPATIBILITY!
@@ -270,6 +270,7 @@ def graph_visualize(prox_fns, filename = None):
         if not obj in nodes:
             nodes[obj] = 'N%d' % len(nodes)
         return nodes[obj]
+    from proximal.prox_fns.prox_fn import ProxFn
     for pfn in prox_fns:
         dot.node(node(pfn), str(pfn))
         activenodes = [pfn.lin_op]

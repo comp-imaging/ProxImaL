@@ -196,7 +196,7 @@ __global__ void prox(const float *v, float *xhat, float rho%(argstring)s)
         else:
             c = gpuarray.to_gpu(self.c)
             b = gpuarray.to_gpu(self.b)
-            cuda_fun = lambda rho, v, *args, **kw: gpuarray.to_gpu(self._prox(rho, v.get(), *args, **kw))            
+            cuda_fun = lambda rho, v, *args, **kw: gpuarray.to_gpu(self._prox(rho, v.get(), *args, **kw).astype(np.float32()))            
             rho_hat = (rho + 2 * self.gamma) / (self.alpha * self.beta**2)
             # vhat = (rho*v - c)*beta/(rho + 2*gamma) - b
             # Modify v in-place. This is important for the Python to be performant.

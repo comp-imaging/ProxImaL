@@ -85,6 +85,7 @@ if( %(abs_idx)s >= %(offset)d && %(abs_idx)s < %(endoffset)d )
                 found = True
                 break
         assert(found)
+        #print("vstack(%s):adjoint -> found parent idx=%d %s sizes=%s" %( repr(self), idx, repr(n), [x.size for x in input_nodes]))
         offset = 0
         for i in range(idx):
             offset += input_nodes[i].size

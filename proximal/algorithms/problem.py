@@ -3,6 +3,7 @@ from . import pock_chambolle as pc
 from . import half_quadratic_splitting as hqs
 from . import linearized_admm as ladmm
 from proximal.utils.utils import Impl, graph_visualize
+from proximal.utils.codegen import PyCudaAdapter
 from proximal.lin_ops import Variable, CompGraph, est_CompGraph_norm, vstack
 from proximal.prox_fns import ProxFn
 from . import absorb
@@ -215,6 +216,8 @@ class Problem(object):
                     print("max(abs(ytt - yt)): ", np.amax(np.abs(np.ravel(ytt.get().astype(np.float64)) - np.ravel(yt))))
                     print("max(abs(xtt - xt)): ", np.amax(np.abs(np.ravel(xtt.get().astype(np.float64)) - np.ravel(xt))))
                                     
+            if self.implem == Impl['pycuda']:
+                kwargs['adapter'] = PyCudaAdapter()
             opt_val = module.solve(psi_fns, omega_fns,
                                    lin_solver=self.lin_solver,
                                    try_diagonalize=self.try_diagonalize,

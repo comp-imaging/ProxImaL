@@ -1,6 +1,7 @@
 from proximal.tests.base_test import BaseTest
 import proximal as px
 from proximal.algorithms import admm, pc, hqs, ladmm, absorb_offset
+from proximal.utils.codegen import PyCudaAdapter
 import cvxpy as cvx
 import numpy as np
 
@@ -86,23 +87,38 @@ class TestAlgs(BaseTest):
         self.assertItemsAlmostEqual(x.value, cvx_X.value, places=2)
         self.assertAlmostEqual(np.sqrt(sltn), prob.value, places=2)
 
+
     def test_pock_chambolle(self):
+        self._test_pock_chambolle('numpy')
+        
+    def test_pock_chambolle_cuda(self):
+        self._test_pock_chambolle('pycuda')
+    
+    def _test_pock_chambolle(self, impl):
         """Test pock chambolle algorithm.
         """
+        print()
+        print("----------------------",impl,"-------------------------")
+        if impl == 'pycuda':
+            kw = {'verbose': 2, 'adapter': PyCudaAdapter()}
+        else:
+            kw = {'verbose': 2}
         X = px.Variable((10, 5))
         B = np.reshape(np.arange(50), (10, 5))
         prox_fns = [px.sum_squares(X, b=B)]
-        sltn = pc.solve(prox_fns, [], 1.0, 1.0, 1.0, eps_rel=1e-5, eps_abs=1e-5)
+        sltn = pc.solve(prox_fns, [], 1.0, 1.0, 1.0, eps_rel=1e-5, eps_abs=1e-5, **kw)
         self.assertItemsAlmostEqual(X.value, B, places=2)
         self.assertAlmostEqual(sltn, 0)
 
         prox_fns = [px.norm1(X, b=B, beta=2)]
-        sltn = pc.solve(prox_fns, [], 1.0, 1.0, 1.0, eps_rel=1e-5, eps_abs=1e-5)
+        sltn = pc.solve(prox_fns, [], 1.0, 1.0, 1.0, eps_rel=1e-5, eps_abs=1e-5, **kw)
         self.assertItemsAlmostEqual(X.value, B / 2., places=2)
         self.assertAlmostEqual(sltn, 0, places=2)
 
         prox_fns = [px.norm1(X), px.sum_squares(X, b=B)]
-        sltn = pc.solve(prox_fns, [], 0.5, 1.0, 1.0, eps_rel=1e-5, eps_abs=1e-5)
+        print("----------------------------------------------------")
+        print("----------------------------------------------------")
+        sltn = pc.solve(prox_fns, [], 0.5, 1.0, 1.0, eps_rel=1e-5, eps_abs=1e-5, conv_check=1, **kw)
 
         cvx_X = cvx.Variable(10, 5)
         cost = cvx.sum_squares(cvx_X - B) + cvx.norm(cvx_X, 1)
@@ -113,7 +129,7 @@ class TestAlgs(BaseTest):
 
         psi_fns, omega_fns = pc.partition(prox_fns)
         sltn = pc.solve(psi_fns, omega_fns, 0.5, 1.0, 1.0,
-                        eps_abs=1e-5, eps_rel=1e-5)
+                        eps_abs=1e-5, eps_rel=1e-5, **kw)
         self.assertItemsAlmostEqual(X.value, cvx_X.value, places=2)
         self.assertAlmostEqual(sltn, prob.value)
 
@@ -124,7 +140,7 @@ class TestAlgs(BaseTest):
         b = np.array([-41, 413, 2])
         prox_fns = [px.nonneg(x), px.sum_squares(px.conv(kernel, x), b=b)]
         sltn = pc.solve(prox_fns, [], 0.1, 0.1, 1.0, max_iters=3000,
-                        eps_abs=1e-5, eps_rel=1e-5)
+                        eps_abs=1e-5, eps_rel=1e-5, **kw)
         cvx_X = cvx.Variable(3)
         cost = cvx.norm(kernel_mat * cvx_X - b)
         prob = cvx.Problem(cvx.Minimize(cost), [cvx_X >= 0])
@@ -133,7 +149,7 @@ class TestAlgs(BaseTest):
 
         psi_fns, omega_fns = pc.partition(prox_fns)
         sltn = pc.solve(psi_fns, omega_fns, 0.1, 0.1, 1.0, max_iters=3000,
-                        eps_abs=1e-5, eps_rel=1e-5)
+                        eps_abs=1e-5, eps_rel=1e-5, **kw)
         self.assertItemsAlmostEqual(x.value, cvx_X.value, places=2)
 
         # # TODO
@@ -284,3 +300,10 @@ class TestAlgs(BaseTest):
         sltn_val = np.square(tmp).sum() / 2 - u.sum() - v.sum() + \
             gamma * (np.linalg.norm(v)**2 + np.linalg.norm(u)**2)
         self.assertAlmostEqual((obj_val - sltn_val) / sltn_val, 0, places=3)
+
+if __name__ == "__main__":
+    import sys
+    if 'cuda' in sys.argv:
+        TestAlgs().test_pock_chambolle_cuda()
+    else:
+        TestAlgs().test_pock_chambolle()    

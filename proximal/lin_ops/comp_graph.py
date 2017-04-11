@@ -211,9 +211,13 @@ class CompGraph(object):
         # forward direction
         self.cuda_forward_subgraphs = CudaSubGraph(self.input_nodes, self.output_nodes, self.end)
         self.cuda_forward_subgraphs.gen_code("forward_cuda_kernel")
+        print("Forward subgraphs:")
+        #self.cuda_forward_subgraphs.visualize()
         
         self.cuda_adjoint_subgraphs = CudaSubGraph(self.output_nodes, self.input_nodes, self.start)
         self.cuda_adjoint_subgraphs.gen_code("adjoint_cuda_kernel")
+        print("Adjoint subgraphs:")
+        #self.cuda_adjoint_subgraphs.visualize()
                                                                          
     def forward_cuda(self, x, y, printt=False):
         if 0:
