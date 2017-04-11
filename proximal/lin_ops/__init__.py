@@ -1,5 +1,6 @@
 from .black_box import LinOpFactory
 from .conv import conv
+from .conv_nofft import conv_nofft
 from .constant import Constant
 from .comp_graph import CompGraph, est_CompGraph_norm
 from .mul_elemwise import mul_elemwise
