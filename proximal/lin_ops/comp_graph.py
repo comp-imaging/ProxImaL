@@ -369,7 +369,7 @@ class CompGraph(object):
     def norm_bound(self, final_output_mags):
         """Returns fast upper bound on ||K||.
 
-        Parametersprox
+        Parameters
         ----------
         final_output_mags : list
             Place to store final output magnitudes.

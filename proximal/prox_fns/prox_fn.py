@@ -1,11 +1,9 @@
 from __future__ import division
 import abc
-import tempfile
-import os.path
 import numpy as np
 from proximal.utils import Impl
 from proximal.utils.cuda_codegen import (sub2ind, ind2sub, indent, gpuarray,
-     replace_local_floats_with_double, compile_cuda_kernel, cuda_function)
+     compile_cuda_kernel, cuda_function)
 
 class ProxFn(object):
     """Represents alpha*f(beta*x - b) + <c,x> + gamma*<x,x> + d
@@ -211,19 +209,7 @@ __global__ void prox(const float *v, float *xhat, float rho%(argstring)s)
     def __str__(self):
         """Default to string is name of class.
         """
-        #Represents alpha*f(beta*x - b) + <c,x> + gamma*<x,x> + d
-        r = ""
-        if self.alpha != 1.: r += "%02.03e * " % self.alpha
-        r += self.__class__.__name__ + "( "
-        if self.beta != 1.: r += "%02.03e * " % self.beta
-        r += "x"
-        if not np.alltrue(np.ravel(self.b) == 0.0): r += " - b"
-        r += " )"
-        if not np.all(self.c == 0.0): r += " + <c,x>"
-        if not self.gamma == 0.0: r += " + %02.03e * <x,x>" % self.gamma
-        if not self.d == 0.0: r += " + %02.03e" % self.d
-        r += "; x = " + str(self.lin_op)
-        return "{ " + r + " }"
+        return self.__class__.__name__
 
     def __add__(self, other):
         """ProxFn + ProxFn(s).
