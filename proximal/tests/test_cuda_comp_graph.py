@@ -4,7 +4,7 @@ from proximal.tests.base_test import BaseTest
 
 from proximal.lin_ops.vstack import vstack
 from proximal.lin_ops.variable import Variable
-from proximal.lin_ops.subsample import subsample
+from proximal.lin_ops.subsample import subsample, uneven_subsample
 from proximal.lin_ops.comp_graph import CompGraph
 from proximal.lin_ops.conv_nofft import conv_nofft
 from proximal.lin_ops.grad import grad
@@ -113,6 +113,29 @@ class TestCudaCompGraphs(BaseTest):
         aout = np.zeros((10,10))
         aout[::2,::4] = np.reshape(ain, (5,3))
         self._generic_check_adjoint(lambda x: subsample(x, [2,4]), (10,10), (5,3), "subsample", in_out_sample = (fin,fout,ain,aout))
+        
+    def test_uneven_subsample(self):
+        fin = np.arange(100)
+        fout = np.reshape(fin, (10,10))[::2,::4].flatten()
+        ain = np.arange(15)
+        aout = np.zeros((10,10))
+        aout[::2,::4] = np.reshape(ain, (5,3))
+        idx = np.indices( (5,3) )
+        idx[0] *= 2
+        idx[1] *= 4
+        self._generic_check_adjoint(lambda x: uneven_subsample(x, idx), (10,10), (5,3), "uneven_subsample", in_out_sample = (fin,fout,ain,aout))        
+        
+    def test_uneven_subsample2(self):
+        # check out of range indices
+        fin = np.arange(9)+1
+        idxy = np.array([[0,-1,-2], [1,1,1], [2,3,4]])
+        idxx = np.array([[0,1,2], [-1,1,3], [-2,1,4]])
+        
+        fout = np.array([[1,0, 0], [0, 5, 0], [0, 0, 0]])
+       
+        ain = fin
+        aout = fout
+        self._generic_check_adjoint(lambda x: uneven_subsample(x, [idxy,idxx]), (3,3), (3,3), "uneven_subsample2", in_out_sample = (fin,fout,ain,aout))        
         
     def test_grad(self):
         fin = np.arange(100)
@@ -268,5 +291,7 @@ class TestCudaCompGraphs(BaseTest):
         #print( G.start.adjoint_cuda(G, 0, "i", None)[0] )
                 
 if __name__ == "__main__":
+    t = TestCudaCompGraphs()
+    t.test_uneven_subsample2()
     import unittest
     unittest.main()

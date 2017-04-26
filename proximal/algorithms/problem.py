@@ -110,7 +110,7 @@ class Problem(object):
         
         if show_graph:
             print("Computational graph before optimizing:")
-            graph_visualize(prox_fns)
+            graph_visualize(prox_fns, filename = show_graph if type(show_graph) is str else None)
         
         # Short circuit with one function.
         if len(prox_fns) == 1 and type(prox_fns[0].lin_op) == Variable:

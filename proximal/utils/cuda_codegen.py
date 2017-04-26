@@ -129,12 +129,14 @@ def sub2ind(idx, shape):
     Calculates a linear index from multuple sub indices (like the matlab function).
     Intended to be used in cuda kernel generators.
     """
+    assert(len(idx) == len(shape))
     if all([not isinstance(i, str) for i in idx]):
         res = 0
         for d,i in enumerate(idx):
             res += i*np.prod(shape[(d+1):])
         return res
     else:
+        
         res = "(" + ("+".join(["(%s)*%d" % (i, np.prod(shape[(d+1):])) for d,i in enumerate(idx)])) + ")"
     return res
         
@@ -229,15 +231,16 @@ class ProxyNode:
     This class is used as a dummy node when the computation graph is split up 
     into multiple parts.
     """
-    def __init__(self, n, argname):
+    def __init__(self, n, argname, shape):
         self.n = n
         self.argname = argname
+        self.shape = shape
     
     def adjoint_cuda_kernel(self, cg, num_tmp_vars, idx, parent):
         var = "var_%d" % num_tmp_vars
         num_tmp_vars += 1
         argname = self.argname
-        linidx = sub2ind(idx, self.n.shape)
+        linidx = sub2ind(idx, self.shape)
         code = "float %(var)s = %(argname)s[%(linidx)s];\n" % locals()
         return code, var, num_tmp_vars
     
@@ -335,6 +338,9 @@ class CudaSubGraph:
         for n in nokernel_innodes:
             dsg = CudaSubGraph(get_input_nodes, get_output_nodes, n)
             self.dependent_subgraphs.append(dsg)
+            
+        self.orig_input_nodes = get_input_nodes
+        self.orig_output_nodes = get_output_nodes
         
     def __str__(self):
         res = "CudaSubGraph(\n"
@@ -407,7 +413,7 @@ class CudaSubGraph:
         """
         return self._output_nodes[n]
         
-    def gen_code(self, fcn, parent = None):
+    def gen_code(self, fcn, parent = None, shape = None):
         """
         generates the cuda kernel code. fcn should either be "forward_cuda_kernel" or "adjoint_cuda_kernel"
         """
@@ -425,16 +431,20 @@ class CudaSubGraph:
                 
         for cn in self.nokernel_nodes:
             for n in cn:
-                o = gpuarray.zeros(n.shape, dtype=np.float32)
+                o = self.orig_output_nodes(n)
+                assert(len(o) == 1)
+                o = o[0]
+                rshape = n.shape if fcn == "forward_cuda_kernel" else o.shape
+                o = gpuarray.zeros(rshape, dtype=np.float32)
                 self.nokernel_results[n] = o
             n = cn[-1]
             self.cuda_args.append( ("linop_proxy_output_%d" % n.linop_id, o) )
-            self.nokernel_proxynodes[n] = ProxyNode(n, self.cuda_args[-1][0])
+            self.nokernel_proxynodes[n] = ProxyNode(n, self.cuda_args[-1][0], rshape)
             
         add_args = "".join((", float *%s" % x[0] for x in self.cuda_args))
         
         cg = self if fcn == "forward_cuda_kernel" else ReverseInOut(self, reverseNodes=False)
-        self.shape = parent.shape if not parent is None else self.end.shape
+        self.shape = shape if not shape is None else self.end.shape
         # generate the cuda kernel for this subgraph
         cucode, var, num_tmp_vars = getattr(self.end, fcn)(cg, 0, ind2sub("yidx", self.shape), parent)
         cucode = indent(cucode, 8)
@@ -457,12 +467,16 @@ __global__ void %(fcn)s_%(subgraph_id)d(const float *x, float *y%(add_args)s)
         # generate the cuda kernels for the dependent subgraphs
         for i,dsg in enumerate(self.dependent_subgraphs):
             cn = self.nokernel_nodes[i]
-            dsg.gen_code(fcn, cn[0])
-            lastShape = dsg.shape
+            if fcn == "forward_cuda_kernel":
+                parent = self.orig_input_nodes(cn[0])
+                assert(len(parent) == 1)
+                parent = parent[0]
+            else:
+                parent = cn[0]
+            dsg.gen_code(fcn, cn[0], parent.shape)
             for ni, n in enumerate(cn):
-                self.nokernel_inputs[n] = gpuarray.zeros(lastShape, dtype=np.float32) if ni == 0 else self.nokernel_results[cn[ni-1]]
-                lastShape = n.shape
-        
+                self.nokernel_inputs[n] = gpuarray.zeros(dsg.shape, dtype=np.float32) if ni == 0 else self.nokernel_results[cn[ni-1]]
+                        
         # compile and create the function
         try:
             self._cuda_code = code
