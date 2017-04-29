@@ -95,11 +95,11 @@ tmp = %(v)s;
 """ % locals()
         v = gen_v([linidx])
         code += """
-%(res)s = sqrt(%(res)s);
 
 if( %(res)s > 0.0f )
 {
-    %(res)s = max(0.0f, 1.0f - (1.0f / (%(res)s * %(rho)s) ));
+    %(res)s = rsqrtf(%(res)s);
+    %(res)s = max(0.0f, 1.0f - (%(res)s / (%(rho)s) ));
 } else
 {
     %(res)s = 0.0f;

@@ -1,5 +1,5 @@
 from ..lin_ops import lin_op
-from ..utils.cuda_codegen import indent, ind2sub, sub2ind, float_constant, compile_cuda_kernel, cuda_function
+from ..utils.cuda_codegen import indent, ind2sub, sub2ind, float_constant, compile_cuda_kernel, cuda_function, PyCudaAdapter
 import numpy as np
 import scipy.ndimage.filters
 
@@ -280,22 +280,59 @@ if( %(valididx)s )
         return code
                 
     def gen_cuda(self):
+        try:
+            from proximal.utils import cuda_npp
+            has_cuda_npp = True
+        except:
+            from traceback import format_exc
+            print(format_exc())
+            has_cuda_npp = False
+            
         slices = []
         for d in range(len(self.kernel.shape)):
             slices.append(slice(None,None,-1))
         kernelM = self.kernel[tuple(slices)]
-        code1, n1 = self._gen_cuda_inner("cuda_conv_nofft_forward_inner", self.kernel)
-        code2, n2 = self._gen_cuda_outer("cuda_conv_nofft_forward_outer", lambda x: self._replicate_outer_generator(x, self.kernel) )
-        code3, n3 = self._gen_cuda_inner("cuda_conv_nofft_adjoint_inner", kernelM)
-        code4, n4 = self._gen_cuda_outer("cuda_conv_nofft_adjoint_outer", lambda x: self._zerosum_outer_generator(x, kernelM))
         
-        #print(code1+code2+code3+code4)
-        self.cuda_source = code1 + code2 + code3 + code4
-        mod = compile_cuda_kernel(self.cuda_source)
-        cuda_forward_func_inner = cuda_function(mod, "cuda_conv_nofft_forward_inner", n1)
-        cuda_forward_func_outer = cuda_function(mod, "cuda_conv_nofft_forward_outer", n2)
-        cuda_adjoint_func_inner = cuda_function(mod, "cuda_conv_nofft_adjoint_inner", n3)
-        cuda_adjoint_func_outer = cuda_function(mod, "cuda_conv_nofft_adjoint_outer", n4)
+        is2Dconv = len(kernelM.shape) != 2 or not (len(kernelM.shape) == 3 and kernelM.shape[-1] == 1)
+        numChannels = 1 if len(kernelM.shape) == 2 else self.shape[-1]
+        
+        if not has_cuda_npp or not is2Dconv or numChannels > 4:
+            print("Warning: conv_nofft: using naive kernel.", has_cuda_npp, is2Dconv, numChannels)
+        
+            code1, n1 = self._gen_cuda_inner("cuda_conv_nofft_forward_inner", self.kernel)
+            code2, n2 = self._gen_cuda_outer("cuda_conv_nofft_forward_outer", lambda x: self._replicate_outer_generator(x, self.kernel) )
+            code3, n3 = self._gen_cuda_inner("cuda_conv_nofft_adjoint_inner", kernelM)
+            code4, n4 = self._gen_cuda_outer("cuda_conv_nofft_adjoint_outer", lambda x: self._zerosum_outer_generator(x, kernelM))
+            
+            #print(code1+code2+code3+code4)
+            self.cuda_source = code1 + code2 + code3 + code4
+            mod = compile_cuda_kernel(self.cuda_source)
+            cuda_forward_func_inner = cuda_function(mod, "cuda_conv_nofft_forward_inner", n1)
+            cuda_forward_func_outer = cuda_function(mod, "cuda_conv_nofft_forward_outer", n2)
+            cuda_adjoint_func_inner = cuda_function(mod, "cuda_conv_nofft_adjoint_inner", n3)
+            cuda_adjoint_func_outer = cuda_function(mod, "cuda_conv_nofft_adjoint_outer", n4)
+            
+        else:
+            print("Warning: conv_nofft: using npp kernel.")
+
+            # npp optimized version
+            
+            code2, n2 = self._gen_cuda_outer("cuda_conv_nofft_forward_outer", lambda x: self._replicate_outer_generator(x, self.kernel) )
+            code4, n4 = self._gen_cuda_outer("cuda_conv_nofft_adjoint_outer", lambda x: self._zerosum_outer_generator(x, kernelM))
+
+            self.cuda_source = code2 + code4
+            mod = compile_cuda_kernel(self.cuda_source)
+            #cuda_forward_func_inner = cuda_function(mod, "cuda_conv_nofft_forward_inner", n1)
+            cuda_forward_func_outer = cuda_function(mod, "cuda_conv_nofft_forward_outer", n2)
+            #cuda_adjoint_func_inner = cuda_function(mod, "cuda_conv_nofft_adjoint_inner", n3)
+            cuda_adjoint_func_outer = cuda_function(mod, "cuda_conv_nofft_adjoint_outer", n4)
+            
+            roi = [self.kernel.shape[1]//2, self.kernel.shape[0]//2, self.shape[1] - 2*(self.kernel.shape[1]//2), self.shape[0] - 2*(self.kernel.shape[0]//2)]
+            a = PyCudaAdapter()
+            kgpu = a.from_np(self.kernel)
+            kTgpu = a.from_np(kernelM)
+            cuda_forward_func_inner = lambda x, y: cuda_npp.nppiFilter(x, kgpu, roi, y)
+            cuda_adjoint_func_inner = lambda x, y: cuda_npp.nppiFilter(x, kTgpu, roi, y)
 
         cuda_forward_func = lambda *args: cuda_forward_func_inner(*args) + cuda_forward_func_outer(*args)
         setattr(self, "cuda_conv_nofft_forward", cuda_forward_func)

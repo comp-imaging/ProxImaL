@@ -198,7 +198,7 @@ class TestCudaCompGraphs(BaseTest):
         self._generic_check_adjoint(lambda x: (x, x*5), (10,10), (10*10+10*10,), "vstack")
         
     def test_transpose(self):
-        self._generic_check_adjoint(lambda x: transpose(x, [2,0,1]), (4,3,2), (2,4,3), "transpose" )
+        self._generic_check_adjoint(lambda x: transpose(x, [2,0,1]), (4,3,2), (2,4,3), "transpose")
         
     def test_pxwise_matmul(self):
         A = random.rand(4,4,3,2)
@@ -270,7 +270,7 @@ class TestCudaCompGraphs(BaseTest):
         
         t_cpu = t2_cpu - t1_cpu
         t_gpu = t2_gpu - t1_gpu
-        print("Forward timing: cpu=%.2f ms gpu=%.2f ms factor=%.3f" % (t_cpu, t_gpu, t_gpu/t_cpu))
+        logging.info("Forward timing: cpu=%.2f ms gpu=%.2f ms factor=%.3f" % (t_cpu, t_gpu, t_gpu/t_cpu))
         self.assertTrue(t_gpu < t_cpu)
 
         t1_cpu = time.time()        
@@ -285,13 +285,15 @@ class TestCudaCompGraphs(BaseTest):
         
         t_cpu = t2_cpu - t1_cpu
         t_gpu = t2_gpu - t1_gpu
-        print("Adjoint timing: cpu=%.2f ms gpu=%.2f ms factor=%.3f" % (t_cpu, t_gpu, t_gpu/t_cpu))
+        logging.info("Adjoint timing: cpu=%.2f ms gpu=%.2f ms factor=%.3f" % (t_cpu, t_gpu, t_gpu/t_cpu))
         self.assertTrue(t_gpu < t_cpu)
 
         #print( G.start.adjoint_cuda(G, 0, "i", None)[0] )
                 
 if __name__ == "__main__":
+    import logging
+    logging.getLogger().setLevel(logging.INFO)
     t = TestCudaCompGraphs()
-    t.test_uneven_subsample2()
+    t.test_subsample()
     import unittest
     unittest.main()

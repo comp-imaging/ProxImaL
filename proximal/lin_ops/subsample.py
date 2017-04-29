@@ -1,6 +1,6 @@
 from .lin_op import LinOp
 import numpy as np
-from ..utils.cuda_codegen import indent
+from ..utils.cuda_codegen import indent, sub2ind, ind2sub
 
 class subsample(LinOp):
     """Samples every steps[i] pixel along axis i,
@@ -131,6 +131,12 @@ class uneven_subsample(LinOp):
         self.valid_indices = np.logical_not(invalid_indices)
         self.linear_indices = np.ravel_multi_index(indices, arg.shape, mode='clip')
         self.orig_shape = arg.shape
+        # for cuda:
+        self.indices = indices
+        bindices = -np.ones(int(np.prod(arg.shape)), dtype=np.int32)
+        bindices[self.linear_indices[self.valid_indices]] = np.arange(int(np.prod(self.linear_indices.shape)), dtype=np.int32)[self.valid_indices.flatten()]
+        self.invindices = bindices
+        
         shape = self.linear_indices.shape
         super(uneven_subsample, self).__init__([arg], shape)
 
@@ -150,6 +156,76 @@ class uneven_subsample(LinOp):
         o = np.zeros(int(np.prod(outputs[0].shape)), dtype=inputs[0].dtype)
         o[self.linear_indices[self.valid_indices]] = inputs[0][self.valid_indices]
         outputs[0][:] = np.reshape(o, outputs[0].shape)
+        
+    def cuda_additional_buffers(self):
+        return [("uneven_subsample_fidx_%d" % self.linop_id, self.indices), ("uneven_subsample_bidx_%d" % self.linop_id, self.invindices)]
+        
+    def forward_cuda_kernel(self, cg, num_tmp_vars, abs_idx, parent):
+        linidx = sub2ind(abs_idx, self.indices.shape[1:])
+        vlinidx = "linidx_%(num_tmp_vars)d" % locals()
+        code = "/*uneven_subsample*/\nint %(vlinidx)s = %(linidx)s;\n" % locals()
+        num_tmp_vars += 1
+        res = "res_%(num_tmp_vars)d" % locals() 
+        code += "float %(res)s = 0.0f;\n" % locals()
+        num_tmp_vars += 1
+        vvalid = "valid_%(num_tmp_vars)d" % locals()
+        code +="int %(vvalid)s = 1;\n" % locals()
+        num_tmp_vars += 1
+        idx = []
+        new_idx = []
+        fidx = "uneven_subsample_fidx_%d" % self.linop_id
+        offset = 0
+        for i in range(self.indices.shape[0]):
+            new_var = "idx_%(num_tmp_vars)d" % locals()
+            new_idx.append(new_var)
+            num_tmp_vars += 1
+            shapedim = self.orig_shape[i]
+            code += """
+int %(new_var)s = %(fidx)s[%(vlinidx)s + %(offset)d];
+%(vvalid)s = %(vvalid)s && %(new_var)s >= 0 && %(new_var)s < %(shapedim)d;
+""" % locals()
+            offset += int(np.prod(self.indices.shape[1:]))
+        icode, var, num_tmp_vars = cg.input_nodes(self)[0].forward_cuda_kernel(cg, num_tmp_vars, new_idx, self)
+        icode = indent(icode, 4)
+        code += """
+if( %(vvalid)s )
+{
+    %(icode)s
+    %(res)s = %(var)s;
+}
+""" % locals()
+        return code, res, num_tmp_vars
+    
+    def adjoint_cuda_kernel(self, cg, num_tmp_vars, abs_idx, parent):
+        linidx = sub2ind(abs_idx, self.orig_shape)
+        
+        vlinidx = "linidx_%(num_tmp_vars)d" % locals()
+        code = "/*uneven_subsample*/\nint %(vlinidx)s = %(linidx)s;\n" % locals()
+        num_tmp_vars += 1
+        
+        res = "res_%(num_tmp_vars)d" % locals()
+        code += "float %(res)s = 0.0f;\n"  % locals()
+        num_tmp_vars += 1
+        
+        bidx = "uneven_subsample_bidx_%d" % self.linop_id
+        
+        newlinidx = "idx_%(num_tmp_vars)d" % locals()
+        code += "int %(newlinidx)s = %(bidx)s[%(vlinidx)s];\n"  % locals()
+        num_tmp_vars += 1
+        
+        new_idx = ind2sub(newlinidx, self.shape)
+        
+        icode, var, num_tmp_vars = cg.output_nodes(self)[0].adjoint_cuda_kernel(cg, num_tmp_vars, new_idx, self)
+        icode = indent(icode, 4)
+        code += """
+if(%(newlinidx)s >= 0)
+{
+    %(icode)s
+    %(res)s = %(var)s;
+}
+""" % locals()
+        return code, res, num_tmp_vars
+        
         
     def is_gram_diag(self, freq=False):
         """Is the lin op's Gram matrix diagonal (in the frequency domain)?

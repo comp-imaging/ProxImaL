@@ -1,5 +1,5 @@
 from .lin_op import LinOp
-from ..utils.cuda_codegen import indent, sub2ind, ind2sub, NodeReverseInOut, ReverseInOut
+from ..utils.cuda_codegen import indent, sub2ind, ind2subCode, NodeReverseInOut, ReverseInOut
 import numpy as np
 
 
@@ -51,8 +51,10 @@ float %(res)s = 0;
             endoffset = offset + node.size
             sub_idx_vars = list(["idx_%d" % d for d in range(num_tmp_vars, num_tmp_vars + len(self.input_shapes[idx]))])
             num_tmp_vars += len(self.input_shapes[idx])
-            sub_expressions = ind2sub("%s - %d" % (abs_idx, offset), self.input_shapes[idx] )
-            sub_idx_var_defs = "".join("int %(var)s = %(exp)s;\n" % locals() for (var,exp) in zip(sub_idx_vars, sub_expressions))
+            
+            sub_idx_var_defs = indent(ind2subCode("%s - %d" % (abs_idx, offset), self.input_shapes[idx], sub_idx_vars), 4)
+            #sub_expressions = ind2sub("%s - %d" % (abs_idx, offset), self.input_shapes[idx] )
+            #sub_idx_var_defs = "".join("int %(var)s = %(exp)s;\n" % locals() for (var,exp) in zip(sub_idx_vars, sub_expressions))
             sub_idx_var_defs = indent(sub_idx_var_defs,4)
             
             icode, var, num_tmp_vars = node.forward_cuda_kernel(cg, num_tmp_vars, sub_idx_vars, self)

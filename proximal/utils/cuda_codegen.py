@@ -1,14 +1,12 @@
 import re
 import numpy as np
-import functools
-import struct
+import logging
 
 try:
     import pycuda.driver as cuda
     import pycuda.autoinit
-    from pycuda.compiler import SourceModule
+    from pycuda.compiler import SourceModule, DEFAULT_NVCC_FLAGS
     from pycuda import gpuarray
-    import pycuda.tools
     
     cuda_available = True
     
@@ -24,11 +22,12 @@ def compile_cuda_kernel(cuda_kernel_code):
     """
     try:
         cuda_code = cuda_kernel_code if 1 else replace_local_floats_with_double(cuda_kernel_code)
-        mod = SourceModule(cuda_code)
+        logging.debug("Compiling cuda code:\n" + cuda_code)
+        mod = SourceModule(cuda_code, options=DEFAULT_NVCC_FLAGS + ['--use_fast_math'])
     except cuda.CompileError as e:
-        print(cuda_code)
-        print("CUDA compilation error:")
-        print(e.stderr)
+        logging.error(cuda_code)
+        logging.error("CUDA compilation error:")
+        logging.error(e.stderr)
         raise e
     return mod
         
@@ -42,7 +41,8 @@ def cuda_function(mod, function_name, datadim, additional_arguments = ()):
     cuda_func = mod.get_function(function_name)            
     block = (min(datadim, cuda_func.MAX_THREADS_PER_BLOCK), 1, 1)
     grid = (datadim//block[0],1,1)
-    result = lambda *args: cuda_func(*(args+additional_arguments), grid=grid, block=block, time_kernel=True)
+    logger = lambda x: logging.info("Cuda function %s execution time: %.2f ms", function_name, x*1000) or x
+    result = lambda *args: logger(cuda_func(*(args+additional_arguments), grid=grid, block=block, time_kernel=True))
     return result
     
 class NumpyAdapter:
@@ -75,9 +75,15 @@ class NumpyAdapter:
     def copyto(self, tgt, src):
         np.copyto(tgt, src)
 
+    def sum(self, matrix):
+        return np.sum(matrix)
+
+    def abs(self, matrix):
+        return np.abs(matrix)
+
     def implem(self):
         return 'numpy'        
-
+    
 class PyCudaAdapter:
     """
     To keep algorithms free of cuda clutter, we use these adapter classes to map
@@ -107,6 +113,12 @@ class PyCudaAdapter:
     
     def copyto(self, tgt, src):
         tgt[:] = src
+           
+    def sum(self, matrix):
+        return gpuarray.sum(matrix)
+    
+    def abs(self, matrix):
+        return matrix.__abs__()
 
     def implem(self):
         return 'pycuda'
@@ -116,7 +128,7 @@ def float_constant(v):
     return a floating point constant for usage in cuda kernels (a string).
     """
     # TODO maybe use hexadecimal floating point constants here
-    return "%.10e" % v
+    return "%.10ef" % v
 
 def indent(code, level):
     """
@@ -161,6 +173,87 @@ def ind2sub(ind, shape):
             res.append( "((%(ind)s)%(exp1)s)%(exp2)s" % locals() )
     return res
 
+def _magic_division_numbers(d):
+    with np.errstate(over='ignore'):
+        # see https://github.com/milakov/int_fastdiv/blob/master/int_fastdiv.h
+        # (M,s,n_add_sign) 
+        assert(d > 0)
+        
+        if d == 1: return (0, -1,  1)
+        if d == -1: return (0, -1, -1)
+        two31 = np.uint32(0x80000000)
+        ad = np.uint32(1 if d == 0 else abs(d))
+        t = np.uint32(two31 + (np.uint32(d) >> 31))
+        anc = np.uint32(t - 1 - t % ad)
+        p = np.int32(31)
+        q1 = np.uint32(two31 // anc)
+        r1 = np.uint32(two31 - q1*anc)
+        q2 = np.uint32(two31 // ad)
+        r2 = np.uint32(two31 - q2 * ad)
+        while 1:
+            p += np.int32(1)
+            q1 = np.uint32(q1*2)
+            r1 = np.uint32(r1*2)
+            if (r1 >= anc):
+                q1 = np.uint32(q1+1)
+                r1 = np.uint32(r1-anc)
+            q2 = np.uint32(q2*2)
+            r2 = np.uint32(r2*2)
+            if (r2 >= ad):
+                q2 = np.uint32(q2+1)
+                r2 = np.uint32(r2-ad)
+            delta = np.int32(ad - r2)
+            if not (q1 < delta or (q1 == delta and r1 == 0)):
+                break
+        M = np.int32(q2 + 1)
+        if (d < 0):
+            M = np.int32(-M)
+        s = np.int32(p - 32)
+        
+        if ((d > 0) and (M < 0)):
+            n_add_sign = np.int32(1)
+        elif ((d < 0) and (M > 0)):
+            n_add_sign = np.int32(-1)
+        else:
+            n_add_sign = np.int32(0)
+        return (M,s,n_add_sign)
+
+def ind2subCode(ind, shape, target_var_names):
+    """
+    Same as ind2sub, but it will be more efficient by reusing results.
+    Pass the variable names to be defined and initialized in target_var_names.
+    """
+    code = ""
+    av = target_var_names[-1]
+    code += "int %(av)s = 0;\n" % locals()
+    for d in range(len(shape)):
+        v = target_var_names[d]
+        divisor = int(np.prod(shape[(d+1):]))
+        if d != len(shape) - 1:
+            code += "int "
+        if 1 or divisor in [1 << k for k in range(1,31)]:
+            code += "%(v)s = ( (%(ind)s) + %(av)s ) / %(divisor)d;\n" % locals()
+        elif divisor == 1:
+            code += "%(v)s = ( (%(ind)s) + %(av)s );\n" % locals()
+        elif divisor > 1:
+            M,s,n_add_sign = _magic_division_numbers(divisor)
+                        
+            code += """\
+%(v)s = (%(ind)s) + %(av)s; /* optimized integer division by %(divisor)d */ 
+asm("mul.hi.s32 %%0, %%1, %%2;" : "=r"(%(v)s) :  "r"(%(M)d), "r"(%(v)s));
+%(v)s += ((%(ind)s) + %(av)s) * %(n_add_sign)d;
+""" % locals()
+            if s > 0:
+                if s < 32: 
+                    code += "%(v)s >>= %(s)d;" % locals()
+                else: 
+                    code += "%(v)s = (%(v)s >= 0) ? 0 : -1;\n" % locals()
+                code += "%(v)s += (((unsigned int)%(v)s) >> 31);\n" % locals()
+           
+        if d != len(shape) - 1:
+            code += "%(av)s -= %(v)s*%(divisor)d;\n" % locals()
+    return code
+            
 class NodeReverseInOut(object):
     """
     When generating cuda kernels, the graphs are traversed implicitely.
@@ -324,6 +417,7 @@ class CudaSubGraph:
                 except KeyError:
                     pass
             else:       
+                logging.info("%s: no cuda kernel available", str(n))
                 cn = [n]
                 while 1:
                     innodes = get_input_nodes(cn[0])
@@ -426,8 +520,12 @@ class CudaSubGraph:
             except AttributeError:
                 buffers = []
             for aname, aval in buffers:
-                aval = gpuarray.to_gpu(aval.astype(np.float32))
-                self.cuda_args.append( (aname, aval) )
+                if type(aval) == np.ndarray and aval.dtype == np.int32:
+                    aval = gpuarray.to_gpu(aval)                    
+                    self.cuda_args.append( (aname, aval, "int") )
+                else:
+                    aval = gpuarray.to_gpu(aval.astype(np.float32))
+                    self.cuda_args.append( (aname, aval, "float") )
                 
         for cn in self.nokernel_nodes:
             for n in cn:
@@ -438,10 +536,10 @@ class CudaSubGraph:
                 o = gpuarray.zeros(rshape, dtype=np.float32)
                 self.nokernel_results[n] = o
             n = cn[-1]
-            self.cuda_args.append( ("linop_proxy_output_%d" % n.linop_id, o) )
+            self.cuda_args.append( ("linop_proxy_output_%d" % n.linop_id, o, "float") )
             self.nokernel_proxynodes[n] = ProxyNode(n, self.cuda_args[-1][0], rshape)
             
-        add_args = "".join((", float *%s" % x[0] for x in self.cuda_args))
+        add_args = "".join((", %s *%s" % (x[2], x[0]) for x in self.cuda_args))
         
         cg = self if fcn == "forward_cuda_kernel" else ReverseInOut(self, reverseNodes=False)
         self.shape = shape if not shape is None else self.end.shape
@@ -476,22 +574,11 @@ __global__ void %(fcn)s_%(subgraph_id)d(const float *x, float *y%(add_args)s)
             dsg.gen_code(fcn, cn[0], parent.shape)
             for ni, n in enumerate(cn):
                 self.nokernel_inputs[n] = gpuarray.zeros(dsg.shape, dtype=np.float32) if ni == 0 else self.nokernel_results[cn[ni-1]]
-                        
-        # compile and create the function
-        try:
-            self._cuda_code = code
-            self.cuda_mod = SourceModule(code)
-        except cuda.CompileError as e:
-            print(code)
-            print("CUDA compilation error:")
-            print(e.stderr)
-            raise e
         
-        cuda_func = self.cuda_mod.get_function("%(fcn)s_%(subgraph_id)d" % locals())
-        block = (min(int(dimy), cuda_func.MAX_THREADS_PER_BLOCK), 1, 1)
-        grid = (int(dimy)//block[0],1,1)
+        self._cuda_code = code
+        self.cuda_mod = compile_cuda_kernel(code)
         arg_vals = tuple(x[1] for x in self.cuda_args)
-        self.cuda_kernel_func = lambda *args: cuda_func(*(args+arg_vals), grid=grid, block=block, time_kernel=True)
+        self.cuda_kernel_func = cuda_function(self.cuda_mod, "%(fcn)s_%(subgraph_id)d" % locals(), dimy, arg_vals)
         
     def apply(self, x, y):
         """
@@ -520,3 +607,22 @@ __global__ void %(fcn)s_%(subgraph_id)d(const float *x, float *y%(add_args)s)
         """
         return self._cuda_code + "\n".join([x.cuda_code for x in self.dependent_subgraphs])
 
+if __name__ == "__main__":
+    def div(n, M, s, n_add_sign):
+        v = np.int32(np.uint32(  (np.int64(n)*np.int64(M)) >> 32) )
+        v += np.int32(n) * np.int32(n_add_sign)
+        if s >= 0:
+            if s < 32:
+                v >>= s
+            else:
+                v = 0 if v >= 0 else -1
+            v += np.int32(np.uint32(v) >> 31)
+        return v
+    
+    for d in range(3,100):
+        M,s,n_add_sign = _magic_division_numbers(d)
+        for n in range(2,10000):
+            r = div(n, M, s, n_add_sign)
+            print(n, "/", d, "=", r)
+            assert( r == n // d )
+        

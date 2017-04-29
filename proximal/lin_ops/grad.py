@@ -2,7 +2,7 @@ from .lin_op import LinOp
 import numpy as np
 from proximal.utils.utils import Impl
 from proximal.halide.halide import Halide
-from ..utils.cuda_codegen import indent
+from ..utils.cuda_codegen import indent, sub2ind
 
 
 class grad(LinOp):
@@ -133,18 +133,21 @@ class grad(LinOp):
 
     def forward_cuda_kernel(self, cg, num_tmp_vars, absidx, parent):
         innode = cg.input_nodes(self)[0]
-        code = """/*grad*/
-"""
         idxvars = ["idx_%d" % (num_tmp_vars+d) for d in range(self.dims)]
         var = "var_%d" % (num_tmp_vars+self.dims)
+        code = """/*grad*/
+""" % locals()
         num_tmp_vars += self.dims+1
         newidx = absidx[:-1]
         for d,cidx in enumerate(absidx[:self.dims]):
             selidx = absidx[-1]
             idxvar = idxvars[d]
             ed = self.shape[d]-1
-            code += "int %(idxvar)s = ((%(selidx)s) == %(d)d) ? min(%(ed)d, (%(cidx)s)+1) : (%(cidx)s);\n" % locals()
+            code += """
+int %(idxvar)s = ((%(selidx)s) == %(d)d) ? min(%(ed)d, (%(cidx)s)+1) : (%(cidx)s);
+""" % locals()
             newidx[d] = idxvar
+        
         icode1,ivar1,num_tmp_vars = innode.forward_cuda_kernel(cg, num_tmp_vars, newidx, self)
         icode2,ivar2,num_tmp_vars = innode.forward_cuda_kernel(cg, num_tmp_vars, absidx[:-1], self)
         code += icode1 + icode2

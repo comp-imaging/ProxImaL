@@ -58,3 +58,11 @@ class TestCudaProxFn(BaseTest):
             maxeps = max(err,maxeps)
         
         print("Max proxfn error: %.2e" % maxeps)
+
+if __name__ == "__main__":
+    import logging
+    logging.getLogger().setLevel(logging.DEBUG)
+    t = TestCudaProxFn()
+    t.test_group_norm1()
+    import unittest
+    unittest.main()

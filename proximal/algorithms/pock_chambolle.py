@@ -104,7 +104,7 @@ def solve(psi_fns, omega_fns, tau=None, sigma=None, theta=None,
           max_iters=1000, eps_abs=1e-3, eps_rel=1e-3, x0=None,
           lin_solver="cg", lin_solver_options=None, conv_check=100,
           try_diagonalize=True, try_fast_norm=False, scaled=True,
-          metric=None, convlog=None, verbose=0, callback=None, adapter = NumpyAdapter()):
+          metric=None, convlog=None, verbose=0, callback=None, adapter = NumpyAdapter(), ppd=False, cuda_code_file=None):
     
     # Can only have one omega function.
     assert len(omega_fns) <= 1
@@ -117,17 +117,45 @@ def solve(psi_fns, omega_fns, tau=None, sigma=None, theta=None,
     if adapter.implem() == 'numpy':
         K_forward = K.forward
         K_adjoint = K.adjoint
+        prox_off_and_fac = lambda offset, factor, fn, *args, **kw: offset + factor*fn.prox(*args, **kw)
         prox = lambda fn, *args, **kw: fn.prox(*args, **kw)
     elif adapter.implem() == 'pycuda':
         K_forward = K.forward_cuda
         K_adjoint = K.adjoint_cuda
+        prox_off_and_fac = lambda offset, factor, fn, *args, **kw: fn.prox_cuda(*args, **kw, offset=offset, factor=factor)
         prox = lambda fn, *args, **kw: fn.prox_cuda(*args, **kw)
+        if not cuda_code_file is None:
+            K.gen_cuda_code()
+            open(cuda_code_file, "w").write("/* CUDA FORWARD IMPLEMENTAIOTN */\n" + K.cuda_forward_subgraphs.cuda_code + "\n/*CUDA ADJOINT IMPLEMENTAIOTN */" + K.cuda_adjoint_subgraphs.cuda_code)
     else:
-        raise RuntimeError("Implementation %s unknown" % adapter.implem())
-    v = np.zeros(K.input_size)
+        raise RuntimeError("Implementation %s unknown" % adapter.implem())        
+    print(adapter.implem(), cuda_code_file)
+    v = adapter.zeros(K.input_size)
+    Kv = adapter.zeros(K.output_size)
     # Select optimal parameters if wanted
     if tau is None or sigma is None or theta is None:
-        tau, sigma, theta = est_params_pc(K, tau, sigma, verbose, scaled, try_fast_norm)
+        if not ppd:
+            tau, sigma, theta = est_params_pc(K, tau, sigma, verbose, scaled, try_fast_norm)        
+        else:
+            tau = adapter.zeros(K.output_size)
+            sigma = adapter.zeros(K.input_size)
+            for j in range(len(v)):
+                v[j] = adapter.from_np(np.array(adapter.scalar(1)))
+                K_forward(v, Kv)
+                v[j] = adapter.from_np(np.array(adapter.scalar(0)))
+                tau[j] = 1./adapter.sum(adapter.abs(Kv))
+                if( j % 100 == 0 ): print("%d / %d" % (j, len(v)))
+            print(tau)
+            Kv[:] = 0
+            for i in range(len(Kv)):
+                Kv[i] = adapter.from_np(np.array(adapter.scalar(1)))
+                K_adjoint(Kv, v)
+                Kv[i] = adapter.from_np(np.array(adapter.scalar(0)))
+                sigma[i] = 1./adapter.sum(adapter.abs(v))
+                if( i % 1000 == 0 ): print("%d / %d" % (i, len(Kv)))
+            print(sigma)
+            theta = 1
+            xxx
     elif callable(tau) or callable(sigma) or callable(theta):
         if scaled:
             L = 1
@@ -174,16 +202,16 @@ def solve(psi_fns, omega_fns, tau=None, sigma=None, theta=None,
                               "conv_check"])
 
     # Convergence log for initial iterate
-    if convlog is not None:
+    if convlog is not None or conv_check > 0:
         K.update_vars(adapter.to_np(x))
-        objval = 0.0
+        objval = []
         for f in prox_fns:
             evp = f.value
             #print(str(f), '->', f.value)
-            objval += evp
-        #print("Initial objval: ", objval)
+            objval += [evp]
+        print("obj_val = %02.03e [%s]" % (sum(objval), " ".join(["%02.03e" % v for v in objval])))
         if convlog is not None:
-            convlog.record_objective(objval)
+            convlog.record_objective(sum(objval))
             convlog.record_timing(0.0)
 
     for i in range(max_iters):
@@ -230,7 +258,7 @@ def solve(psi_fns, omega_fns, tau=None, sigma=None, theta=None,
             z_slc = adapter.reshape(z[slc], fn.lin_op.shape)
             # Moreau identity: apply and time prox.
             prox_log[fn].tic()
-            y[slc] = adapter.flatten( (z_slc - csigma * prox(fn, csigma, z_slc / csigma, i)) )
+            y[slc] = adapter.flatten( prox_off_and_fac(z_slc, -csigma, fn, csigma, z_slc / csigma, i) )
             prox_log[fn].toc()
             offset += fn.lin_op.size
             prox_log_tot[fn].toc()
@@ -245,9 +273,14 @@ def solve(psi_fns, omega_fns, tau=None, sigma=None, theta=None,
 
         iter_timing["omega_fn"].tic()
         if len(omega_fns) > 0:
-            xtmp = adapter.reshape(x, omega_fns[0].lin_op.shape)
-            x[:] = adapter.flatten( prox(omega_fns[0], adapter.scalar(1.0) / ctau, xtmp, x_init=prev_x,
+            fn = omega_fns[0]
+            prox_log_tot[fn].tic()
+            xtmp = adapter.reshape(x, fn.lin_op.shape)
+            prox_log[fn].tic()
+            x[:] = adapter.flatten( prox(fn, adapter.scalar(1.0) / ctau, xtmp, x_init=prev_x,
                                      lin_solver=lin_solver, options=lin_solver_options) )
+            prox_log[fn].toc()
+            prox_log_tot[fn].toc()
         iter_timing["omega_fn"].toc()
 
         iter_timing["xbar"].tic()
