@@ -26,11 +26,11 @@ class grad(LinOp):
         if len(arg.shape) in [2, 3] and self.dims == 2:
             self.tmpfwd = np.zeros((arg.shape[0], arg.shape[1],
                                     arg.shape[2] if (len(arg.shape) > 2) else 1, 2),
-                                   dtype=np.float32, order='FORTRAN')
+                                   dtype=np.float32, order='F')
 
             self.tmpadj = np.zeros((arg.shape[0], arg.shape[1],
                                     arg.shape[2] if (len(arg.shape) > 2) else 1),
-                                   dtype=np.float32, order='FORTRAN')
+                                   dtype=np.float32, order='F')
 
         super(grad, self).__init__([arg], shape, implem)
 
@@ -133,10 +133,10 @@ class grad(LinOp):
 
     def forward_cuda_kernel(self, cg, num_tmp_vars, absidx, parent):
         innode = cg.input_nodes(self)[0]
-        code = """/*grad*/
-"""
         idxvars = ["idx_%d" % (num_tmp_vars+d) for d in range(self.dims)]
         var = "var_%d" % (num_tmp_vars+self.dims)
+        code = """/*grad*/
+"""
         num_tmp_vars += self.dims+1
         newidx = absidx[:-1]
         for d,cidx in enumerate(absidx[:self.dims]):
@@ -145,14 +145,15 @@ class grad(LinOp):
             ed = self.shape[d]-1
             code += "int %(idxvar)s = ((%(selidx)s) == %(d)d) ? min(%(ed)d, (%(cidx)s)+1) : (%(cidx)s);\n" % locals()
             newidx[d] = idxvar
+
         icode1,ivar1,num_tmp_vars = innode.forward_cuda_kernel(cg, num_tmp_vars, newidx, self)
         icode2,ivar2,num_tmp_vars = innode.forward_cuda_kernel(cg, num_tmp_vars, absidx[:-1], self)
         code += icode1 + icode2
         code += """
 float %(var)s = %(ivar1)s - %(ivar2)s;
-""" % locals()        
+""" % locals()
         return code, var, num_tmp_vars
-    
+
     def adjoint_cuda_kernel(self, cg, num_tmp_vars, absidx, parent):
         innode = cg.output_nodes(self)[0]
         dims = self.dims
@@ -169,12 +170,12 @@ int %(nidx)s;
             cd = self.shape[d]-1
             code += "%(nidx)s = %(cidx)s-1\n;" % locals()
             newidx[d] = nidx
-            
+
             icode1,ivar1,num_tmp_vars = innode.adjoint_cuda_kernel(cg, num_tmp_vars, absidx + [str(d)], self)
             icode2,ivar2,num_tmp_vars = innode.adjoint_cuda_kernel(cg, num_tmp_vars, newidx + [str(d)], self)
             icode1 = indent(icode1, 4)
             icode2 = indent(icode2, 4)
-                           
+
             code += """
 if( %(cidx)s == 0 )
 {
@@ -191,7 +192,7 @@ if( %(cidx)s == 0 )
     %(var)s += %(ivar1)s - %(ivar2)s;
 }
 """ % locals()
-        
+
         code += "%(var)s = -%(var)s;\n" % locals()
         return code, var, num_tmp_vars
 

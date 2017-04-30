@@ -2,7 +2,7 @@ from __future__ import division
 import abc
 import numpy as np
 from proximal.utils import Impl
-from proximal.utils.cuda_codegen import (sub2ind, ind2sub, indent, gpuarray,
+from proximal.utils.cuda_codegen import (sub2ind, ind2subCode, indent, gpuarray,
      compile_cuda_kernel, cuda_function)
 
 class ProxFn(object):
@@ -97,7 +97,7 @@ class ProxFn(object):
         if not np.all(self.b == 0):
             res.append( ("b", self.b) )
         return res
-    
+
     def gen_cuda_code(self):
         shape = self.lin_op.shape
         dimv = int(np.prod(shape))
@@ -119,36 +119,62 @@ class ProxFn(object):
         if alpha_beta_s == 1:
             div_alpha_beta_s = ""
         else:
-            div_alpha_beta_s = " / %.8ef" % (alpha_beta_s)
+            div_alpha_beta_s = " * %.8ef" % (1./alpha_beta_s)
         beta = self.beta
         if beta == 1:
             xhatc_div_beta = ""
             mul_beta = ""
         else:
-            xhatc_div_beta = "xhatc /= %.8ef;" % beta
+            xhatc_div_beta = "xhatc *= %.8ef;" % (1./beta)
             mul_beta = " * %.8ef" % beta
-        
-        gen_v = lambda idx: "(((v[%(idx)s] * rho)%(ccode)s)%(mul_beta)s) / (rho%(plus_2gamma)s%(bcode1)s)" % dict(
+
+        idxvars = ["subidx%d" % d for d in range(len(shape))]
+        ind2subcode = ind2subCode("vidx", shape, idxvars)
+
+        v_divisor = "float vDiv = 1.f / (rho%(plus_2gamma)s%(bcode1)s);\n" % locals()
+
+        gen_v = lambda idx: "(((v[%(idx)s] * rho)%(ccode)s)%(mul_beta)s)*vDiv" % dict(
                     idx=sub2ind(idx, shape) if len(idx) > 1 else idx[0],
                     ccode=ccode % locals(),
                     mul_beta=mul_beta,
                     plus_2gamma=plus_2gamma,
                     bcode1=bcode1 % locals(),
                 )
-        
-        
-        cucode = self._prox_cuda("rho_hat", gen_v, ind2sub("vidx", shape), "vidx", "xhatc")
+
+
+        cucode = self._prox_cuda("rho_hat", gen_v, idxvars, "vidx", "xhatc")
         cucode = indent(cucode, 8)
-        
+        ind2subcode = indent(ind2subcode, 8)
+
         code = """
-__global__ void prox(const float *v, float *xhat, float rho%(argstring)s)
+__global__ void prox_off_and_fac(const float *v, float *xhat, float rho, const float *offset, float factor %(argstring)s)
 {
     float rho_hat = (rho%(plus_2gamma)s)%(div_alpha_beta_s)s;
-    
-    int index = blockIdx.x * blockDim.x + threadIdx.x; 
+    %(v_divisor)s
+
+    int index = blockIdx.x * blockDim.x + threadIdx.x;
     int stride = blockDim.x * gridDim.x;
     for( int vidx = index; vidx < %(dimv)d; vidx += stride )
     {
+        %(ind2subcode)s
+        %(cucode)s
+        %(bcode2)s
+        %(xhatc_div_beta)s
+
+        xhat[vidx] = offset[vidx] + factor * xhatc;
+    }
+}
+
+__global__ void prox(const float *v, float *xhat, float rho %(argstring)s)
+{
+    float rho_hat = (rho%(plus_2gamma)s)%(div_alpha_beta_s)s;
+    %(v_divisor)s
+
+    int index = blockIdx.x * blockDim.x + threadIdx.x;
+    int stride = blockDim.x * gridDim.x;
+    for( int vidx = index; vidx < %(dimv)d; vidx += stride )
+    {
+        %(ind2subcode)s
         %(cucode)s
         %(bcode2)s
         %(xhatc_div_beta)s
@@ -161,8 +187,9 @@ __global__ void prox(const float *v, float *xhat, float rho%(argstring)s)
         self.cuda_source = code
         mod = compile_cuda_kernel(self.cuda_source)
         const_vals = tuple(x[1] for x in self.cuda_args)
-        self.kernel_cuda_prox = cuda_function(mod, "prox", int(np.prod(shape)), const_vals)        
-        
+        self.kernel_cuda_prox = cuda_function(mod, "prox", int(np.prod(shape)), const_vals)
+        self.kernel_cuda_prox_off_and_fac = cuda_function(mod, "prox_off_and_fac", int(np.prod(shape)), const_vals)
+
     def prox_cuda(self, rho, v, *args, **kwargs):
         if hasattr(self, "_prox_cuda"):
             if self.kernel_cuda_prox is None:
@@ -170,12 +197,16 @@ __global__ void prox(const float *v, float *xhat, float rho%(argstring)s)
             if not type(v) == gpuarray.GPUArray:
                 v = gpuarray.to_gpu(v.astype(np.float32))
             xhat = gpuarray.zeros(v.shape, dtype=np.float32)
-            self.kernel_cuda_prox(v, xhat, np.float32(rho))
+            if "offset" in kwargs:
+                assert(kwargs["offset"].flags.c_contiguous and kwargs["offset"].dtype == np.float32)
+                self.kernel_cuda_prox_off_and_fac(v, xhat, np.float32(rho), kwargs["offset"], np.float32(kwargs.get("factor", 1)) )
+            else:
+                self.kernel_cuda_prox(v, xhat, np.float32(rho))
             return xhat
         else:
             c = gpuarray.to_gpu(self.c)
             b = gpuarray.to_gpu(self.b)
-            cuda_fun = lambda rho, v, *args, **kw: gpuarray.to_gpu(self._prox(rho, v.get(), *args, **kw).astype(np.float32()))            
+            cuda_fun = lambda rho, v, *args, **kw: gpuarray.to_gpu(self._prox(rho, v.get(), *args, **kw).astype(np.float32()))
             rho_hat = (rho + 2 * self.gamma) / (self.alpha * self.beta**2)
             # vhat = (rho*v - c)*beta/(rho + 2*gamma) - b
             # Modify v in-place. This is important for the Python to be performant.
@@ -188,8 +219,10 @@ __global__ void prox(const float *v, float *xhat, float rho%(argstring)s)
             # Modify result in-place.
             xhat += b
             xhat /= self.beta
-            return xhat        
-            
+            if "offset" in kwargs:
+                xhat = kwargs["offset"] + kwargs.get("factor",1) * xhat
+            return xhat
+
     @abc.abstractmethod
     def _eval(self, v):
         """Evaluate the function on v (ignoring parameters).
