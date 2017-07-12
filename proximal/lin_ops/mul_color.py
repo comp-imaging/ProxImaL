@@ -1,3 +1,4 @@
+from __future__ import print_function
 from .lin_op import LinOp
 import numpy as np
 import sys
@@ -19,7 +20,7 @@ class mul_color(LinOp):
             self.TC = np.asarray(mode)
 
             if self.TC.shape != (3, 3):
-                print >> sys.stderr, "Error, color matrix is not 3x3."
+                print("Error, color matrix is not 3x3.", file=sys.stderr)
                 sys.exit(1)
 
         else:
@@ -34,12 +35,12 @@ class mul_color(LinOp):
                                     [0.5, -0.4186875, -0.0813125]],
                                    dtype=np.float32, order='F')
             else:
-                print >> sys.stderr, "Error, unsupported color mode."
+                print("Error, unsupported color mode.", file=sys.stderr)
                 sys.exit(1)
 
         # Check for the shape
         if len(arg.shape) != 3 or arg.shape[2] != 3:
-            print >> sys.stderr, "Error, color transform needs a 3 channel image."
+            print("Error, color transform needs a 3 channel image.", file=sys.stderr)
             sys.exit(1)
 
         super(mul_color, self).__init__([arg], arg.shape)

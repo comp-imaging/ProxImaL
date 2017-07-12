@@ -1,5 +1,6 @@
 from .prox_fn import ProxFn
 import numpy as np
+import itertools
 from proximal.utils.utils import Impl
 from proximal.halide.halide import Halide
 
@@ -49,6 +50,7 @@ class group_norm1(ProxFn):
 
             # Numpy implementation
             np.multiply(v, v, self.v_group_norm)
+            
 
             # Sum along dimensions and keep dimensions
             orig_s = v.shape
@@ -67,16 +69,45 @@ class group_norm1(ProxFn):
                     tiles += (1,)
 
             self.v_group_norm = np.tile(self.v_group_norm, tiles)
-
+            
             # Thresholded group norm
             with np.errstate(divide='ignore'):
                 np.maximum(0.0, 1.0 - (1.0 / rho) * (1.0 / self.v_group_norm), self.v_group_norm)
-
+            
             # Mult
             v *= self.v_group_norm
 
         return v
+    
+    def _prox_cuda(self, rho, gen_v, subidx, linidx, res):
+        code = """/*group_norm1*/
+float %(res)s = 0.0f;
+float tmp;
+""" % locals()        
+        for gd in itertools.product( *(range(self.lin_op.shape[d]) for d in self.group_dims) ):
+            newidx = subidx[:]
+            for i,d in enumerate(self.group_dims):
+                newidx[d] = gd[i]
+            v = gen_v(newidx)
+            code += """
+tmp = %(v)s;
+%(res)s += tmp*tmp;
+""" % locals()
+        v = gen_v([linidx])
+        code += """
 
+if( %(res)s > 0.0f )
+{
+    %(res)s = rsqrtf(%(res)s);
+    %(res)s = max(0.0f, 1.0f - (%(res)s / (%(rho)s) ));
+} else
+{
+    %(res)s = 0.0f;
+}
+%(res)s *= %(v)s;
+""" % locals()
+        return code
+    
     def _eval(self, v):
         """Evaluate the function on v (ignoring parameters).
         """
@@ -147,7 +178,7 @@ class weighted_group_norm1(group_norm1):
         idxs = self.weight != 0
         v[idxs] *= self.v_group_norm[idxs]
         return v
-
+    
     def _eval(self, v):
         """Evaluate the function on v (ignoring parameters).
         """

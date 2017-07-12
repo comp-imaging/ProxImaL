@@ -1,10 +1,13 @@
 from __future__ import print_function
+import tempfile
+import os
 from proximal.lin_ops import (CompGraph, est_CompGraph_norm, Variable,
                               vstack)
 from proximal.utils.timings_log import TimingsLog, TimingsEntry
+from proximal.utils.utils import graph_visualize
+from proximal.utils.cuda_codegen import NumpyAdapter
 from .invert import get_least_squares_inverse, max_diag_set
 import numpy as np
-
 
 def partition(prox_fns, try_diagonalize=True):
     """Divide the proxable functions into sets Psi and Omega.
@@ -39,40 +42,90 @@ def partition(prox_fns, try_diagonalize=True):
     psi_fns = [func for func in prox_fns if func not in split_fn + quad_fns]
     return psi_fns, omega_fns
 
+dsp_cnt = 0
+def display_matrix(M):
+    import pickle
+    global dsp_cnt
+    f = "/tmp/matrix%d.pickle" % dsp_cnt
+    pickle.dump(M, open(f, "wb"))
+    dsp_cnt = (dsp_cnt + 1) % 30
+    # display the corners of M and a point in the middle
+    print(f)
+    idx = [0] * len(M.shape)
+    while 1:
+        print(("%3d "*len(idx)) % tuple(idx), "-> %+02.03e" % M.item(*idx))
+        ok = False
+        i = -1
+        while not ok:
+            if idx[i] == 0 and M.shape[i] > 1:
+                ok = True
+                idx[i] = M.shape[i]-1
+            else:
+                idx[i] = 0
+            i = i-1
+            if -i > len(idx):
+                break
+        if not ok:
+            break
+    idx = [s//2 for s in M.shape]
+    print(("%3d "*len(idx)) % tuple(idx), "-> %+02.03e" % M.item(*idx))
 
 def solve(psi_fns, omega_fns, tau=None, sigma=None, theta=None,
           max_iters=1000, eps_abs=1e-3, eps_rel=1e-3, x0=None,
           lin_solver="cg", lin_solver_options=None, conv_check=100,
           try_diagonalize=True, try_fast_norm=False, scaled=True,
-          metric=None, convlog=None, verbose=0):
+          metric=None, convlog=None, verbose=0, callback=None, adapter = NumpyAdapter()):
+
     # Can only have one omega function.
     assert len(omega_fns) <= 1
     prox_fns = psi_fns + omega_fns
     stacked_ops = vstack([fn.lin_op for fn in psi_fns])
     K = CompGraph(stacked_ops)
-    v = np.zeros(K.input_size)
+
+    #graph_visualize(prox_fns)
+
+    if adapter.implem() == 'numpy':
+        K_forward = K.forward
+        K_adjoint = K.adjoint
+        prox_off_and_fac = lambda offset, factor, fn, *args, **kw: offset + factor*fn.prox(*args, **kw)
+        prox = lambda fn, *args, **kw: fn.prox(*args, **kw)
+    elif adapter.implem() == 'pycuda':
+        K_forward = K.forward_cuda
+        K_adjoint = K.adjoint_cuda
+        prox_off_and_fac = lambda offset, factor, fn, *args, **kw: fn.prox_cuda(*args, offset=offset, factor=factor, **kw)
+        prox = lambda fn, *args, **kw: fn.prox_cuda(*args, **kw)
+    else:
+        raise RuntimeError("Implementation %s unknown" % adapter.implem())
     # Select optimal parameters if wanted
     if tau is None or sigma is None or theta is None:
         tau, sigma, theta = est_params_pc(K, tau, sigma, verbose, scaled, try_fast_norm)
+    elif callable(tau) or callable(sigma) or callable(theta):
+        if scaled:
+            L = 1
+        else:
+            L = est_CompGraph_norm(K, try_fast_norm)
 
     # Initialize
-    x = np.zeros(K.input_size)
-    y = np.zeros(K.output_size)
-    xbar = np.zeros(K.input_size)
-    u = np.zeros(K.output_size)
-    z = np.zeros(K.output_size)
+    x = adapter.zeros(K.input_size)
+    y = adapter.zeros(K.output_size)
+    xbar = adapter.zeros(K.input_size)
+    u = adapter.zeros(K.output_size)
+    z = adapter.zeros(K.output_size)
 
     if x0 is not None:
-        x[:] = np.reshape(x0, K.input_size)
-        K.forward(x, y)
-        xbar[:] = x
+        x[:] = adapter.reshape(adapter.from_np(x0), K.input_size)
+    else:
+        x[:] = adapter.from_np(K.x0())
+
+    K_forward(x, y)
+    xbar[:] = x
 
     # Buffers.
-    Kxbar = np.zeros(K.output_size)
-    Kx = np.zeros(K.output_size)
-    KTy = np.zeros(K.input_size)
-    KTu = np.zeros(K.input_size)
-    s = np.zeros(K.input_size)
+    Kxbar = adapter.zeros(K.output_size)
+    Kx = adapter.zeros(K.output_size)
+    KTy = adapter.zeros(K.input_size)
+    KTu = adapter.zeros(K.input_size)
+    s = adapter.zeros(K.input_size)
 
     prev_x = x.copy()
     prev_Kx = Kx.copy()
@@ -81,62 +134,108 @@ def solve(psi_fns, omega_fns, tau=None, sigma=None, theta=None,
 
     # Log for prox ops.
     prox_log = TimingsLog(prox_fns)
+    prox_log_tot = TimingsLog(prox_fns)
     # Time iterations.
-    iter_timing = TimingsEntry("PC iteration")
+    iter_timing = TimingsLog(["pc_iteration_tot",
+                              "copyprev",
+                              "calcz",
+                              "calcx",
+                              "omega_fn",
+                              "xbar",
+                              "conv_check"])
 
     # Convergence log for initial iterate
     if convlog is not None:
-        K.update_vars(x)
-        objval = sum([fn.value for fn in prox_fns])
+        K.update_vars(adapter.to_np(x))
+        objval = 0.0
+        for f in prox_fns:
+            evp = f.value
+            #print(str(f), '->', f.value)
+            objval += evp
         convlog.record_objective(objval)
         convlog.record_timing(0.0)
 
     for i in range(max_iters):
-        iter_timing.tic()
+        iter_timing["pc_iteration_tot"].tic()
         if convlog is not None:
             convlog.tic()
 
+        if callable(sigma):
+            csigma = sigma(i, L)
+        else:
+            csigma = sigma
+        if callable(tau):
+            ctau = tau(i, L)
+        else:
+            ctau = tau
+        if callable(theta):
+            ctheta = theta(i, L)
+        else:
+            ctheta = theta
+
+        csigma = adapter.scalar(csigma)
+        ctau = adapter.scalar(ctau)
+        ctheta = adapter.scalar(ctheta)
+
         # Keep track of previous iterates
-        np.copyto(prev_x, x)
-        np.copyto(prev_z, z)
-        np.copyto(prev_u, u)
-        np.copyto(prev_Kx, Kx)
+        iter_timing["copyprev"].tic()
+        adapter.copyto(prev_x, x)
+        adapter.copyto(prev_z, z)
+        adapter.copyto(prev_u, u)
+        adapter.copyto(prev_Kx, Kx)
+        iter_timing["copyprev"].toc()
 
         # Compute z
-        K.forward(xbar, Kxbar)
-        z = y + sigma * Kxbar
+        iter_timing["calcz"].tic()
+        K_forward(xbar, Kxbar)
+        z = y + csigma * Kxbar
+        iter_timing["calcz"].toc()
 
         # Update y.
         offset = 0
         for fn in psi_fns:
+            prox_log_tot[fn].tic()
             slc = slice(offset, offset + fn.lin_op.size, None)
-            z_slc = np.reshape(z[slc], fn.lin_op.shape)
-
+            z_slc = adapter.reshape(z[slc], fn.lin_op.shape)
             # Moreau identity: apply and time prox.
             prox_log[fn].tic()
-            y[slc] = (z_slc - sigma * fn.prox(sigma, z_slc / sigma, i)).flatten()
+            y[slc] = adapter.flatten( prox_off_and_fac(z_slc, -csigma, fn, csigma, z_slc / csigma, i) )
             prox_log[fn].toc()
             offset += fn.lin_op.size
-        y[offset:] = 0
+            prox_log_tot[fn].toc()
 
+        iter_timing["calcx"].tic()
+        if offset < y.shape[0]:
+            y[offset:] = 0
         # Update x
-        K.adjoint(y, KTy)
-        x -= tau * KTy
+        K_adjoint(y, KTy)
+        x -= ctau * KTy
+        iter_timing["calcx"].toc()
 
+        iter_timing["omega_fn"].tic()
         if len(omega_fns) > 0:
-            xtmp = np.reshape(x, omega_fns[0].lin_op.shape)
-            x[:] = omega_fns[0].prox(1.0 / tau, xtmp, x_init=prev_x,
-                                     lin_solver=lin_solver, options=lin_solver_options).flatten()
+            fn = omega_fns[0]
+            prox_log_tot[fn].tic()
+            xtmp = adapter.reshape(x, fn.lin_op.shape)
+            prox_log[fn].tic()
+            x[:] = adapter.flatten( prox(fn, adapter.scalar(1.0) / ctau, xtmp, x_init=prev_x,
+                                     lin_solver=lin_solver, options=lin_solver_options) )
+            prox_log[fn].toc()
+            prox_log_tot[fn].toc()
+        iter_timing["omega_fn"].toc()
 
+        iter_timing["xbar"].tic()
         # Update xbar
-        np.copyto(xbar, x)
-        xbar += theta * (x - prev_x)
+        adapter.copyto(xbar, x)
+        xbar += ctheta * (x - prev_x)
+        iter_timing["xbar"].toc()
 
         # Convergence log
         if convlog is not None:
             convlog.toc()
-            K.update_vars(x)
-            objval = sum([fn.value for fn in prox_fns])
+            K.update_vars(adapter.to_np(x))
+            objval = list([fn.value for fn in prox_fns])
+            objval = sum(objval)
             convlog.record_objective(objval)
 
         """ Old convergence check
@@ -148,9 +247,12 @@ def solve(psi_fns, omega_fns, tau=None, sigma=None, theta=None,
         """
 
         # Residual based convergence check
-        K.forward(x, Kx)
-        u = 1.0 / sigma * y + theta * (Kx - prev_Kx)
-        z = prev_u + prev_Kx - 1.0 / sigma * y
+        if i % conv_check in [0, conv_check-1]:
+            iter_timing["conv_check"].tic()
+            K_forward(x, Kx)
+            u = adapter.scalar(1.0) / csigma * y + ctheta * (Kx - prev_Kx)
+            z = prev_u + prev_Kx - adapter.scalar(1.0) / csigma * y
+            iter_timing["conv_check"].toc()
 
         # Iteration order is different than
         # lin-admm (--> start checking at iteration 1)
@@ -158,20 +260,26 @@ def solve(psi_fns, omega_fns, tau=None, sigma=None, theta=None,
 
             # Check convergence
             r = prev_Kx - z
-            K.adjoint(sigma * (z - prev_z), s)
+            K_adjoint(csigma * (z - prev_z), s)
             eps_pri = np.sqrt(K.output_size) * eps_abs + eps_rel * \
-                max([np.linalg.norm(prev_Kx), np.linalg.norm(z)])
+                max([np.linalg.norm(adapter.to_np(prev_Kx)), np.linalg.norm(adapter.to_np(z))])
 
-            K.adjoint(u, KTu)
-            eps_dual = np.sqrt(K.input_size) * eps_abs + eps_rel * np.linalg.norm(KTu) / sigma
+            K_adjoint(u, KTu)
+            eps_dual = np.sqrt(K.input_size) * eps_abs + eps_rel * np.linalg.norm(adapter.to_np(KTu)) / csigma
+
+            if not callback is None or verbose == 2:
+                K.update_vars(adapter.to_np(x))
+            if not callback is None:
+                callback(adapter.to_np(x))
 
             # Progress
             if verbose > 0:
                 # Evaluate objective only if required (expensive !)
                 objstr = ''
                 if verbose == 2:
-                    K.update_vars(x)
-                    objstr = ", obj_val = %02.03e" % sum([fn.value for fn in prox_fns])
+                    ov = list([fn.value for fn in prox_fns])
+                    objval = sum(ov)
+                    objstr = ", obj_val = %02.03e [%s] " % (objval, ", ".join("%02.03e" % x for x in ov))
 
                 """ Old convergence check
                 #Evaluate metric potentially
@@ -188,15 +296,15 @@ def solve(psi_fns, omega_fns, tau=None, sigma=None, theta=None,
                 metstr = '' if metric is None else ", {}".format(metric.message(v))
                 print(
                     "iter %d: ||r||_2 = %.3f, eps_pri = %.3f, ||s||_2 = %.3f, eps_dual = %.3f%s%s"
-                    % (i, np.linalg.norm(r), eps_pri, np.linalg.norm(s), eps_dual, objstr, metstr)
+                    % (i, np.linalg.norm(adapter.to_np(r)), eps_pri, np.linalg.norm(adapter.to_np(s)), eps_dual, objstr, metstr)
                 )
 
-            iter_timing.toc()
-            if np.linalg.norm(r) <= eps_pri and np.linalg.norm(s) <= eps_dual:
+            iter_timing["pc_iteration_tot"].toc()
+            if np.linalg.norm(adapter.to_np(r)) <= eps_pri and np.linalg.norm(adapter.to_np(s)) <= eps_dual:
                 break
 
         else:
-            iter_timing.toc()
+            iter_timing["pc_iteration_tot"].toc()
 
         """ Old convergence check
         if error <= eps:
@@ -206,7 +314,9 @@ def solve(psi_fns, omega_fns, tau=None, sigma=None, theta=None,
     # Print out timings info.
     if verbose > 0:
         print(iter_timing)
-        print("prox funcs:")
+        print("prox funcs total:")
+        print(prox_log_tot)
+        print("prox funcs inner:")
         print(prox_log)
         print("K forward ops:")
         print(K.forward_log)
@@ -214,8 +324,9 @@ def solve(psi_fns, omega_fns, tau=None, sigma=None, theta=None,
         print(K.adjoint_log)
 
     # Assign values to variables.
-    K.update_vars(x)
-
+    K.update_vars(adapter.to_np(x))
+    if not callback is None:
+        callback(adapter.to_np(x))
     # Return optimal value.
     return sum([fn.value for fn in prox_fns])
 

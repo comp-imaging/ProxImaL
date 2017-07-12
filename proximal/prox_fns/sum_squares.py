@@ -6,7 +6,6 @@ from proximal.utils.utils import Impl, fftd, ifftd
 from scipy.sparse.linalg import lsqr, LinearOperator
 from proximal.halide.halide import Halide
 
-
 class sum_squares(ProxFn):
     """The function ||x||_2^2.
     """
@@ -133,7 +132,7 @@ class least_squares(sum_squares):
         Kv = np.zeros(self.K.output_size)
         self.K.forward(v.ravel(), Kv)
         return super(least_squares, self)._eval(Kv - self.offset)
-
+    
     def solve(self, b, rho=None, v=None, lin_solver="lsqr", *args, **kwargs):
         # KtK Operator is diagonal
         if self.diag is not None:

@@ -1,4 +1,5 @@
 from .lin_op import LinOp
+from ..utils.cuda_codegen import ReverseInOut
 import numpy as np
 
 
@@ -27,6 +28,23 @@ class sum(LinOp):
         """
         for output in outputs:
             np.copyto(output, inputs[0])
+            
+    def forward_cuda_kernel(self, cg, num_tmp_variables, abs_idx, parent):
+        #print("sum:forward:cuda")
+        input_nodes = cg.input_nodes(self)
+        res = "var_%d" % num_tmp_variables
+        num_tmp_variables += 1
+        code = "float %(res)s = 0; /*sum/copy*/ \n" % locals()
+        for n in input_nodes:
+            icode, ivar, num_tmp_variables = n.forward_cuda_kernel(cg, num_tmp_variables, abs_idx, self)
+            code += icode
+            code += "%(res)s += %(ivar)s;\n" % locals()
+        return code, res, num_tmp_variables 
+    
+    def adjoint_cuda_kernel(self, cg, num_tmp_variables, abs_idx, parent):
+        #print("sum:adjoint:cuda")
+        code, var, num_tmp_variables = cg.output_nodes(self)[0].adjoint_cuda_kernel(cg, num_tmp_variables, abs_idx, self)
+        return code, var, num_tmp_variables
 
     def is_diag(self, freq=False):
         """Is the lin op diagonal (in the frequency domain)?
@@ -70,9 +88,12 @@ class sum(LinOp):
 
 class copy(sum):
 
-    def __init__(self, shape, implem=None):
-        self.shape = shape
-        self.input_nodes = []
+    def __init__(self, arg, implem=None):
+        if type(arg) is tuple:
+            self.shape = arg
+            self.input_nodes = []
+        elif isinstance(arg, LinOp):
+            super(copy,self).__init__([arg], arg.shape)
 
     def forward(self, inputs, outputs):
         """The forward operator.
@@ -87,6 +108,14 @@ class copy(sum):
         Reads from inputs and writes to outputs.
         """
         super(copy, self).forward(inputs, outputs)
+        
+    def forward_cuda_kernel(self, cg, num_tmp_variables, abs_idx, parent):
+        #print("copy:forward:cuda")
+        return super(copy, self).adjoint_cuda_kernel(ReverseInOut(cg), num_tmp_variables, abs_idx, parent)
+        
+    def adjoint_cuda_kernel(self, cg, num_tmp_variables, abs_idx, parent):
+        #print("copy:adjoint:cuda")
+        return super(copy, self).forward_cuda_kernel(ReverseInOut(cg), num_tmp_variables, abs_idx, parent)
 
     def norm_bound(self, input_mags):
         """Gives an upper bound on the magnitudes of the outputs given inputs.

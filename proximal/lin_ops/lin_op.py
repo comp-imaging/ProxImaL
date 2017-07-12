@@ -1,7 +1,7 @@
 import abc
 import numpy as np
 from proximal.utils import Impl
-
+from proximal.utils.cuda_codegen import PyCudaAdapter
 
 def cast_to_const(expr):
     """Converts a non-LinOp to a Constant.
@@ -14,10 +14,15 @@ class LinOp(object):
     """Represents a linear operator.
     """
     __metaclass__ = abc.ABCMeta
+    
+    instanceCnt = 0
 
     def __init__(self, input_nodes, shape, implem=None):
         self.input_nodes = [cast_to_const(node) for node in input_nodes]
         self.shape = self.format_shape(shape)
+        self.orig_node = self
+        self.linop_id = LinOp.instanceCnt
+        LinOp.instanceCnt += 1
         if implem is not None:
             self.set_implementation(implem)
         else:
@@ -67,6 +72,32 @@ class LinOp(object):
     def implementation(self):
         return self.implementation
 
+    # might be overwritten by subclasses
+    def cuda_kernel_available(self):
+        return hasattr(self, 'forward_cuda_kernel') and hasattr(self, 'adjoint_cuda_kernel')
+    
+    def forward_cuda(self, inputs, outputs):
+        # Default implementation copies the gpu input arrays to the cpu,
+        # applies the cpu forward operation and copies the result back to 
+        # the gpu. Not the fastest implementation, but it works. To be fast,
+        # either implement the forward_cuda_kernel or overwrite this method
+        # to operate on the gpu arrays.
+        a = PyCudaAdapter()
+        inputs_cpu = [a.to_np(i) for i in inputs]
+        outputs_cpu = [np.zeros(o.shape) for o in outputs]
+        self.forward(inputs_cpu, outputs_cpu)
+        for i,o in enumerate(outputs_cpu):
+            outputs[i][:] = a.from_np(o)
+
+    def adjoint_cuda(self, inputs, outputs):
+        # similar to forward_cuda
+        a = PyCudaAdapter()
+        inputs_cpu = [a.to_np(i) for i in inputs]
+        outputs_cpu = [np.zeros(o.shape) for o in outputs]
+        self.adjoint(inputs_cpu, outputs_cpu)
+        for i,o in enumerate(outputs_cpu):
+            outputs[i][:] = a.from_np(o)
+
     @property
     def size(self):
         return np.prod(self.shape)
@@ -86,7 +117,7 @@ class LinOp(object):
         Reads from inputs and writes to outputs.
         """
         return NotImplemented
-
+    
     def is_gram_diag(self, freq=False):
         """Is the lin op's Gram matrix diagonal (in the frequency domain)?
         """

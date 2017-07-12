@@ -1,4 +1,5 @@
 from .lin_op import LinOp
+from ..utils.cuda_codegen import ReverseInOut, float_constant
 import numpy as np
 
 
@@ -25,7 +26,20 @@ class scale(LinOp):
         Reads from inputs and writes to outputs.
         """
         self.forward(inputs, outputs)
-
+        
+    def forward_cuda_kernel(self, cg, num_tmp_vars, abs_idx, parent):
+        #print("scale:forward:cuda")
+        code, var, num_tmp_vars = cg.input_nodes(self)[0].forward_cuda_kernel(cg, num_tmp_vars, abs_idx, self)
+        scalar = float_constant(self.scalar)
+        code += """/* scale */
+%(var)s *= %(scalar)s;
+""" % locals()
+        return code, var, num_tmp_vars
+        
+    def adjoint_cuda_kernel(self, cg, num_tmp_vars, abs_idx, parent):
+        #print("scale:adjoint:cuda")
+        return self.forward_cuda_kernel(ReverseInOut(cg), num_tmp_vars, abs_idx, parent)
+        
     def is_gram_diag(self, freq=False):
         """Is the lin  Gram diagonal (in the frequency domain)?
         """

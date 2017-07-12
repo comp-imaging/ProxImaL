@@ -10,6 +10,8 @@ class Variable(LinOp):
     def __init__(self, shape):
         self.uuid = uuid.uuid1()
         self._value = None
+        self.varname = ''
+        self.initval = None
         super(Variable, self).__init__([], shape)
 
     def forward(self, inputs, outputs):
@@ -18,14 +20,14 @@ class Variable(LinOp):
         Reads from inputs and writes to outputs.
         """
         np.copyto(outputs[0], inputs[0])
-
+        
     def adjoint(self, inputs, outputs):
         """The adjoint operator.
 
         Reads from inputs and writes to outputs.
         """
         np.copyto(outputs[0], inputs[0])
-
+        
     def variables(self):
         return [self]
 

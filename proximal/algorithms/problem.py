@@ -2,12 +2,14 @@ from . import admm
 from . import pock_chambolle as pc
 from . import half_quadratic_splitting as hqs
 from . import linearized_admm as ladmm
-from proximal.utils.utils import Impl
+from proximal.utils.utils import Impl, graph_visualize
+from proximal.utils.cuda_codegen import PyCudaAdapter
 from proximal.lin_ops import Variable, CompGraph, est_CompGraph_norm, vstack
 from proximal.prox_fns import ProxFn
 from . import absorb
 from . import merge
 import numpy as np
+from numpy import linalg as LA
 
 NAME_TO_SOLVER = {
     "admm": admm,
@@ -87,7 +89,7 @@ class Problem(object):
         """
         self.lin_solver = lin_solver
 
-    def solve(self, solver=None, *args, **kwargs):
+    def solve(self, solver=None, test_adjoints = False, test_norm = False, show_graph = False, *args, **kwargs):
         if solver is None:
             solver = self.solver
 
@@ -105,6 +107,11 @@ class Problem(object):
         # Absorb offsets.
         prox_fns = [absorb.absorb_offset(fn) for fn in prox_fns]
         # TODO more analysis of what solver to use.
+        
+        if show_graph:
+            print("Computational graph before optimizing:")
+            graph_visualize(prox_fns, filename = show_graph if type(show_graph) is str else None)
+        
         # Short circuit with one function.
         if len(prox_fns) == 1 and type(prox_fns[0].lin_op) == Variable:
             fn = prox_fns[0]
@@ -120,6 +127,28 @@ class Problem(object):
                 else:
                     psi_fns = prox_fns
                     omega_fns = []
+            else:
+                psi_fns = self.psi_fns
+                omega_fns = self.omega_fns
+            if test_norm:
+                L = CompGraph(vstack([fn.lin_op for fn in psi_fns]))
+                from numpy.random import random
+
+                output_mags = [NotImplemented]
+                L.norm_bound(output_mags)
+                if not NotImplemented in output_mags:
+                    assert len(output_mags) == 1
+                
+                    x = random(L.input_size)
+                    x = x / LA.norm(x)
+                    y = np.zeros(L.output_size)
+                    y = L.forward(x, y)
+                    ny = LA.norm(y)
+                    nL2 = est_CompGraph_norm(L, try_fast_norm=False)
+                    if ny > output_mags[0]:
+                        raise RuntimeError("wrong implementation of norm!")
+                    print("%.3f <= ||K|| = %.3f (%.3f)" % (ny, output_mags[0], nL2))
+                
             # Scale the problem.
             if self.scale:
                 K = CompGraph(vstack([fn.lin_op for fn in psi_fns]),
@@ -132,6 +161,41 @@ class Problem(object):
                 for idx, fn in enumerate(omega_fns):
                     omega_fns[idx] = fn.copy(beta=fn.beta / np.sqrt(Knorm),
                                              implem=self.implem)
+                for v in K.orig_end.variables():
+                    if v.initval is not None:
+                        v.initval *= np.sqrt(Knorm)
+            if not test_adjoints in [False, None]:
+                if test_adjoints is True:
+                    test_adjoints = 1e-6
+                # test adjoints
+                L = CompGraph(vstack([fn.lin_op for fn in psi_fns]))
+                from numpy.random import random
+                
+                x = random(L.input_size)
+                yt = np.zeros(L.output_size)
+                #print("x=", x)
+                yt = L.forward(x, yt)
+                #print("yt=", yt)
+                #print("x=", x)
+                y = random(L.output_size)
+                #print("y=", y)
+                xt = np.zeros(L.input_size)
+                xt = L.adjoint(y, xt)
+                #print("xt=", xt)
+                #print("y=", y)
+                r = np.abs( np.dot(np.ravel(y), np.ravel(yt)) - np.dot(np.ravel(x), np.ravel(xt)) )
+                #print( x.shape, y.shape, xt.shape, yt.shape)
+                if r > test_adjoints:
+                    #print("yt=", yt)
+                    #print("y =", y)
+                    #print("xt=", xt)
+                    #print("x =", x)
+                    raise RuntimeError("Unmatched adjoints: " + str(r))
+                else:
+                    print("Adjoint test passed.", r)
+                                    
+            if self.implem == Impl['pycuda']:
+                kwargs['adapter'] = PyCudaAdapter()
             opt_val = module.solve(psi_fns, omega_fns,
                                    lin_solver=self.lin_solver,
                                    try_diagonalize=self.try_diagonalize,

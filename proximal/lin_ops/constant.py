@@ -31,7 +31,31 @@ class Constant(LinOp):
         Reads from inputs and writes to outputs.
         """
         pass
-
+    
+    def cuda_additional_buffers(self):
+        if np.all(self._value == 0.0):
+            return []
+        else:
+            return [("constant_%d" % self.linop_id, self._value)]
+    
+    def forward_cuda_kernel(self, cg, num_tmp_vars, abs_idx, parent):
+        var = "var_%(num_tmp_vars)s" % locals()
+        if np.all(self._value == 0.0):
+            # usually the constants are zero, so we have no need to do the memory lookup
+            code = "float %(var)s = 0.0f;\n" % locals()
+        else:            
+            cname = self.cuda_additional_buffers()[0][0]
+            shape = self._value.shape
+            index = "+".join(["(%s)*%d" % (ai, np.prod(shape[d+1:])) for d,ai in enumerate(abs_idx)])
+            code = """/*constant*/
+float %(var)s = %(cname)s[%(index)s];
+""" % locals()
+        
+        return code, var, num_tmp_vars+1
+    
+    def adjoint_cuda_kernel(self, cg, num_tmp_vars, abs_idx, parent):
+        return None, None, num_tmp_vars
+    
     @property
     def value(self):
         return self._value

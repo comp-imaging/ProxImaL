@@ -3,20 +3,26 @@ from .edge import Edge
 from .variable import Variable
 from .constant import Constant
 from .vstack import split
+from ..utils.cuda_codegen import CudaSubGraph, gpuarray
+from .vstack import vstack
 from proximal.utils.timings_log import TimingsLog
 import copy as cp
 from collections import defaultdict
 import numpy as np
 from scipy.sparse.linalg import LinearOperator, eigs
 
-
 class CompGraph(object):
     """A computation graph representing a composite lin op.
     """
+    
+    instanceCnt = 0
 
     def __init__(self, end, implem=None):
+        self.instanceID = CompGraph.instanceCnt
+        CompGraph.instanceCnt += 1
         self.orig_end = end
         self.end = cp.copy(end)
+        self.end.orig_node = end.orig_node
         self.shape = self.end.shape
         # Construct via graph traversal.
         self.nodes = []
@@ -27,30 +33,69 @@ class CompGraph(object):
         new_vars = []
         # Assumes all nodes have at most one output.
         ready = [self.end]
+        done = []
+        node_to_copies = {}
+        self.split_nodes = {}
         while len(ready) > 0:
             curr = ready.pop(0)
+            done.append(curr)
             if isinstance(curr, Variable):
+                # new_vars may contain specific variables more than once
                 new_vars.append(curr)
             # Zero out constants.
             self.nodes.append(curr)
             input_edges = []
             for node in curr.input_nodes:
-                # Zero out constants.
+                # Zero out constants. Constants are handled in absorb_offset
                 if isinstance(node, Constant):
                     node = Constant(np.zeros(curr.shape))
+                    node.orig_node = None
                     self.constants.append(node)
                 else:
-                    node = cp.copy(node)
+                    # avoid copying too many nodes
+                    if not node in node_to_copies:                            
+                        cnode = cp.copy(node)
+                        node.orig_node = node.orig_node
+                        node_to_copies[node] = cnode
+                    else:
+                        self.split_nodes[node_to_copies[node]] = True
+                    node = node_to_copies[node]
                     # Default implementation.
                     if implem is not None:
                         node.implem = implem
-                ready.append(node)
+                if not node in ready and not node in done:
+                    ready.append(node)
                 edge = Edge(node, curr, node.shape)
                 input_edges.append(edge)
-                self.output_edges[node] = [edge]
+                if not node in self.output_edges:
+                    self.output_edges[node] = [edge]
+                else:
+                    self.output_edges[node].append(edge)
 
             self.edges += input_edges
             self.input_edges[curr] = input_edges
+
+        # replace the split nodes with copy nodes
+        for n in self.split_nodes.keys():
+            outedges = self.output_edges[n]
+            outnodes = [e.end for e in outedges]
+            copy_node = copy(n, implem=implem)
+            copy_node.input_nodes += [n]
+            self.output_edges[n] = [Edge(n, copy_node, n.shape)]
+            self.input_edges[copy_node] = self.output_edges[n]
+            self.output_edges[copy_node] = []
+            self.nodes.append(copy_node)
+            for ns in outnodes:
+                inedges = self.input_edges[ns]
+                newinedges = []
+                for e in inedges:
+                    if e.start is n:
+                        e = Edge(copy_node, e.end, copy_node.shape)
+                        newinedges.append( e )
+                        self.output_edges[copy_node].append(e)
+                    else:
+                        newinedges.append( e )
+                self.input_edges[ns] = newinedges            
 
         # Make copy node for each variable.
         old_vars = self.orig_end.variables()
@@ -60,6 +105,7 @@ class CompGraph(object):
         offset = 0
         for var in old_vars:
             copy_node = copy(var.shape, implem=implem)
+            copy_node.orig_node = None
             id2copy[var.uuid] = copy_node
             copy_nodes.append(copy_node)
             self.var_info[var.uuid] = offset
@@ -70,19 +116,21 @@ class CompGraph(object):
         # Replace variables with copy nodes in graph.
         for var in new_vars:
             copy_node = id2copy[var.uuid]
-            output_edge = self.output_edges[var][0]
-            output_node = output_edge.end
-            edge = Edge(copy_node, output_node, var.shape)
-            self.edges.append(edge)
-            self.output_edges[copy_node].append(edge)
-            idx = self.input_edges[output_node].index(output_edge)
-            self.input_edges[output_node][idx] = edge
+            for output_edge in self.output_edges[var]:
+                output_node = output_edge.end
+                edge = Edge(copy_node, output_node, var.shape)
+                self.edges.append(edge)
+                self.output_edges[copy_node].append(edge)
+                idx = self.input_edges[output_node].index(output_edge)
+                #print("Variable %s(%s): idx=%d" % (var.varname, var.uuid, idx))
+                self.input_edges[output_node][idx] = edge
 
         # Record information about variables.
         self.input_size = sum([var.size for var in old_vars])
         self.output_size = self.end.size
 
         self.start = split(copy_nodes, implem=implem)
+        self.start.orig_node = None
         self.nodes.append(self.start)
         split_outputs = []
         for copy_node in copy_nodes:
@@ -92,9 +140,19 @@ class CompGraph(object):
 
         self.edges += split_outputs
         self.output_edges[self.start] = split_outputs
+        
+        self.cuda_forward_subgraphs = None
+        self.cuda_adjoint_subgraphs = None
+        
         # A record of timings.
         self.forward_log = TimingsLog(self.nodes + [self])
         self.adjoint_log = TimingsLog(self.nodes + [self])
+        
+    def input_nodes(self, node):
+        return list([e.start for e in self.input_edges[node]])
+
+    def output_nodes(self, node):
+        return list([e.end for e in self.output_edges[node]])
 
     def get_inputs(self, node):
         """Returns the input data for a node.
@@ -106,6 +164,85 @@ class CompGraph(object):
         """
         return [e.data for e in self.output_edges[node]]
 
+    def gen_cuda_code(self):
+        # The basic original idea is to generate a cuda kernel for the whole graph
+        # this is done by calling the output node (self.end for forward direction,
+        # self.start for adjoint direction), and these nodes will recursively 
+        # generate the kernel operations also for their input nodes.
+        #
+        # There are certain nodes in the graph which are either not yet ported to
+        # cuda or they don't efficiently fit into the above scheme. For example,
+        # it is not efficient to perform a convolution operation in the middle of
+        # a long linear graph (because the preceding image values have to be 
+        # calculated size(conv_kernel) times). Therefore we need a way to split
+        # the graph into subgraphs, and calculate individual nodes for their own.
+        #
+        # Nodes who want to be isolated can either not implement the forward_cuda_kernel
+        # function or override the function cuda_kernel_available(self) and return false.
+        
+        # forward direction
+        self.cuda_forward_subgraphs = CudaSubGraph(self.input_nodes, self.output_nodes, self.end)
+        self.cuda_forward_subgraphs.gen_code("forward_cuda_kernel")
+        #print("Forward subgraphs:")
+        #self.cuda_forward_subgraphs.visualize()
+        
+        self.cuda_adjoint_subgraphs = CudaSubGraph(self.output_nodes, self.input_nodes, self.start)
+        self.cuda_adjoint_subgraphs.gen_code("adjoint_cuda_kernel")
+        #print("Adjoint subgraphs:")
+        #self.cuda_adjoint_subgraphs.visualize()
+                                                                         
+    def forward_cuda(self, x, y, printt=False):
+        if 0:
+            needcopy = False
+            if type(x) is gpuarray.GPUArray:
+                x = x.get()
+            if type(y) is gpuarray.GPUArray:
+                needcopy = True
+                yorig = y
+                y = y.get()
+            self.forward(x, y)
+            if needcopy:
+                yorig[:] = gpuarray.to_gpu(y)
+        else:
+            if self.cuda_forward_subgraphs is None:
+                self.gen_cuda_code()
+            if not type(x) is gpuarray.GPUArray:
+                x = gpuarray.to_gpu(x.astype(np.float32))
+            if not type(y) is gpuarray.GPUArray:
+                y = gpuarray.to_gpu(y.astype(np.float32))
+                print("Warning: result y is no GPU array.")
+            self.forward_log[self].tic()
+            t = self.cuda_forward_subgraphs.apply(x, y)
+            self.forward_log[self].toc()
+            if printt: print(t)
+        return y
+
+    def adjoint_cuda(self, y, x, printt=False):
+        if 0:
+            needcopy = False
+            if type(x) is gpuarray.GPUArray:
+                needcopy = True
+                xorig = x
+                x = x.get()
+            if type(y) is gpuarray.GPUArray:
+                y = y.get()
+            self.adjoint(y, x)
+            if needcopy:
+                xorig[:] = gpuarray.to_gpu(x)            
+        else:
+            if self.cuda_adjoint_subgraphs is None:
+                self.gen_cuda_code()
+            if not type(x) is gpuarray.GPUArray:
+                x = gpuarray.to_gpu(x.astype(np.float32))
+                print("Warning: result x is no GPU array.")
+            if not type(y) is gpuarray.GPUArray:
+                y = gpuarray.to_gpu(y.astype(np.float32))
+            self.adjoint_log[self].tic()
+            t = self.cuda_adjoint_subgraphs.apply(y, x)
+            self.adjoint_log[self].toc()
+            if printt: print(t)
+        return x
+        
     def forward(self, x, y):
         """Evaluates the forward composition.
 
@@ -124,11 +261,16 @@ class CompGraph(object):
             # Run forward op and time it.
             self.forward_log[node].tic()
             node.forward(inputs, outputs)
+            #if node in self.split_nodes:
+            #    for io in range(1,len(outputs)):
+            #        np.copyto(outputs[io], outputs[0])
             self.forward_log[node].toc()
-        # Evaluate forward graph and time it.
+            
         self.forward_log[self].tic()
+        # Evaluate forward graph and time it.
         self.traverse_graph(forward_eval, True)
         self.forward_log[self].toc()
+        return y
 
     def adjoint(self, u, v):
         """Evaluates the adjoint composition.
@@ -147,12 +289,24 @@ class CompGraph(object):
                 inputs = self.get_inputs(node)
             # Run adjoint op and time it.
             self.adjoint_log[node].tic()
-            node.adjoint(outputs, inputs)
+            #if node in self.split_nodes:
+            #    for io in range(len(outputs)):
+            #        node.adjoint([outputs[io]], inputs)
+            #        assert(len(inputs) == 1)
+            #        if io == 0:
+            #            res = inputs[0].copy()
+            #        else:
+            #            res += inputs[0]
+            #    np.copyto(inputs[0], res)
+            #else:
+            if 1:
+                node.adjoint(outputs, inputs)
             self.adjoint_log[node].toc()
         # Evaluate adjoint graph and time it.
         self.adjoint_log[self].tic()
         self.traverse_graph(adjoint_eval, False)
         self.adjoint_log[self].toc()
+        return v
 
     def traverse_graph(self, node_fn, forward):
         """Traverse the graph and apply the given function at each node.
@@ -229,7 +383,15 @@ class CompGraph(object):
             offset = self.var_info[var.uuid]
             var.value = np.reshape(val[offset:offset + var.size], var.shape)
             offset += var.size
-
+            
+    def x0(self):
+        res = np.zeros(self.input_size)
+        for var in self.orig_end.variables():
+            if var.initval is not None:
+                offset = self.var_info[var.uuid]
+                res[offset:offset + var.size] = np.ravel(var.initval)
+        return res
+    
     def __str__(self):
         return self.__class__.__name__
 
