@@ -12,7 +12,52 @@ import numpy as np
 def halide_installed():
     """Returns whether Halide is installed.
     """
-    return 'HALIDE_PATH' in os.environ
+    if 'HALIDE_PATH' in os.environ:
+        return True
+    else:
+        return (('HALIDE_LIB_DIR' in os.environ) and
+                ('HALIDE_INCLUDE_DIR' in os.environ) and
+                ('HALIDE_TOOLS_DIR' in os.environ))
+
+
+def get_halide_paths(lib_ext='.so'):
+    # Halide library
+    if 'HALIDE_LIB_DIR' in os.environ:
+        halide_lib = os.path.join(
+            os.environ['HALIDE_LIB_DIR'], 'libHalide' + lib_ext)
+    else:
+        halide_lib = os.path.join(
+            os.environ['HALIDE_PATH'], 'bin', 'libHalide' + lib_ext)
+    if not os.path.exists(halide_lib):
+        raise ValueError(
+            "Specified halide library ({}) not found.".format(halide_lib))
+
+    # Halide include path
+    if 'HALIDE_INCLUDE_DIR' in os.environ:
+        halide_incl = os.environ['HALIDE_INCLUDE_DIR']
+    else:
+        halide_incl = os.path.join(os.environ['HALIDE_PATH'], 'include')
+    if not os.path.isdir(halide_incl):
+        raise ValueError(
+            "specified halide include directory ({}) not found".format(
+                halide_incl))
+    halide_incl = '-I' + halide_incl
+
+    # Halide generator tool
+    if 'HALIDE_TOOLS_DIR' in os.environ:
+        generator_main = os.path.join(
+            os.environ['HALIDE_TOOLS_DIR'], 'GenGen.cpp')
+    else:
+        generator_main = os.path.join(
+            os.environ['HALIDE_PATH'], 'tools', 'GenGen.cpp')
+    if not os.path.exists(generator_main):
+        raise ValueError(
+            "Specified halide generator ({}) not found.".format(
+                generator_main))
+    halide_paths = dict(library=halide_lib,
+                        include=halide_incl,
+                        generator=generator_main)
+    return halide_paths
 
 
 class Halide(object):
@@ -170,10 +215,7 @@ def gengen(generator_source, builddir='./build',
     # Generator code is a temporary file
     generator = os.path.join(builddir, 'gengen.XXXX')
 
-    # File definitions
-    halide_lib = '${HALIDE_PATH}/bin/libHalide.so'
-    halid_incl = '-I${HALIDE_PATH}/include'
-    generator_main = '${HALIDE_PATH}/tools/GenGen.cpp'
+    halide_paths = get_halide_paths()
 
     # Define output names
     function_name, function_name_c, output_lib = output_names(
@@ -205,7 +247,8 @@ def gengen(generator_source, builddir='./build',
         # Compile
         cmd = ("g++ {0} -g -Wwrite-strings -std=c++11 -fno-rtti {1} {2} {3} {4} "
                " -lz -lpthread -ldl -o {5}").format(
-            compile_flag_str, halid_incl, generator_source, generator_main, halide_lib, generator)
+            compile_flag_str, halide_paths['include'], generator_source,
+            halide_paths['generator'], halide_paths['library'], generator)
 
         if verbose:
             print('Compiling {0}'.format(generator_source))
