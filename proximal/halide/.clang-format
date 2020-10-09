@@ -1,0 +1,8 @@
+---
+Language:        Cpp
+BasedOnStyle:  Google
+Standard: Cpp11
+
+AlwaysBreakAfterReturnType: TopLevelDefinitions
+ColumnLimit:     100
+IndentWidth:     4

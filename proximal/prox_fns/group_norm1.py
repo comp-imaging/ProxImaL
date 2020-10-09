@@ -24,7 +24,7 @@ class group_norm1(ProxFn):
            self.group_dims == [len(lin_op.shape) - 1]:
             self.tmpout = np.zeros((lin_op.shape[0], lin_op.shape[1],
                                     lin_op.shape[2] if (len(lin_op.shape) > 3) else 1, 2),
-                                   dtype=np.float32, order='FORTRAN')
+                                   dtype=np.float32, order='F')
 
         super(group_norm1, self).__init__(lin_op, **kwargs)
 
@@ -36,15 +36,9 @@ class group_norm1(ProxFn):
            len(self.lin_op.shape) in [3, 4] and self.lin_op.shape[-1] == 2 and \
            self.group_dims == [len(self.lin_op.shape) - 1]:
 
-            # Halide implementation
-            if len(self.lin_op.shape) == 3:
-                tmpin = np.asfortranarray(np.reshape(
-                    v, (self.lin_op.shape[0], self.lin_op.shape[1], 1, 2)).astype(np.float32))
-            else:
-                tmpin = np.asfortranarray(v.astype(np.float32))
-
-            Halide('prox_IsoL1.cpp').prox_IsoL1(tmpin, 1.0 / rho, self.tmpout)  # Call
-            np.copyto(v, np.reshape(self.tmpout, self.lin_op.shape))
+            shape = (self.lin_op.shape[0], self.lin_op.shape[1], 1, 2)
+            Halide('prox_IsoL1').prox_IsoL1(v.reshape(shape), 1.0 / rho, self.tmpout)  # Call
+            np.copyto(v, self.tmpout.reshape(self.lin_op.shape))
 
         else:
 

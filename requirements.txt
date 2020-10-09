@@ -1,0 +1,6 @@
+pytest
+pytest-cov
+meson
+cvxpy
+numexpr
+opencv-python

@@ -4,11 +4,11 @@
 //FlexISP paper. Later, Poisson noise prox etc. will live here.
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef PROX_OPERATORS_H
-#define PROX_OPERATORS_H
+#pragma once
 
 #include "vars.h"
 
+namespace {
 ////////////////////////////////////////////////////////////////////////////////
 // Proximal L1
 ////////////////////////////////////////////////////////////////////////////////
@@ -33,10 +33,6 @@ Func proxIsoL1(Func input, Expr width, Expr height, Expr theta) {
     Func pInput("pInput");
     pInput(x, y, c, k) = shrink_L1_iso(input, theta);
         
-    // Schedule
-	pInput.parallel(y);
-	pInput.compute_root();
-
     return pInput;
 }
 
@@ -47,10 +43,6 @@ Func proxL1(Func input, Expr width, Expr height, Expr theta) {
     Func pInput("pInput");
     pInput(x, y, c, k) = shrink_L1(input, theta);
         
-    // Schedule
-	pInput.parallel(y);
-    pInput.compute_root();
-
     return pInput;
 }
 
@@ -149,5 +141,4 @@ Func proxFANN(Func v, Expr sigma, Func params_func, Expr verbose, Expr width, Ex
     return FANN_res;
 }
 
-
-#endif //PROX_OPERATORS
+} // namespace

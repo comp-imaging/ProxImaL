@@ -1,0 +1,2 @@
+option('wtarget', type: 'integer', min: 2, max: 4096, value: 512)
+option('htarget', type: 'integer', min: 2, max: 4096, value: 512)

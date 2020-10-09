@@ -1,8 +1,9 @@
 from proximal.tests.base_test import BaseTest
-from proximal.prox_fns import (norm1, sum_squares, sum_entries, nonneg, weighted_norm1,
-                               weighted_nonneg, diff_fn)
+from proximal.utils.utils import get_test_image, get_kernel
+from proximal.prox_fns import (norm1, sum_squares, sum_entries, nonneg,
+                               weighted_norm1, weighted_nonneg, diff_fn)
 from proximal.lin_ops import Variable
-from proximal.halide.halide import Halide, halide_installed
+from proximal.halide.halide import Halide
 from proximal.utils.utils import im2nparray, tic, toc
 import cvxpy as cvx
 import numpy as np
@@ -29,8 +30,12 @@ class TestProxFn(BaseTest):
         self.assertItemsAlmostEqual(x, v * rho / (2 + rho))
 
         # With modifiers.
-        mod_fn = sum_squares(tmp, alpha=2, beta=-1,
-                             c=np.ones(10) * 1.0, b=np.ones(10) * 1.0, gamma=1)
+        mod_fn = sum_squares(tmp,
+                             alpha=2,
+                             beta=-1,
+                             c=np.ones(10) * 1.0,
+                             b=np.ones(10) * 1.0,
+                             gamma=1)
 
         rho = 2
         v = np.arange(10) * 1.0
@@ -41,7 +46,7 @@ class TestProxFn(BaseTest):
         # xhat = fn.prox(rho_hat, vhat)
         x_var = cvx.Variable(10)
         cost = 2 * cvx.sum_squares(-x_var - np.ones(10)) + \
-            np.ones(10).T * x_var + cvx.sum_squares(x_var) + \
+            np.ones(10).T @ x_var + cvx.sum_squares(x_var) + \
             (rho / 2) * cvx.sum_squares(x_var - v)
         prob = cvx.Problem(cvx.Minimize(cost))
         prob.solve()
@@ -57,15 +62,23 @@ class TestProxFn(BaseTest):
         rho = 1
         v = np.arange(10) * 1.0 - 5.0
         x = fn.prox(rho, v.copy())
-        self.assertItemsAlmostEqual(x, np.sign(v) * np.maximum(np.abs(v) - 1.0 / rho, 0))
+        self.assertItemsAlmostEqual(
+            x,
+            np.sign(v) * np.maximum(np.abs(v) - 1.0 / rho, 0))
 
         rho = 2
         x = fn.prox(rho, v.copy())
-        self.assertItemsAlmostEqual(x, np.sign(v) * np.maximum(np.abs(v) - 1.0 / rho, 0))
+        self.assertItemsAlmostEqual(
+            x,
+            np.sign(v) * np.maximum(np.abs(v) - 1.0 / rho, 0))
 
         # With modifiers.
-        mod_fn = norm1(tmp, alpha=0.1, beta=5,
-                       c=np.ones(10) * 1.0, b=np.ones(10) * -1.0, gamma=4)
+        mod_fn = norm1(tmp,
+                       alpha=0.1,
+                       beta=5,
+                       c=np.ones(10) * 1.0,
+                       b=np.ones(10) * -1.0,
+                       gamma=4)
 
         rho = 2
         v = np.arange(10) * 1.0
@@ -75,7 +88,7 @@ class TestProxFn(BaseTest):
         # rho_hat = rho/(mod_fn.alpha*mod_fn.beta**2)
         # xhat = fn.prox(rho_hat, vhat)
         x_var = cvx.Variable(10)
-        cost = 0.1 * cvx.norm1(5 * x_var + np.ones(10)) + np.ones(10).T * x_var + \
+        cost = 0.1 * cvx.norm1(5 * x_var + np.ones(10)) + np.ones(10).T @ x_var + \
             4 * cvx.sum_squares(x_var) + (rho / 2) * cvx.sum_squares(x_var - v)
         prob = cvx.Problem(cvx.Minimize(cost))
         prob.solve()
@@ -88,8 +101,9 @@ class TestProxFn(BaseTest):
         fn = weighted_norm1(tmp, -v + 1)
         rho = 2
         x = fn.prox(rho, v.copy())
-        self.assertItemsAlmostEqual(x, np.sign(v) *
-                                    np.maximum(np.abs(v) - np.abs(-v + 1) / rho, 0))
+        self.assertItemsAlmostEqual(
+            x,
+            np.sign(v) * np.maximum(np.abs(v) - np.abs(-v + 1) / rho, 0))
 
     def test_nonneg(self):
         """Test I(x >= 0) prox fn.
@@ -107,14 +121,19 @@ class TestProxFn(BaseTest):
         self.assertItemsAlmostEqual(x, np.maximum(v, 0))
 
         # With modifiers.
-        mod_fn = nonneg(tmp, alpha=0.1, beta=5,
-                        c=np.ones(10) * 1.0, b=np.ones(10) * -1.0, gamma=4)
+        mod_fn = nonneg(tmp,
+                        alpha=0.1,
+                        beta=5,
+                        c=np.ones(10) * 1.0,
+                        b=np.ones(10) * -1.0,
+                        gamma=4)
 
         rho = 2
         v = np.arange(10) * 1.0
         x = mod_fn.prox(rho, v.copy())
 
-        vhat = mod_fn.beta * (v - mod_fn.c / rho) * rho / (rho + 2 * mod_fn.gamma) - mod_fn.b
+        vhat = mod_fn.beta * (v - mod_fn.c / rho) * rho / (
+            rho + 2 * mod_fn.gamma) - mod_fn.b
         rho_hat = rho / (mod_fn.alpha * np.sqrt(np.abs(mod_fn.beta)))
         xhat = fn.prox(rho_hat, vhat)
 
@@ -134,100 +153,81 @@ class TestProxFn(BaseTest):
     def test_norm1_halide(self):
         """Halide Norm 1 test
         """
-        if halide_installed():
-            # Load image
-            testimg_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                            'data', 'angela.jpg')
-            img = Image.open(testimg_filename)  # opens the file using Pillow - it's not an array yet
-            np_img = np.asfortranarray(im2nparray(img))
+        # Load image
+        np_img = get_test_image(512)
 
-            # Convert to gray
-            np_img = np.mean(np_img, axis=2)
+        # Test problem
+        v = np_img
+        theta = 0.5
 
-            # Test problem
-            v = np_img
-            theta = 0.5
+        # Output
+        output = np.zeros_like(np_img)
+        Halide('prox_L1', recompile=True).prox_L1(v, theta, output)  # Call
 
-            # Output
-            output = np.zeros_like(np_img)
-            Halide('prox_L1.cpp').prox_L1(v, theta, output)  # Call
+        # Reference
+        output_ref = np.maximum(0.0, v - theta) - np.maximum(0.0, -v - theta)
 
-            # Reference
-            output_ref = np.maximum(0.0, v - theta) - np.maximum(0.0, -v - theta)
-
-            self.assertItemsAlmostEqual(output, output_ref)
+        self.assertItemsAlmostEqual(output, output_ref)
 
     def test_isonorm1_halide(self):
         """Halide Norm 1 test
         """
-        if halide_installed():
-            # Load image
-            testimg_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                            'data', 'angela.jpg')
-            img = Image.open(testimg_filename)
-            np_img = np.asfortranarray(im2nparray(img))
+        # Test problem
+        theta = 0.5
 
-            # Convert to gray
-            np_img = np.mean(np_img, axis=2)
+        np_img = get_test_image(512)
+        f = np_img
 
-            # Test problem
-            theta = 0.5
+        if len(np_img.shape) == 2:
+            f = f[..., np.newaxis]
 
-            f = np_img
-            if len(np_img.shape) == 2:
-                f = f[..., np.newaxis]
+        ss = f.shape
+        fx = f[:, np.r_[1:ss[1], ss[1] - 1], :] - f
+        fy = f[np.r_[1:ss[0], ss[0] - 1], :, :] - f
+        v = np.asfortranarray(np.stack((fx, fy), axis=-1))
 
-            ss = f.shape
-            fx = f[:, np.r_[1:ss[1], ss[1] - 1], :] - f
-            fy = f[np.r_[1:ss[0], ss[0] - 1], :, :] - f
-            v = np.asfortranarray(np.stack((fx, fy), axis=-1))
+        # Output
+        output = np.zeros_like(v)
+        Halide('prox_IsoL1', recompile=True).prox_IsoL1(v, theta,
+                                                        output)  # Call
 
-            # Output
-            output = np.zeros_like(v)
-            Halide('prox_IsoL1.cpp').prox_IsoL1(v, theta, output)  # Call
+        # Reference
+        normv = np.sqrt(
+            np.multiply(v[:, :, :, 0], v[:, :, :, 0]) +
+            np.multiply(v[:, :, :, 1], v[:, :, :, 1]))
+        normv = np.stack((normv, normv), axis=-1)
+        with np.errstate(divide='ignore'):
+            output_ref = np.maximum(0.0, 1.0 - theta / normv) * v
 
-            # Reference
-            normv = np.sqrt(np.multiply(v[:, :, :, 0], v[:, :, :, 0]) +
-                            np.multiply(v[:, :, :, 1], v[:, :, :, 1]))
-            normv = np.stack((normv, normv), axis=-1)
-            with np.errstate(divide='ignore'):
-                output_ref = np.maximum(0.0, 1.0 - theta / normv) * v
+        self.assertItemsAlmostEqual(output, output_ref)
 
-            self.assertItemsAlmostEqual(output, output_ref)
-
-    def test_poisson_halide(self):
+    def _test_poisson_halide(self):
         """Halide Poisson norm test
         """
-        if halide_installed():
-            # Load image
-            testimg_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                            'data', 'angela.jpg')
-            img = Image.open(testimg_filename)
-            np_img = np.asfortranarray(im2nparray(img))
+        # Test problem
+        np_img = get_test_image(512)
+        v = np_img
+        theta = 0.5
 
-            # Convert to gray
-            np_img = np.mean(np_img, axis=2)
+        mask = np.asfortranarray(
+            np.random.randn(*np_img.shape).astype(np.float32))
+        mask = np.maximum(mask, 0.)
+        b = np_img * np_img
 
-            # Test problem
-            v = np_img
-            theta = 0.5
+        # Output
+        output = np.zeros_like(v)
 
-            mask = np.asfortranarray(np.random.randn(*list(np_img.shape)).astype(np.float32))
-            mask = np.maximum(mask, 0.)
-            b = np_img * np_img
+        tic()
+        Halide('prox_Poisson',
+               recompile=True).prox_Poisson(v, mask, b, theta, output)  # Call
+        print('Running took: {0:.1f}ms'.format(toc()))
 
-            # Output
-            output = np.zeros_like(v)
+        # Reference
+        output_ref = 0.5 * (v - theta + np.sqrt((v - theta) *
+                                                (v - theta) + 4 * theta * b))
+        output_ref[mask <= 0.5] = v[mask <= 0.5]
 
-            tic()
-            Halide('prox_Poisson.cpp').prox_Poisson(v, mask, b, theta, output)  # Call
-            print('Running took: {0:.1f}ms'.format(toc()))
-
-            # Reference
-            output_ref = 0.5 * (v - theta + np.sqrt((v - theta) * (v - theta) + 4 * theta * b))
-            output_ref[mask <= 0.5] = v[mask <= 0.5]
-
-            self.assertItemsAlmostEqual(output, output_ref)
+        self.assertItemsAlmostEqual(output, output_ref)
 
     def test_diff_fn(self):
         """Test generic differentiable function operator.

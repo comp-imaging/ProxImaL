@@ -44,12 +44,12 @@ class grad(LinOp):
                 (len(self.shape) == 3 or len(self.shape) == 4) and self.dims == 2:
             # Halide implementation
             if len(self.shape) == 3:
-                tmpin = np.asfortranarray((inputs[0][..., np.newaxis]).astype(np.float32))
+                tmpin = inputs[0][..., np.newaxis]
             else:
-                tmpin = np.asfortranarray((inputs[0]).astype(np.float32))
+                tmpin = inputs[0]
 
-            Halide('A_grad.cpp').A_grad(tmpin, self.tmpfwd)  # Call
-            np.copyto(outputs[0], np.reshape(self.tmpfwd, self.shape))
+            Halide('A_grad').A_grad(tmpin, self.tmpfwd)  # Call
+            outputs[0][:] = np.reshape(self.tmpfwd, self.shape)
 
         else:
 
@@ -86,14 +86,12 @@ class grad(LinOp):
 
             # Halide implementation
             if len(self.shape) == 3:
-                tmpin = np.asfortranarray(np.reshape(inputs[0],
-                                                     (self.shape[0], self.shape[1],
-                                                      1, 2)).astype(np.float32))
+                tmpin = inputs[0][..., np.newaxis, :]
             else:
-                tmpin = np.asfortranarray(inputs[0].astype(np.float32))
+                tmpin = inputs[0]
 
-            Halide('At_grad.cpp').At_grad(tmpin, self.tmpadj)  # Call
-            np.copyto(outputs[0], np.reshape(self.tmpadj, self.shape[:-1]))
+            Halide('At_grad').At_grad(tmpin, self.tmpadj)  # Call
+            outputs[0][:] = np.reshape(self.tmpadj, self.shape[:-1])
 
         else:
 

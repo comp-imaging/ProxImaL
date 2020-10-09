@@ -8,20 +8,19 @@
 // The file contains the matrix K and its adjoint.
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef PRIOR_TRANSFORMS_H
-#define PRIOR_TRANSFORMS_H
+#pragma once
 
 #include "vars.h"
+
+namespace {
 
 //K gradient mat func
 // Here K is only the stacked gradients
 //
 // K = [ dx;
 //       dy];
-Func K_grad_mat(Func input, Expr width, Expr height) {
+Func K_grad_mat(const Func input, const Expr width, const Expr height) {
     
-	int vec_width = 8;
-
     Func Kx("Kx");
 
     // Compute gradient
@@ -35,23 +34,12 @@ Func K_grad_mat(Func input, Expr width, Expr height) {
 	
 	Kx(x, y, c, k) = select(k == 0, dy(x, y, c), dx(x, y, c));
 
-    // Schedule
-	Kx.reorder(k, c, y, x);
-	Kx.vectorize(y, vec_width);
-	Kx.parallel(x);
-	Kx.unroll(k,2);
-	Kx.compute_root();
-
-	//Kx.print_loop_nest();
-
     return Kx;
 }
 
 //KT just for gradient
-Func KT_grad_mat(Func input, Expr width, Expr height) {
+Func KT_grad_mat(const Func input, const Expr width, const Expr height) {
    
-	int vec_width = 8;
-    
 	Func KTp("KTp");
     Func KTx("KTx");
     Func KTy("KTy");
@@ -76,16 +64,6 @@ Func KT_grad_mat(Func input, Expr width, Expr height) {
     //Final result is sum of all matrix-vector products
     KT(x, y, c) = -KTx(x, y, c) - KTy(x, y, c);
 
-    std::cout << "Finished KT setup." << std::endl;
-    
-	// Schedule
-	KT.reorder(c, y, x);
-	KT.parallel(x);
-	KT.vectorize(y, vec_width);
-	KT.compute_root();
-	
-	//KT.print_loop_nest();
-	
     return KT;
 }
 
@@ -205,5 +183,4 @@ Func KT_mat(Func input, Expr width, Expr height, Expr lambda_prior, Expr lambda_
 }
 */
 
-
-#endif //PRIOR_TRANSFORMS_H
+} // namespace

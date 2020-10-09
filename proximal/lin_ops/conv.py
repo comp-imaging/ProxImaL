@@ -35,19 +35,17 @@ class conv(LinOp):
                 # Halide FFT (pack into diag)
                 # TODO: FIX IMREAL LATER
                 hsize = arg.shape if len(arg.shape) == 3 else arg.shape + (1,)
-                output_fft_tmp = np.zeros(((hsize[0] + 1) / 2 + 1, hsize[1], hsize[2], 2),
-                                          dtype=np.float32, order='F')
-                Halide('fft2_r2c.cpp').fft2_r2c(self.kernel, self.kernel.shape[1] / 2,
-                                                self.kernel.shape[0] / 2, output_fft_tmp)
+                output_fft_tmp = np.zeros((int((hsize[0] + 1) / 2) + 1, hsize[1], hsize[2]),
+                                          dtype=np.complex64, order='F')
+
+                Halide('fft2_r2c', target_shape=hsize[:2]).fft2_r2c(self.kernel, int(self.kernel.shape[1] / 2),
+                                                int(self.kernel.shape[0] / 2), output_fft_tmp)
                 self.forward_kernel[:] = 0.
 
                 if len(arg.shape) == 2:
-                    self.forward_kernel[0:(hsize[0] + 1) / 2 + 1, ...] = 1j * \
-                                           output_fft_tmp[..., 0, 1]
-                    self.forward_kernel[0:(hsize[0] + 1) / 2 + 1, ...] += output_fft_tmp[..., 0, 0]
+                    self.forward_kernel[0:int((hsize[0] + 1) / 2 + 1), ...] = output_fft_tmp[..., 0]
                 else:
-                    self.forward_kernel[0:(hsize[0] + 1) / 2 + 1, ...] = 1j * output_fft_tmp[..., 1]
-                    self.forward_kernel[0:(hsize[0] + 1) / 2 + 1, ...] += output_fft_tmp[..., 0]
+                    self.forward_kernel[0:int((hsize[0] + 1) / 2 + 1), ...] = output_fft_tmp
 
             self.tmpout = np.zeros(arg.shape, dtype=np.float32, order='F')
             self.initialized = True
@@ -62,8 +60,7 @@ class conv(LinOp):
                 (len(self.shape) == 2 or (len(self.shape) == 3 and self.dims == 2)):
 
             # Halide implementation
-            tmpin = np.asfortranarray(inputs[0].astype(np.float32))
-            Halide('A_conv.cpp').A_conv(tmpin, self.kernel, self.tmpout)  # Call
+            Halide('A_conv').A_conv(inputs[0], self.kernel, self.tmpout)  # Call
             np.copyto(outputs[0], self.tmpout)
 
         else:
@@ -83,8 +80,7 @@ class conv(LinOp):
                 (len(self.shape) == 2 or (len(self.shape) == 3 and self.dims == 2)):
 
             # Halide implementation
-            tmpin = np.asfortranarray(inputs[0].astype(np.float32))
-            Halide('At_conv.cpp').At_conv(tmpin, self.kernel, self.tmpout)  # Call
+            Halide('At_conv').At_conv(inputs[0], self.kernel, self.tmpout)  # Call
             np.copyto(outputs[0], self.tmpout)
 
         else:

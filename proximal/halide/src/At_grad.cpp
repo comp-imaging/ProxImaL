@@ -1,5 +1,5 @@
 ////////////////////////////////////////////////////////////////////////////////
-//Gradient trans as part of image formation.
+// Gradient trans as part of image formation.
 ////////////////////////////////////////////////////////////////////////////////
 
 #include <Halide.h>
@@ -9,27 +9,32 @@ using namespace Halide::BoundaryConditions;
 #include "core/prior_transforms.h"
 
 class grad_trans_gen : public Generator<grad_trans_gen> {
-public:
+   public:
+    Input<Buffer<float>> input{"input", 4};
+    Output<Buffer<float>> output{"output", 3};
 
-    ImageParam input{Float(32), 4, "input"};
-    
-    Func build() {
+    void generate() {
         Expr width = input.width();
         Expr height = input.height();
 
-        //Input
-        Func input_func("in");
-        input_func(x, y, c, g) = input(x, y, c, g);
+        // Warping
+        output(x, y, c) = KT_grad_mat(input, width, height)(x, y, c);
+    }
 
-        //Warping
-        Func grad_trans_input = KT_grad_mat(input_func, width, height); 
+    void schedule() {
+        if (auto_schedule) {
+            input.set_estimates({{0, 512}, {0, 512}, {0, 1}, {0, 2}});
+            output.set_estimates({{0, 512}, {0, 512}, {0, 1}});
+            return;
+        }
 
-        //Allow for arbitrary strides
-        input.set_stride(0, Expr());
-        grad_trans_input.output_buffer().set_stride(0, Expr()); 
+        // Schedule
+        output.reorder(c, y, x);
+        output.parallel(x);
 
-        return grad_trans_input;
+        const auto vec_width = natural_vector_size<float>();
+        output.vectorize(y, vec_width);
     }
 };
 
-auto gradTransImg = RegisterGenerator<grad_trans_gen>("gradTransImg");
+HALIDE_REGISTER_GENERATOR(grad_trans_gen, gradTransImg);

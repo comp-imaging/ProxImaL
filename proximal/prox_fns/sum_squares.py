@@ -2,9 +2,11 @@ from __future__ import print_function
 from .prox_fn import ProxFn
 from proximal.lin_ops import CompGraph, mul_elemwise
 import numpy as np
+import numexpr as ne
 from proximal.utils.utils import Impl, fftd, ifftd
 from scipy.sparse.linalg import lsqr, LinearOperator
 from proximal.halide.halide import Halide
+
 
 class sum_squares(ProxFn):
     """The function ||x||_2^2.
@@ -21,13 +23,16 @@ class sum_squares(ProxFn):
     def _prox(self, rho, v, *args, **kwargs):
         """x = rho/(2+rho)*v.
         """
-        v *= rho / (2 + rho)
+        ne.evaluate('v * rho / (rho + 2)', out=v, casting='unsafe')
         return v
 
     def _eval(self, v):
         """Evaluate the function on v (ignoring parameters).
         """
-        return np.square(v).sum()
+        if v.dtype == np.complex64 or v.dtype == np.complex128:
+            return ne.evaluate('sum(real(v * conj(v)))')
+        else:
+            return ne.evaluate('sum(v * v)')
 
 
 class weighted_sum_squares(sum_squares):
@@ -44,14 +49,23 @@ class weighted_sum_squares(sum_squares):
         """
         new_lin_op = mul_elemwise(self.weight, self.lin_op)
         new_b = mul_elemwise(self.weight, self.b).value
-        return sum_squares(new_lin_op, alpha=self.alpha,
-                           beta=self.beta, b=new_b, c=self.c, gamma=self.gamma).absorb_params()
+        return sum_squares(new_lin_op,
+                           alpha=self.alpha,
+                           beta=self.beta,
+                           b=new_b,
+                           c=self.c,
+                           gamma=self.gamma).absorb_params()
 
     def _prox(self, rho, v, *args, **kwargs):
         """x = (rho/weight)/(2+(rho/weight))*v.
         """
-        rho_vec = rho / np.square(self.weight[self.weight != 0])
-        v[self.weight != 0] *= rho_vec / (2 + rho_vec)
+        ne.evaluate('where(w == 0, v, v * (rho / w**2) / (rho / w**2 + 2))', {
+            'w': self.weight,
+            'v': v,
+            'rho': rho,
+        },
+                    out=v,
+                    casting='unsafe')
         return v
 
     def _eval(self, v):
@@ -75,8 +89,14 @@ class least_squares(sum_squares):
        Here K is a computation graph (vector to vector lin op).
     """
 
-    def __init__(self, lin_op, offset, diag=None, freq_diag=None,
-                 freq_dims=None, implem=Impl['numpy'], **kwargs):
+    def __init__(self,
+                 lin_op,
+                 offset,
+                 diag=None,
+                 freq_diag=None,
+                 freq_dims=None,
+                 implem=Impl['numpy'],
+                 **kwargs):
         self.K = CompGraph(lin_op)
         self.offset = offset
         self.diag = diag
@@ -88,7 +108,9 @@ class least_squares(sum_squares):
         # Get shape for frequency inversion var
         if self.freq_diag is not None:
             if len(self.K.orig_end.variables()) > 1:
-                raise Exception("Diagonal frequency inversion supports only one var currently.")
+                raise Exception(
+                    "Diagonal frequency inversion supports only one var currently."
+                )
 
             self.freq_shape = self.K.orig_end.variables()[0].shape
             self.freq_diag = np.reshape(self.freq_diag, self.freq_shape)
@@ -96,15 +118,20 @@ class least_squares(sum_squares):
                     (len(self.freq_shape) == 2 or (len(self.freq_shape) == 2 and
                                                    self.freq_dims == 2)):
                 # TODO: FIX REAL TO IMAG
-                hsize = self.freq_shape if len(self.freq_shape) == 3 else (
-                    self.freq_shape[0], self.freq_shape[1], 1)
-                hsizehalide = ((hsize[0] + 1) / 2 + 1, hsize[1], hsize[2], 2)
+                hsize = self.freq_shape if len(
+                    self.freq_shape) == 3 else (self.freq_shape[0],
+                                                self.freq_shape[1], 1)
+                hsizehalide = (int((hsize[0] + 1) / 2) + 1, hsize[1], hsize[2])
 
                 self.hsizehalide = hsizehalide
-                self.ftmp_halide = np.zeros(hsizehalide, dtype=np.float32, order='F')
-                self.ftmp_halide_out = np.zeros(hsize, dtype=np.float32, order='F')
-                self.freq_diag = np.reshape(self.freq_diag[0:hsizehalide[0], ...],
-                                            hsizehalide[0:3])
+                self.ftmp_halide = np.empty(hsizehalide,
+                                            dtype=np.complex64,
+                                            order='F')
+                self.ftmp_halide_out = np.empty(hsize,
+                                                dtype=np.float32,
+                                                order='F')
+                self.freq_diag = np.reshape(
+                    self.freq_diag[0:hsizehalide[0], ...], hsizehalide)
 
         super(least_squares, self).__init__(lin_op, implem=implem, **kwargs)
 
@@ -115,7 +142,9 @@ class least_squares(sum_squares):
         -------
         list
         """
-        return [self.offset, self.diag, self.orig_freq_diag, self.orig_freq_dims]
+        return [
+            self.offset, self.diag, self.orig_freq_diag, self.orig_freq_dims
+        ]
 
     def _prox(self, rho, v, b=None, lin_solver="cg", *args, **kwargs):
         """x = argmin_x ||K*x - self.offset - b||_2^2 + (rho/2)||x-v||_2^2.
@@ -124,7 +153,12 @@ class least_squares(sum_squares):
             offset = self.offset
         else:
             offset = self.offset + b
-        return self.solve(offset, rho=rho, v=v, lin_solver=lin_solver, *args, **kwargs)
+        return self.solve(offset,
+                          rho=rho,
+                          v=v,
+                          lin_solver=lin_solver,
+                          *args,
+                          **kwargs)
 
     def _eval(self, v):
         """Evaluate the function on v (ignoring parameters).
@@ -132,24 +166,33 @@ class least_squares(sum_squares):
         Kv = np.zeros(self.K.output_size)
         self.K.forward(v.ravel(), Kv)
         return super(least_squares, self)._eval(Kv - self.offset)
-    
+
     def solve(self, b, rho=None, v=None, lin_solver="lsqr", *args, **kwargs):
         # KtK Operator is diagonal
         if self.diag is not None:
 
-            Ktb = np.zeros(self.K.input_size)
+            Ktb = np.empty(self.K.input_size, dtype=b.dtype)
             self.K.adjoint(b, Ktb)
             if rho is None:
                 Ktb /= self.diag
             else:
-                Ktb += (rho / 2.) * v
-                Ktb /= (self.diag + rho / 2.)
+                ne.evaluate(
+                    '(Ktb + v * half_rho) / (d + half_rho)',
+                    {
+                        'Ktb': Ktb,
+                        'half_rho': rho * 0.5,
+                        'v': np.zeros(Ktb.shape) if v is None else v,
+                        'd': self.diag,
+                    },
+                    out=Ktb,
+                    casting='unsafe',
+                )
 
             return Ktb
 
         # KtK operator is diagonal in frequency domain.
         elif self.freq_diag is not None:
-            Ktb = np.zeros(self.K.input_size)
+            Ktb = np.empty(self.K.input_size, dtype=np.float32, order='F')
             self.K.adjoint(b, Ktb)
 
             # Frequency inversion
@@ -157,26 +200,33 @@ class least_squares(sum_squares):
                     (len(self.freq_shape) == 2 or
                      (len(self.freq_shape) == 2 and self.freq_dims == 2)):
 
-                Halide('fft2_r2c.cpp').fft2_r2c(np.asfortranarray(np.reshape(
-                    Ktb.astype(np.float32), self.freq_shape)), 0, 0, self.ftmp_halide)
-
-                Ktb = 1j * self.ftmp_halide[..., 1]
-                Ktb += self.ftmp_halide[..., 0]
+                Halide('fft2_r2c').fft2_r2c(Ktb.reshape(self.freq_shape), 0, 0,
+                                            self.ftmp_halide)
 
                 if rho is None:
-                    Ktb /= self.freq_diag
+                    ne.evaluate('F_Ktb / d', {
+                        'F_Ktb': self.ftmp_halide,
+                        'd': self.freq_diag,
+                    },
+                                out=self.ftmp_halide,
+                                casting='unsafe')
                 else:
-                    Halide('fft2_r2c.cpp').fft2_r2c(np.asfortranarray(np.reshape(
-                        v.astype(np.float32), self.freq_shape)), 0, 0, self.ftmp_halide)
+                    F_Ktb = self.ftmp_halide.copy()
 
-                    vhat = self.ftmp_halide[..., 0] + 1j * self.ftmp_halide[..., 1]
-                    Ktb *= 1.0 / rho
-                    Ktb += vhat
-                    Ktb /= (1.0 / rho * self.freq_diag + 1.0)
+                    Halide('fft2_r2c').fft2_r2c(np.reshape(v, self.freq_shape),
+                                                0, 0, self.ftmp_halide)
+                    ne.evaluate('(F_Ktb / rho + x) / (d / rho + 1.0)', {
+                        'F_Ktb': F_Ktb,
+                        'x': self.ftmp_halide,
+                        'rho': rho,
+                        'd': self.freq_diag,
+                    },
+                                out=self.ftmp_halide,
+                                casting='unsafe')
 
                 # Do inverse tranform
-                Ktb = np.asfortranarray(np.stack((Ktb.real, Ktb.imag), axis=-1))
-                Halide('ifft2_c2r.cpp').ifft2_c2r(Ktb, self.ftmp_halide_out)
+                Halide('ifft2_c2r').ifft2_c2r(self.ftmp_halide,
+                                              self.ftmp_halide_out)
 
                 return self.ftmp_halide_out.ravel()
 
@@ -223,7 +273,8 @@ class least_squares(sum_squares):
             else:
                 # Compgraph and additional terms
                 self.K.forward(x, output_data[0:0 + sizeb])
-                np.copyto(output_data[sizeb:sizeb + sizev], x * np.sqrt(rho / 2.0))
+                np.copyto(output_data[sizeb:sizeb + sizev],
+                          x * np.sqrt(rho / 2.0))
 
             return output_data
 
@@ -237,9 +288,11 @@ class least_squares(sum_squares):
             return input_data
 
         # Define linear operator
-        def matvecComp(x): return matvec(x, output_data)
+        def matvecComp(x):
+            return matvec(x, output_data)
 
-        def rmatvecComp(y): return rmatvec(y, input_data)
+        def rmatvecComp(y):
+            return rmatvec(y, input_data)
 
         K = LinearOperator((self.K.output_size + sizev, self.K.input_size),
                            matvecComp, rmatvecComp)
@@ -251,8 +304,12 @@ class least_squares(sum_squares):
         else:
             if not isinstance(options, lsqr_options):
                 raise Exception("Invalid LSQR options.")
-            return lsqr(K, b, atol=options.atol, btol=options.btol,
-                        show=options.show, iter_lim=options.iter_lim)[0]
+            return lsqr(K,
+                        b,
+                        atol=options.atol,
+                        btol=options.btol,
+                        show=options.show,
+                        iter_lim=options.iter_lim)[0]
 
     def solve_cg(self, b, rho=None, v=None, x_init=None, options=None):
         """Solve ||K*x - b||^2_2 + (rho/2)||x-v||_2^2.
@@ -279,8 +336,8 @@ class least_squares(sum_squares):
         elif not isinstance(options, cg_options):
             raise Exception("Invalid CG options.")
 
-        return cg(KtK, Ktb, options.tol, options.num_iters,
-                  options.verbose, x_init, self.implementation)
+        return cg(KtK, Ktb, options.tol, options.num_iters, options.verbose,
+                  x_init, self.implementation)
 
 
 class lsqr_options:
@@ -306,13 +363,16 @@ def cg(KtKfun, b, tol, num_iters, verbose, x_init=None, implem=Impl['numpy']):
     # KtKfun being a function that computes the matrix vector product KtK x
 
     # TODO: Fix halide later
-    implem == Impl['numpy']
+    assert implem == Impl['numpy']
 
     if implem == Impl['halide']:
         output = np.array([0.0], dtype=np.float32)
-        hl_norm2 = Halide('A_norm_L2.cpp', generator_name="normL2_1DImg",
+        hl_norm2 = Halide('A_norm_L2.cpp',
+                          generator_name="normL2_1DImg",
                           func="A_norm_L2_1D").A_norm_L2_1D
-        hl_dot = Halide('A_dot_prod.cpp', generator_name="dot_1DImg", func="A_dot_1D").A_dot_1D
+        hl_dot = Halide('A_dot_prod.cpp',
+                        generator_name="dot_1DImg",
+                        func="A_dot_1D").A_dot_1D
 
         # Temp vars
         x = np.zeros(b.shape, dtype=np.float32, order='F')

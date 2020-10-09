@@ -18,34 +18,24 @@ from proximal.lin_ops import Variable
 import numpy as np
 from scipy import signal
 import matplotlib.pyplot as plt
-from PIL import Image
-from scipy.misc import lena
-import cv2
+
+from common import get_kernel, get_test_image
 
 ############################################################
 
 # Load image
-img = Image.open('./data/angela.jpg')  # opens the file using Pillow - it's not an array yet
-# img = Image.open('./data/largeimage.png')  # opens the file using Pillow - it's not an array yet
+np_img = get_test_image(512)
 
-np_img = np.asfortranarray(im2nparray(img))
-np_img_color = np_img
-np_img = np.mean(np_img_color, axis=2)
-# print 'Type ', np_img.dtype , 'Shape', np_img.shape
-
-plt.ion()
 plt.figure()
 imgplot = plt.imshow(np_img, interpolation="nearest", clim=(0.0, 1.0))
 imgplot.set_cmap('gray')
 plt.title('Numpy')
-# plt.show()
-plt.savefig('prox0.png')
 
 # Compile
-# Halide('prox_L1.cpp', recompile=True) #Compile
-# Halide('prox_IsoL1.cpp', recompile=True) #Compile
-# Halide('prox_Poisson.cpp', recompile=True) #Compile
-
+tic()
+Halide('prox_L1', recompile=True)  # Call
+Halide('prox_IsoL1', recompile=True)  # Call
+print('Compilation took: {0:.1f}ms'.format(toc()))
 
 ############################################################################
 # Test the L1 prox
@@ -54,11 +44,9 @@ v = np_img
 theta = 0.5
 
 # Output
-output = np.zeros_like(np_img)
+output = np.empty(v.shape, dtype=v.dtype)
 
-tic()
-hl = Halide('prox_L1.cpp', recompile=True, verbose=False, cleansource=True)  # Call
-print('Compilation took: {0:.1f}ms'.format(toc()))
+hl = Halide('prox_L1')
 
 tic()
 hl.prox_L1(v, theta, output)
@@ -97,11 +85,9 @@ fy = f[np.r_[1:ss[0], ss[0] - 1], :, :] - f
 v = np.asfortranarray(np.stack((fx, fy), axis=-1))
 
 # Output
-output = np.zeros_like(v)
+output = np.empty(v.shape, dtype=v.dtype)
 
-tic()
-hl = Halide('prox_IsoL1.cpp', recompile=True, verbose=False, cleansource=True)  # Call
-print('Compilation took: {0:.1f}ms'.format(toc()))
+hl = Halide('prox_IsoL1')
 
 tic()
 hl.prox_IsoL1(v, theta, output)  # Call
@@ -127,6 +113,8 @@ output_ref = fn.prox(rho, v.copy())
 
 # Error
 print('Maximum error IsoL1 {0}'.format(np.amax(np.abs(output_ref - output))))
+
+exit()
 
 ############################################################################
 # Test Poisson prox

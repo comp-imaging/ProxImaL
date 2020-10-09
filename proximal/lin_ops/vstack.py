@@ -20,7 +20,7 @@ class vstack(LinOp):
         offset = 0
         for idx, input_data in enumerate(inputs):
             size = input_data.size
-            outputs[0][offset:size + offset] = input_data.flatten()
+            outputs[0][offset:size + offset] = input_data.ravel()
             offset += size
 
     def adjoint(self, inputs, outputs):

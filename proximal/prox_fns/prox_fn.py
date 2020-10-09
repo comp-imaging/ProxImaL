@@ -1,6 +1,7 @@
 from __future__ import division
 import abc
 import numpy as np
+import numexpr as ne
 from proximal.utils import Impl
 from proximal.utils.cuda_codegen import (sub2ind, ind2subCode, indent, gpuarray,
      compile_cuda_kernel, cuda_function)
@@ -77,17 +78,28 @@ class ProxFn(object):
            It is here the iteration for debug purposese etc.
         """
         rho_hat = (rho + 2 * self.gamma) / (self.alpha * self.beta**2)
-        # vhat = (rho*v - c)*beta/(rho + 2*gamma) - b
-        # Modify v in-place. This is important for the Python to be performant.
-        v *= rho
-        v -= self.c
-        v *= self.beta / (rho + 2 * self.gamma)
-        v -= self.b
+
+        symbols = {
+            'rho': rho,
+            'c': self.c,
+            'beta': self.beta,
+            'gamma': self.gamma,
+            'b': self.b,
+        }
+
+        if np.isscalar(v):
+            v = np.array([v])
+
+        ne.evaluate('(v * rho - c) * beta / (rho + 2 * gamma) -b',
+            global_dict=symbols, out=v, casting='unsafe')
+
         xhat = self._prox(rho_hat, v, *args, **kwargs)
-        # x = (xhat + b)/beta
-        # Modify result in-place.
-        xhat += self.b
-        xhat /= self.beta
+        ne.evaluate('(xhat + b) / beta',
+            global_dict=symbols, out=xhat, casting='unsafe')
+
+        if v.size == 1:
+            return xhat
+            
         return xhat
 
     def cuda_additional_buffers(self):

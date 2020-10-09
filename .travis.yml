@@ -1,27 +1,26 @@
 language: python
-virtualenv:
-  system_site_packages: true
-env:
-  matrix:
-    - DISTRIB="conda" PYTHON_VERSION="2.7" 
-      NUMPY_VERSION="1.10.4" SCIPY_VERSION="0.17.0"
-      COVERAGE="false"
-    - DISTRIB="conda" PYTHON_VERSION="3.5" 
-      NUMPY_VERSION="1.10.4" SCIPY_VERSION="0.17.0"
-      COVERAGE="false"
-sudo: required
-install: source continuous_integration/install.sh
-script:
-  - bash continuous_integration/test_script.sh
-  - flake8 .
-after_success:
-    - if [[ "$COVERAGE" == "true" ]]; then coveralls; fi
-notifications:
-  email: false
-cache: apt
+python:
+  - "3.6"
+
+dist: bionic
+cache:
+  apt: true
+  pip: true
+  directories:
+  - $TRAVIS_BUILD_DIR/proximal/halide/subprojects/packagecache/
 addons:
   apt:
     packages:
-    - gfortran
-    - libgfortran3
-    - g++
+    - build-essential
+    - ninja-build
+    - python3-pip
+    - python3-scipy
+    - python3-numpy
+    - python3-opencv
+    - python3-numexpr
+virtualenv:
+  system_site_packages: true
+script:
+- bash continuous_integration/test_script.sh
+notifications:
+  email: false

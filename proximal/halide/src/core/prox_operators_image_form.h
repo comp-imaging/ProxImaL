@@ -5,9 +5,9 @@
 //where A is here the concatenation of all image formation matrices.
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef PROX_OPERATORS_IMAGE_FORM_H
-#define PROX_OPERATORS_IMAGE_FORM_H
+#pragma once
 
+namespace {
 //Vars
 #include "vars.h"
 
@@ -393,4 +393,4 @@ std::vector<Func>  CG_conv_quadratic(Func xin_func, Func xi_K, Func xi_grad, Fun
         return outputs;
 }
 
-#endif //PROX_OPERATORS_IMAGE_FORM_H
+} // namespace

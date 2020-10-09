@@ -6,7 +6,12 @@
 using namespace Halide;
 using namespace Halide::BoundaryConditions;
 
+namespace {
+
 Var x("x"), y("y"), c("c"), k("k");
+
+} // namespace
+
 
 #include "fft/fft.h"
 
@@ -28,39 +33,44 @@ Func fft2_r2c(Func input, int W, int H) {
   
     // Pure definition: do nothing.
     Func dft_in_flat("dft_in_flat");
-    dft_in_flat(h, l, m, k) = undef<float>();
-    dft_in_flat(h, l, m, 0) =  re( dft_in(h, l, m) );
-    dft_in_flat(h, l, m, 1) =  im( dft_in(h, l, m) );
+    dft_in_flat(k, h, l, m) = undef<float>();
+    dft_in_flat(0, h, l, m) =  re( dft_in(h, l, m) );
+    dft_in_flat(1, h, l, m) =  im( dft_in(h, l, m) );
 
-    //Schedule
-    dft_in_flat.compute_root();
     return dft_in_flat;
 }
 
 class fft2_r2c_gen : public Generator<fft2_r2c_gen> {
 public:
 
-    ImageParam input{Float(32), 3, "input"};
-    Param<int> shiftx{"shiftx"};
-    Param<int> shifty{"shifty"};
+    Input<Buffer<float>> input{"input", 3};
+    Input<int> shiftx{"shiftx"};
+    Input<int> shifty{"shifty"};
+    GeneratorParam<int> wtarget{"wtarget", 512, 2, 4096};
+    GeneratorParam<int> htarget{"htarget", 512, 2, 4096};
+    Output<Buffer<float>> fftIn{"fftIn", 4};
 
-    Func build() {
+    void generate() {
 
         //Input
         Func input_func("in");
         Func paddedInput("paddedInput");
-        paddedInput = repeat_image( constant_exterior(input, 0.f), 0, WTARGET, 0, HTARGET);
+        paddedInput = repeat_image( constant_exterior(input, 0.f), 0, wtarget, 0, htarget);
         input_func(x, y, c) = paddedInput( x + shiftx, y + shifty, c );
 
         //Warping
-        Func fftIn = fft2_r2c(input_func, WTARGET, HTARGET);
+        fftIn(k, x, y, c) = fft2_r2c(input_func, (int)wtarget, (int)htarget)(k, x, y, c);
+    }
+
+    void schedule() {
+        if (auto_schedule) {
+            return;
+        }
 
         //Allow for arbitrary strides
-        input.set_stride(0, Expr());
-        fftIn.output_buffer().set_stride(0, Expr()); 
-
-        return fftIn;
+        //input.set_stride(0, Expr());
+        //fftIn.output_buffer().set_stride(0, Expr()); 
     }
 };
 
-auto fftR2CImg = RegisterGenerator<fft2_r2c_gen>("fftR2CImg");
+HALIDE_REGISTER_GENERATOR(fft2_r2c_gen, fftR2CImg);

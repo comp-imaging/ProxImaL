@@ -11,25 +11,30 @@ using namespace Halide::BoundaryConditions;
 class proxIsoL1_gen : public Generator<proxIsoL1_gen> {
 public:
 
-    ImageParam input{Float(32), 4, "input"};
-    Param<float> theta{"theta"};
+    Input<Buffer<float>> input{"input", 4};
+    Input<float> theta{"theta"};
+    Output<Buffer<float>> output{"output", 4};
 
-    Func build() {
+    void generate() {
         Expr width = input.width();
         Expr height = input.height();
 
-        Func input_func;
-        input_func(x, y, c, k) = input(x, y, c, k);
-
         // Prox L1 function
-        Func proxIsoL1_input = proxIsoL1(input_func, width, height, theta);
+        output(x, y, c, k) = proxIsoL1(input, width, height, theta)(x, y, c, k);
+    }
+
+    void schedule() {
+        if (auto_schedule) {
+            input.set_estimates({{0, 512}, {0, 512}, {0, 1}, {0, 2}});
+            output.set_estimates({{0, 512}, {0, 512}, {0, 1}, {0, 2}});
+            return;
+        }
 
         //Allow for arbitrary strides
-        input.set_stride(0, Expr());
-        proxIsoL1_input.output_buffer().set_stride(0, Expr()); 
-        
-        return proxIsoL1_input;
+        //input.set_stride(0, Expr());
+        //proxIsoL1_input.output_buffer().set_stride(0, Expr()); 
+	    output.parallel(y);
     }
 };
 
-auto proxIsol1 = RegisterGenerator<proxIsoL1_gen>("proxIsol1");
+HALIDE_REGISTER_GENERATOR(proxIsoL1_gen, proxIsoL1)

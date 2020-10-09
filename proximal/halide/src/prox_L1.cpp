@@ -11,25 +11,32 @@ using namespace Halide::BoundaryConditions;
 class proxL1_gen : public Generator<proxL1_gen> {
 public:
 
-    ImageParam input{Float(32), 4, "input"};
-    Param<float> theta{"theta"};
+    Input<Buffer<float>> input{"input", 4};
+    Input<float> theta{"theta"};
+    Output<Buffer<float>> proxL1_input{"proxL1_input", 4};
 
-    Func build() {
+    void generate() {
         Expr width = input.width();
         Expr height = input.height();
 
-        Func input_func;
-        input_func(x, y, c, k) = input(x, y, c, k);
-
         // Prox L1 function
-        Func proxL1_input = proxL1(input_func, width, height, theta);
+        proxL1_input(x, y, c, k) = proxL1(input, width, height, theta)(x, y, c, k);
+    }
+
+    void schedule() {
+        if (auto_schedule) {
+            input.set_estimates({{0, 512}, {0, 512}, {0, 1}, {0, 2}});
+            proxL1_input.set_estimates({{0, 512}, {0, 512}, {0, 1}, {0, 2}});
+            return;
+        }
+        // Schedule
+        proxL1_input.parallel(y);
+        proxL1_input.compute_root();
 
         //Allow for arbitrary strides
-        input.set_stride(0, Expr());
-        proxL1_input.output_buffer().set_stride(0, Expr()); 
-        
-        return proxL1_input;
+        //input.set_stride(0, Expr());
+        //proxL1_input.output_buffer().set_stride(0, Expr()); 
     }
 };
 
-auto proxl1 = RegisterGenerator<proxL1_gen>("proxl1");
+HALIDE_REGISTER_GENERATOR(proxL1_gen, proxL1);

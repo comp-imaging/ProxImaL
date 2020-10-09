@@ -1,0 +1,8 @@
+[wrap-file]
+directory = halide
+
+source_url = https://github.com/halide/Halide/releases/download/v8.0.0/halide-linux-64-gcc53-800-65c26cba6a3eca2d08a0bccf113ca28746012cc3.tgz
+source_filename = halide-linux-64-gcc53-800.tar.gz
+source_hash = c67185d50a99adba86f6b2cc43c7e2cf11bcdfba9052d05e764a89b456a50446
+
+patch_directory = halide

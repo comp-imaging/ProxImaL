@@ -9,34 +9,35 @@ using namespace Halide::BoundaryConditions;
 #include "core/image_formation.h"
 
 class mask_gen : public Generator<mask_gen> {
-public:
+   public:
+    Input<Buffer<float>> input{"input", 3};
+    Input<Buffer<float>> mask{"mask", 3};
+    Output<Buffer<float>> output{"output", 3};
 
-    ImageParam input{Float(32), 3, "input"};
-    ImageParam mask{Float(32), 3, "mask"};
-    
-    Func build() {
-        //Image dimensions
+    void generate() {
+        // Image dimensions
         Expr width = input.width();
         Expr height = input.height();
-        
-        //Input
-        Func input_func("input");
-        input_func(x, y, c) = input(x, y, c);
-        
-        //Input mask
-        Func M_func("mask");
-        M_func(x, y, c) = mask(x, y, c);
 
-        //Warping
-        Func M_input = A_M(input_func, width, height, M_func);
+        // Warping
+        output(x, y, c) = A_M(input, width, height, mask)(x, y, c);
+    }
 
-        //Allow for arbitrary strides
-        input.set_stride(0, Expr());
-        mask.set_stride(0, Expr());
-        M_input.output_buffer().set_stride(0, Expr()); 
+    void schedule() {
+        if (auto_schedule) {
+            input.set_estimates({{0, 512}, {0, 512}, {0, 1}});
+            mask.set_estimates({{0, 512}, {0, 512}, {0, 1}});
+            output.set_estimates({{0, 512}, {0, 512}, {0, 1}});
+            return;
+        }
 
-        return M_input;
+        const auto vec_width = natural_vector_size<float>();
+
+        output.reorder(c, y, x);
+        output.vectorize(y, vec_width);
+        //output.unroll(c,3);
+        output.parallel(x);
     }
 };
 
-auto WImg = RegisterGenerator<mask_gen>("WImg");
+HALIDE_REGISTER_GENERATOR(mask_gen, WImg);
