@@ -1,6 +1,6 @@
 ProxImaL
 =====================
-[![Build Status](https://travis-ci.org/comp-imaging/ProxImaL)](https://travis-ci.org/comp-imaging/ProxImaL)
+[![Build Status](https://travis-ci.org/comp-imaging/ProxImaL.svg?branch=master)](https://travis-ci.org/comp-imaging/ProxImaL)
 
 ProxImaL is a Python-embedded modeling language for image optimization problems. 
 It allows you to express your problem in a natural way that follows the math, 

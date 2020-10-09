@@ -12,6 +12,7 @@ pipeline_src = [
     'src/At_conv.cpp',
     'src/prox_L1.cpp',
     'src/prox_IsoL1.cpp',
+    'src/prox_Poisson.cpp',
     'src/fft2_r2c.cpp',
     'src/ifft2_c2r.cpp',
     'src/fft/fft.cpp',
@@ -51,6 +52,11 @@ pipeline_name = [[
     ], [
         'proxIsoL1',
         ['prox_IsoL1'],
+        true,
+        [],
+    ], [
+        'proxPoisson',
+        ['prox_Poisson'],
         true,
         [],
     ], [
