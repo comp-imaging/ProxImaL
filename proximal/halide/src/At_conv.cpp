@@ -11,34 +11,37 @@ using namespace Halide::BoundaryConditions;
 class conv_trans_gen : public Generator<conv_trans_gen> {
 public:
 
-    ImageParam input{Float(32), 3, "input"};
-    ImageParam K{Float(32), 3, "K"};
+    Input<Buffer<float>> input{"input", 3};
+    Input<Buffer<float>> K{"K", 3};
+    Output<Buffer<float>> conv_trans_input{"output", 3};
     
-    Func build() {
+    void generate() {
         Expr width = input.width();
         Expr height = input.height();
         
         Expr width_kernel = K.width();
         Expr height_kernel = K.height();
 
-        //Input
-        Func input_func("in");
-        input_func(x, y, c) = input(x, y, c);
-        
-        //Input H
-        Func K_func("K");
-        K_func(i, j, c) = K(i, j, c);
-
         //Warping
-        Func conv_trans_input = At_conv(input_func, width, height, K_func, width_kernel, height_kernel);
+        conv_trans_input(x, y, c) = At_conv(input, width, height, K, width_kernel, height_kernel)(x, y, c);
+    }
 
-        //Allow for arbitrary strides
-        input.set_stride(0, Expr());
-        K.set_stride(0, Expr());
-        conv_trans_input.output_buffer().set_stride(0, Expr()); 
+    void schedule() {
+        if (auto_schedule) {
+            input.set_estimates({{0, 512}, {0, 512}, {0, 1}});
+            K.set_estimates({{0, 15}, {0, 15}, {0, 1}});
+            conv_trans_input.set_estimates({{0, 512}, {0, 512}, {0, 1}});
+            return;
+        }
 
-        return conv_trans_input;
+        // Schedule
+        conv_trans_input.reorder(c, x, y);
+
+        const auto vec_width = natural_vector_size<float>();
+        // Parallel
+        conv_trans_input.vectorize(x, vec_width);
+        conv_trans_input.parallel(y);
     }
 };
 
-auto convImg = RegisterGenerator<conv_trans_gen>("convImg");
+HALIDE_REGISTER_GENERATOR(conv_trans_gen, convImgT);

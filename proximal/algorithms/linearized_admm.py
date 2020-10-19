@@ -3,6 +3,7 @@ from proximal.lin_ops import CompGraph, est_CompGraph_norm, Variable, vstack
 from proximal.utils.timings_log import TimingsLog, TimingsEntry
 from .invert import get_least_squares_inverse, max_diag_set
 import numpy as np
+import numexpr as ne
 import warnings
 
 
@@ -43,6 +44,7 @@ def partition(prox_fns, try_diagonalize=True):
 def solve(psi_fns, omega_fns, lmb=1.0, mu=None, quad_funcs=None,
           max_iters=1000, eps_abs=1e-3, eps_rel=1e-3,
           lin_solver="cg", lin_solver_options=None,
+          implem=None,
           try_diagonalize=True, try_fast_norm=True, scaled=False,
           metric=None, convlog=None, verbose=0):
 
@@ -50,7 +52,7 @@ def solve(psi_fns, omega_fns, lmb=1.0, mu=None, quad_funcs=None,
     assert len(omega_fns) <= 1
     prox_fns = psi_fns + omega_fns
     stacked_ops = vstack([fn.lin_op for fn in psi_fns])
-    K = CompGraph(stacked_ops)
+    K = CompGraph(stacked_ops, implem=implem)
     # Select optimal parameters if wanted
     if lmb is None or mu is None:
         lmb, mu = est_params_lin_admm(K, lmb, verbose, scaled, try_fast_norm)
@@ -90,9 +92,9 @@ def solve(psi_fns, omega_fns, lmb=1.0, mu=None, quad_funcs=None,
 
         # Update v
         K.forward(v, Kv)
-        Kvzu[:] = Kv - z + u
+        ne.evaluate('Kv - z + u', out=Kvzu)
         K.adjoint(Kvzu, v)
-        v[:] = v_prev - (mu / lmb) * v
+        ne.evaluate('v_prev - (mu / lmb) * v', out=v)
 
         if len(omega_fns) > 0:
             v[:] = omega_fns[0].prox(1.0 / mu, v, x_init=v_prev.copy(),
@@ -100,24 +102,25 @@ def solve(psi_fns, omega_fns, lmb=1.0, mu=None, quad_funcs=None,
 
         # Update z.
         K.forward(v, Kv)
-        Kv_u = Kv + u
+        Kv_u = ne.evaluate('Kv + u')
         offset = 0
         for fn in psi_fns:
             slc = slice(offset, offset + fn.lin_op.size, None)
             Kv_u_slc = np.reshape(Kv_u[slc], fn.lin_op.shape)
             # Apply and time prox.
             prox_log[fn].tic()
-            z[slc] = fn.prox(1.0 / lmb, Kv_u_slc, i).flatten()
+            z[slc] = fn.prox(1.0 / lmb, Kv_u_slc, i).ravel()
             prox_log[fn].toc()
             offset += fn.lin_op.size
 
         # Update u.
-        u += Kv - z
+        ne.evaluate('u + Kv - z', out=u)
         K.adjoint(u, KTu)
 
         # Check convergence.
-        r = Kv - z
-        K.adjoint((1.0 / lmb) * (z - z_prev), s)
+        r = ne.evaluate('Kv - z')
+        ztmp = ne.evaluate('(z - z_prev) / lmb')
+        K.adjoint(ztmp, s)
         eps_pri = np.sqrt(K.output_size) * eps_abs + eps_rel * \
             max([np.linalg.norm(Kv), np.linalg.norm(z)])
         eps_dual = np.sqrt(K.input_size) * eps_abs + eps_rel * np.linalg.norm(KTu) / (1.0 / lmb)
@@ -130,7 +133,7 @@ def solve(psi_fns, omega_fns, lmb=1.0, mu=None, quad_funcs=None,
             convlog.record_objective(objval)
 
         # Show progess
-        if verbose > 0:
+        if verbose > 0 and i % 20 == 0:
             # Evaluate objective only if required (expensive !)
             objstr = ''
             if verbose == 2:

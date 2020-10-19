@@ -8,21 +8,21 @@
 // A, A^T and A^T * A implemented. A^T * A is most efficient when fused, but does not have to for now. 
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef IMAGE_FORMATION_H
-#define IMAGE_FORMATION_H
+#pragma once
 
 #include "vars.h"
 
+namespace {
 ////////////////////////////////////////////////////////////////////////////////
 // Convolution
 ////////////////////////////////////////////////////////////////////////////////
 
 //Convolution
-Func A_conv(Func input, Expr width, Expr height, Func K, Expr filter_width, Expr filter_height) {
+Func A_conv(const Func input, const Expr width, const Expr height, const Func K, const Expr filter_width, const Expr filter_height) {
 
     //Clamped
     Func img_bounded("img_bounded");
-    img_bounded = BoundaryConditions::repeat_image(input, 0, width, 0, height);
+    img_bounded = BoundaryConditions::repeat_image(input, {{0, width}, {0, height}});
 
     //Define the convolution
     Func img_conv("img_conv");
@@ -31,16 +31,8 @@ Func A_conv(Func input, Expr width, Expr height, Func K, Expr filter_width, Expr
 
     std::cout << "Finished A_conv setup." << std::endl;
 
-    // Schedule
-    K.compute_root();
-    img_conv.reorder(c, x, y);
-
-    // Parallel
-    img_conv.vectorize(x, 32);
-    img_conv.parallel(y, 8);
-
     // Apply the boundary condition to the input as required
-    img_bounded.compute_at(img_conv, y);
+    //img_bounded.compute_at(img_conv, y);
     
     return img_conv;
 }
@@ -59,17 +51,6 @@ Func At_conv(Func input, Expr width, Expr height, Func K, Expr filter_width, Exp
 
     std::cout << "Finished At_conv setup." << std::endl;
 
-    // Schedule
-    K.compute_root();
-    img_conv.reorder(c, x, y);
-
-    // Parallel
-    img_conv.vectorize(x, 32);
-    img_conv.parallel(y, 8);
-
-    // Apply the boundary condition to the input as required
-    img_bounded.compute_at(img_conv, y);
-    
     return img_conv;
 }
 
@@ -84,16 +65,6 @@ Func A_M(Func input, Expr width, Expr height, Func mask) {
     //Define the mask
     Func input_mask("input_mask");
     input_mask(x, y, c) = mask(x, y, c) * input(x, y, c);
-
-    std::cout << "Finished A_mask setup." << std::endl;
-
-	// Schedule
-    input_mask.reorder(c, y, x);
-    input_mask.vectorize(y, vec_width);
-	//input_mask.unroll(c,3);
-    input_mask.parallel(x);
-
-	//input_mask.print_loop_nest();
 
     return input_mask;
 }
@@ -245,4 +216,4 @@ Func At_warpHomography(Func input, Expr width, Expr height, Func Hinv, Expr nhom
     return resampledAtSum;
 }
 
-#endif //IMAGE_FORMATION_H
+} // namespace

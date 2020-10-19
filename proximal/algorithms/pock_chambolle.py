@@ -8,6 +8,7 @@ from proximal.utils.utils import graph_visualize
 from proximal.utils.cuda_codegen import NumpyAdapter
 from .invert import get_least_squares_inverse, max_diag_set
 import numpy as np
+import numexpr as ne
 
 def partition(prox_fns, try_diagonalize=True):
     """Divide the proxable functions into sets Psi and Omega.
@@ -74,20 +75,21 @@ def solve(psi_fns, omega_fns, tau=None, sigma=None, theta=None,
           max_iters=1000, eps_abs=1e-3, eps_rel=1e-3, x0=None,
           lin_solver="cg", lin_solver_options=None, conv_check=100,
           try_diagonalize=True, try_fast_norm=False, scaled=True,
+          implem=None,
           metric=None, convlog=None, verbose=0, callback=None, adapter = NumpyAdapter()):
 
     # Can only have one omega function.
     assert len(omega_fns) <= 1
     prox_fns = psi_fns + omega_fns
     stacked_ops = vstack([fn.lin_op for fn in psi_fns])
-    K = CompGraph(stacked_ops)
+    K = CompGraph(stacked_ops, implem=implem)
 
     #graph_visualize(prox_fns)
 
     if adapter.implem() == 'numpy':
         K_forward = K.forward
         K_adjoint = K.adjoint
-        prox_off_and_fac = lambda offset, factor, fn, *args, **kw: offset + factor*fn.prox(*args, **kw)
+        prox_off_and_fac = lambda offset, factor, fn, *args, **kw: ne.evaluate('x*a+b', {'x':fn.prox(*args, **kw), 'a':factor, 'b':offset})
         prox = lambda fn, *args, **kw: fn.prox(*args, **kw)
     elif adapter.implem() == 'pycuda':
         K_forward = K.forward_cuda
@@ -188,7 +190,7 @@ def solve(psi_fns, omega_fns, tau=None, sigma=None, theta=None,
         # Compute z
         iter_timing["calcz"].tic()
         K_forward(xbar, Kxbar)
-        z = y + csigma * Kxbar
+        ne.evaluate('y + csigma * Kxbar', out=z)
         iter_timing["calcz"].toc()
 
         # Update y.
@@ -209,7 +211,7 @@ def solve(psi_fns, omega_fns, tau=None, sigma=None, theta=None,
             y[offset:] = 0
         # Update x
         K_adjoint(y, KTy)
-        x -= ctau * KTy
+        ne.evaluate('x - ctau * KTy', out=x)
         iter_timing["calcx"].toc()
 
         iter_timing["omega_fn"].tic()
@@ -218,16 +220,21 @@ def solve(psi_fns, omega_fns, tau=None, sigma=None, theta=None,
             prox_log_tot[fn].tic()
             xtmp = adapter.reshape(x, fn.lin_op.shape)
             prox_log[fn].tic()
-            x[:] = adapter.flatten( prox(fn, adapter.scalar(1.0) / ctau, xtmp, x_init=prev_x,
-                                     lin_solver=lin_solver, options=lin_solver_options) )
+            if adapter.implem() == 'numpy':
+                # ravel() avoids a redundant memcpy
+                x[:] = prox(fn, 1.0 / ctau, xtmp, x_init=prev_x,
+                                     lin_solver=lin_solver, options=lin_solver_options).ravel()
+            else: 
+                x[:] = adapter.flatten( prox(fn, 1.0 / ctau, xtmp, x_init=prev_x,
+                                     lin_solver=lin_solver, options=lin_solver_options))
+
             prox_log[fn].toc()
             prox_log_tot[fn].toc()
         iter_timing["omega_fn"].toc()
 
         iter_timing["xbar"].tic()
         # Update xbar
-        adapter.copyto(xbar, x)
-        xbar += ctheta * (x - prev_x)
+        ne.evaluate('x + ctheta * (x - prev_x)', out=xbar)
         iter_timing["xbar"].toc()
 
         # Convergence log
@@ -238,20 +245,12 @@ def solve(psi_fns, omega_fns, tau=None, sigma=None, theta=None,
             objval = sum(objval)
             convlog.record_objective(objval)
 
-        """ Old convergence check
-        #Very basic convergence check.
-        r_x = np.linalg.norm(x - prev_x)
-        r_xbar = np.linalg.norm(xbar - prev_xbar)
-        r_ybar = np.linalg.norm(y - prev_y)
-        error = r_x + r_xbar + r_ybar
-        """
-
         # Residual based convergence check
         if i % conv_check in [0, conv_check-1]:
             iter_timing["conv_check"].tic()
             K_forward(x, Kx)
-            u = adapter.scalar(1.0) / csigma * y + ctheta * (Kx - prev_Kx)
-            z = prev_u + prev_Kx - adapter.scalar(1.0) / csigma * y
+            ne.evaluate('y / csigma + ctheta * (Kx - prev_Kx)', out=u, casting='unsafe')
+            ne.evaluate('prev_u + prev_Kx - y / csigma', out=z, casting='unsafe')
             iter_timing["conv_check"].toc()
 
         # Iteration order is different than
@@ -259,13 +258,14 @@ def solve(psi_fns, omega_fns, tau=None, sigma=None, theta=None,
         if i > 0 and i % conv_check == 0:
 
             # Check convergence
-            r = prev_Kx - z
-            K_adjoint(csigma * (z - prev_z), s)
+            r = ne.evaluate('prev_Kx - z')
+            dz = ne.evaluate('csigma * (z - prev_z)')
+            K_adjoint(dz, s)
             eps_pri = np.sqrt(K.output_size) * eps_abs + eps_rel * \
-                max([np.linalg.norm(adapter.to_np(prev_Kx)), np.linalg.norm(adapter.to_np(z))])
+                max([np.linalg.norm(prev_Kx), np.linalg.norm(z)])
 
             K_adjoint(u, KTu)
-            eps_dual = np.sqrt(K.input_size) * eps_abs + eps_rel * np.linalg.norm(adapter.to_np(KTu)) / csigma
+            eps_dual = np.sqrt(K.input_size) * eps_abs + eps_rel * np.linalg.norm(KTu) / csigma
 
             if not callback is None or verbose == 2:
                 K.update_vars(adapter.to_np(x))
@@ -281,17 +281,6 @@ def solve(psi_fns, omega_fns, tau=None, sigma=None, theta=None,
                     objval = sum(ov)
                     objstr = ", obj_val = %02.03e [%s] " % (objval, ", ".join("%02.03e" % x for x in ov))
 
-                """ Old convergence check
-                #Evaluate metric potentially
-                metstr = '' if metric is None else ", {}".format( metric.message(x.copy()) )
-                print "iter [%04d]:" \
-                      "||x - x_prev||_2 = %02.02e " \
-                      "||xbar - xbar_prev||_2 = %02.02e " \
-                      "||y - y_prev||_2 = %02.02e " \
-                      "SUM = %02.02e (eps=%02.03e)%s%s" \
-                        % (i, r_x, r_xbar, r_ybar, error, eps, objstr, metstr)
-                """
-
                 # Evaluate metric potentially
                 metstr = '' if metric is None else ", {}".format(metric.message(v))
                 print(
@@ -305,11 +294,6 @@ def solve(psi_fns, omega_fns, tau=None, sigma=None, theta=None,
 
         else:
             iter_timing["pc_iteration_tot"].toc()
-
-        """ Old convergence check
-        if error <= eps:
-            break
-        """
 
     # Print out timings info.
     if verbose > 0:

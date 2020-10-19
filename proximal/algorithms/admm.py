@@ -3,6 +3,7 @@ from proximal.lin_ops import CompGraph, scale, vstack
 from proximal.utils.timings_log import TimingsLog, TimingsEntry
 from .invert import get_least_squares_inverse, get_diag_quads
 import numpy as np
+import numexpr as ne
 
 
 def partition(prox_fns, try_diagonalize=True):
@@ -30,6 +31,7 @@ def solve(psi_fns, omega_fns, rho=1.0,
           lin_solver="cg", lin_solver_options=None,
           try_diagonalize=True, try_fast_norm=False,
           scaled=True, conv_check=100,
+          implem=None,
           metric=None, convlog=None, verbose=0):
     prox_fns = psi_fns + omega_fns
     stacked_ops = vstack([fn.lin_op for fn in psi_fns])
@@ -99,7 +101,7 @@ def solve(psi_fns, omega_fns, rho=1.0,
             prox_log[fn].toc()
             offset += fn.lin_op.size
         # Update u.
-        u += Kv - z
+        ne.evaluate('u + Kv - z', out=u)
 
         # Check convergence.
         if i % conv_check == 0:

@@ -1,5 +1,3 @@
-
-
 # Proximal
 import sys
 sys.path.append('../../')
@@ -23,15 +21,16 @@ from scipy.misc import lena
 
 # Load image
 # img = Image.open('./data/angela.jpg')  # opens the file using Pillow - it's not an array yet
-img = Image.open('./data/largeimage.png')  # opens the file using Pillow - it's not an array yet
+img = Image.open('./data/largeimage.png'
+                )  # opens the file using Pillow - it's not an array yet
 
 np_img = np.asfortranarray(im2nparray(img))
 np_img = np.mean(np_img, axis=2)
-print 'Img Type ', np_img.dtype, 'Shape', np_img.shape
+print('Img Type ', np_img.dtype, 'Shape', np_img.shape)
 
 plt.ion()
 plt.figure()
-imgplot = plt.imshow(np_img, interpolation="nearest", clim=(0.0, 1.0))
+imgplot = plt.imshow(np_img, interpolation='nearest', clim=(0.0, 1.0))
 imgplot.set_cmap('gray')
 plt.title('Numpy')
 plt.show()
@@ -42,12 +41,14 @@ plt.show()
 #print( 'Compilation took: {0:.1f}ms'.format( toc() ) )
 
 # Test the runner
-output = np.zeros((np_img.shape[0], np_img.shape[1], np_img.shape[2] if (
-    len(np_img.shape) > 2) else 1, 2), dtype=np.float32, order='FORTRAN')
-print 'Out Type ', output.dtype, 'Shape', output.shape
+output = np.zeros((np_img.shape[0], np_img.shape[1], np_img.shape[2] if
+                   (len(np_img.shape) > 2) else 1, 2),
+                  dtype=np.float32,
+                  order='FORTRAN')
+print('Out Type ', output.dtype, 'Shape', output.shape)
 
 tic()
-hl = Halide('A_grad.cpp', recompile=True, verbose=False, cleansource=True)  # Force recompile
+hl = Halide('A_grad', recompile=True)  # Force recompile
 print('Compilation took: {0:.1f}ms'.format(toc()))
 
 tic()
@@ -57,7 +58,6 @@ print('Running halide (first) took: {0:.1f}ms'.format(toc()))
 tic()
 hl.A_grad(np_img, output)  # Call
 print('Running halide (second) took: {0:.1f}ms'.format(toc()))
-
 
 # Compute comparison
 f = np_img
@@ -85,7 +85,7 @@ tic()
 # #Stack all grads
 # Kf = np.asfortranarray( np.stack( stack_arr, axis=-1 ) )
 
- # Forward.
+# Forward.
 var = Variable(f.shape)
 fn = grad(var, dims=2)  # 2d Gradient
 Kf = np.zeros(fn.shape, dtype=np.float32, order='F')
@@ -107,7 +107,7 @@ Kfh = np.asfortranarray(Kf[:, :, :, :])  # For halide
 print('Maximum error {0}'.format(np.amax(np.abs(Kfh - output))))
 
 tic()
-hl = Halide('At_grad.cpp', recompile=True, verbose=False, cleansource=True)  # Force recompile
+hl = Halide('At_grad', recompile=True, verbose=False)  # Force recompile
 print('Compilation took: {0:.1f}ms'.format(toc()))
 
 output_t = np.zeros(f.shape, dtype=np.float32, order='F')
@@ -118,7 +118,6 @@ print('Running trans halid (first) took: {0:.1f}ms'.format(toc()))
 tic()
 hl.At_grad(Kfh, output_t)  # Call
 print('Running trans halid (second) took: {0:.1f}ms'.format(toc()))
-
 
 # Compute comparison (Negative divergence)
 f = Kf

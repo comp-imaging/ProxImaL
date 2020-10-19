@@ -1,5 +1,5 @@
 ////////////////////////////////////////////////////////////////////////////////
-//Gradient as part of image formation.
+// Gradient as part of image formation.
 ////////////////////////////////////////////////////////////////////////////////
 
 #include <Halide.h>
@@ -9,27 +9,33 @@ using namespace Halide::BoundaryConditions;
 #include "core/prior_transforms.h"
 
 class grad_gen : public Generator<grad_gen> {
-public:
+   public:
+    Input<Buffer<float>> input{"input", 3};
+    Output<Buffer<float>> output{"output", 4};
 
-    ImageParam input{Float(32), 3, "input"};
-    
-    Func build() {
+    void generate() {
         Expr width = input.width();
         Expr height = input.height();
-        
-        //Input
-        Func input_func("in");
-        input_func(x, y, c) = input(x, y, c);
 
-        //Warping
-        Func K_input = K_grad_mat(input_func, width, height);
+        // Warping
+        output(x, y, c, k) = K_grad_mat(input, width, height)(x, y, c, k);
+    }
 
-        //Allow for arbitrary strides
-        input.set_stride(0, Expr());
-        K_input.output_buffer().set_stride(0, Expr()); 
+    void schedule() {
+        if (auto_schedule) {
+            input.set_estimates({{0, 512}, {0, 512}, {0, 1}});
+            output.set_estimates({{0, 512}, {0, 512}, {0, 1}, {0, 2}});
+            return;
+        }
 
-        return K_input;
+        const auto vec_width = natural_vector_size<float>();
+
+        // Schedule
+        output.reorder(k, c, y, x);
+        output.vectorize(y, vec_width);
+        output.parallel(x);
+        output.unroll(k, 2);
     }
 };
 
-auto gradImg = RegisterGenerator<grad_gen>("gradImg");
+HALIDE_REGISTER_GENERATOR(grad_gen, gradImg);

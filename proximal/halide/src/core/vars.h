@@ -2,9 +2,10 @@
 //Variables used in the rest of the code.
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef VARS_H
-#define VARS_H
+#pragma once
+
+namespace {
 
 Var x("x"), y("y"), c("c"), i("i"), j("j"), k("k"), l("l"), g("g"), xo, xi;
 
-#endif //VARS_H
+} // namespace

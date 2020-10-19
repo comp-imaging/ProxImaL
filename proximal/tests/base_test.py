@@ -1,25 +1,49 @@
 # Base class for unit tests.
-import unittest
 import numpy as np
+from typing import Union
+from numbers import Real
 
 
-class BaseTest(unittest.TestCase):
-    # AssertAlmostEqual for lists.
+class BaseTest:
 
-    def assertItemsAlmostEqual(self, a, b, places=4):
-        a = self.mat_to_list(a)
-        b = self.mat_to_list(b)
-        for i in range(len(a)):
-            self.assertAlmostEqual(a[i], b[i], places)
+    def assertItemsAlmostEqual(self,
+                               a: Union[list, np.array],
+                               b: Union[list, np.array],
+                               places=4,
+                               eps=1e-5):
+        if type(a) is list:
+            a = np.array(a)
 
-    # Overriden method to assume lower accuracy.
-    def assertAlmostEqual(self, a, b, places=4):
-        super(BaseTest, self).assertAlmostEqual(a, b, places=places)
+        if type(b) is list:
+            b = np.array(a)
 
-    def mat_to_list(self, mat):
-        """Convert a numpy matrix to a list.
-        """
-        if isinstance(mat, (np.matrix, np.ndarray)):
-            return np.asarray(mat).flatten('C').tolist()
-        else:
-            return mat
+        vmax = np.max(
+            (np.linalg.norm(a.ravel(),
+                            np.Inf), np.linalg.norm(b.ravel(), np.Inf)))
+
+        rel_diff = np.linalg.norm(a.ravel() - b.ravel(), np.Inf)
+
+        if vmax == 0:
+            assert rel_diff < eps
+            return
+
+        rel_diff /= vmax
+
+        assert rel_diff < eps
+
+    def assertAlmostEqual(self, a: Real, b: Real, places=4, eps=1e-5):
+        ''' Make sure that max absolute difference is smaller than a threshold '''
+        delta = abs(a - b)
+        vmax = max(abs(a), abs(b))
+        if vmax == 0:
+            assert delta < eps
+            return
+
+        rel_diff = delta / vmax
+        assert rel_diff < eps
+
+    def assertEqual(self, a, b):
+        self.assertEquals(a, b)
+
+    def assertEquals(self, a, b):
+        assert np.all(a == b)

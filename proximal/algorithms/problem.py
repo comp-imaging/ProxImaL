@@ -201,6 +201,7 @@ class Problem(object):
                                    try_diagonalize=self.try_diagonalize,
                                    try_fast_norm=self.try_fast_norm,
                                    scaled=self.scale,
+                                   implem=self.implem,
                                    *args, **kwargs)
             # Unscale the variables.
             if self.scale:

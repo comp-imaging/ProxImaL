@@ -2,6 +2,10 @@ from __future__ import print_function, division
 
 # Imports
 import numpy as np
+from scipy.misc import ascent
+import cv2
+
+import os
 from numpy.fft import fftn, ifftn, fft2, ifft2
 import cv2
 import timeit
@@ -47,6 +51,25 @@ except:
 # Image utils
 ###############################################################################
 
+def get_test_image(WIDTH):
+    I = cv2.resize(ascent().astype(np.float32), (WIDTH, WIDTH))
+    I /= 255.
+
+    return np.asfortranarray(I, dtype=np.float32)
+
+def get_kernel(WIDTH, ndim):
+    assert WIDTH % 2 == 1
+
+    cwd = os.path.dirname(os.path.abspath(__file__))
+    K = cv2.imread(cwd + '/data/kernel_snake.png')[..., 0]
+    K = cv2.resize(K, (WIDTH, WIDTH))
+    K = np.asfortranarray(K, dtype=np.float32)
+    K /= np.sum(K)
+
+    if ndim == 2:
+        return K
+    else:
+        return K[..., (0,0,0)]
 
 def im2nparray(img, datatype=np.float32):
     """ Converts and normalizes image in certain datatype (e.g. np.float32) """

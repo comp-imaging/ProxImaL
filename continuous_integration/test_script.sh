@@ -6,14 +6,14 @@
 
 set -e
 
-python --version
-python -c "import numpy; print('numpy %s' % numpy.__version__)"
-python -c "import scipy; print('scipy %s' % scipy.__version__)"
-python setup.py install
+python3 --version
+python3 -c "import numpy; print('numpy %s' % numpy.__version__)"
+python3 -c "import scipy; print('scipy %s' % scipy.__version__)"
+python3 setup.py install
 
 if [[ "$COVERAGE" == "true" ]]; then
-    export WITH_COVERAGE="--with-coverage"
+    export WITH_COVERAGE="--cov=."
 else
     export WITH_COVERAGE=""
 fi
-nosetests $WITH_COVERAGE proximal
+python3 -m pytest ${WITH_COVERAGE} proximal/tests/
