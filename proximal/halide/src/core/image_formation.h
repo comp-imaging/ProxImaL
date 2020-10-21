@@ -135,23 +135,9 @@ Func A_warpHomography(Func input, Expr width, Expr height, Func H, Expr nhom) {
     Func resampled("resampled");
     resampled(x, y, c, g) = sum(kernel(x,y,g, dom.x, dom.y) * cast<float>(clamped(dom.x + beginx, dom.y + beginy, c)));
     
-    //Schedule backprojection
-        // Scheduling
-    bool parallelize = 1;
-    bool vectorize = 1;
-    kernel.compute_at(resampled, x);
-    
-    if (vectorize) {
-		int vec_size = 8;
-        resampled.vectorize(y, vec_size);
-    }
+    // Scheduling
+    //kernel.compute_at(resampled, x);
 
-    if (parallelize) {
-        Var xo, xi;
-        resampled.split(x, xo, x, 32).parallel(xo);
-    }
-    resampled.compute_root();
-    
     return resampled;
 }
 
@@ -185,33 +171,14 @@ Func At_warpHomography(Func input, Expr width, Expr height, Func Hinv, Expr nhom
     Func resampledAtSum("resampledAtSum");
     resampledAtSum(x, y, c) = sum(resampledAt(x, y, c, domH));
 
-    std::cout << "Finished At_warp setup." << std::endl;
-
     // Scheduling
-    bool parallelize = 1;
-    bool vectorize = 1;
-    kernel.compute_at(resampledAt, x);
-    
-    if (vectorize) {
-        resampledAt.vectorize(y, 8);
-    }
+    //const auto vec_width = natural_vector_size<float>();
+    // kernel.compute_at(resampledAt, x);
 
-    if (parallelize) {
-        Var xo, xi;
-        resampledAt.split(x, xo, x, 32).parallel(xo);
-    }
-    resampledAt.compute_root();
+    // resampledAt.vectorize(y, vec_width);
 
-    //Final sum
-    if (vectorize) {
-        resampledAtSum.vectorize(y, 8);
-    }
-
-    if (parallelize) {
-        Var xo, xi;
-        resampledAtSum.split(x, xo, x, 32).parallel(xo);
-    }
-    resampledAtSum.compute_root();
+    // resampledAt.split(x, xo, x, 32).parallel(xo);
+    // resampledAt.compute_root();
 
     return resampledAtSum;
 }
