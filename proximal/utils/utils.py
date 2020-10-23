@@ -198,7 +198,7 @@ def psf2otf(K, outsize, dims=None):
     # Discard the imaginary part of the psf if it's withi roundoff error.
     eps = np.finfo(np.float32).eps
     if np.amax(np.absolute(otf.imag)) / np.amax(np.absolute(otf)) <= nOps * eps:
-        otf = otf.real
+        otf.imag = 0.
 
     return otf
 

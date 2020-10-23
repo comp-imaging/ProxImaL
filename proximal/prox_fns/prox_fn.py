@@ -77,18 +77,20 @@ class ProxFn(object):
         """Wrapper on the prox function to handle alpha, etc.
            It is here the iteration for debug purposese etc.
         """
-        rho_hat = (rho + 2 * self.gamma) / (self.alpha * self.beta**2)
-
-        symbols = {
-            'rho': rho,
-            'c': self.c,
-            'beta': self.beta,
-            'gamma': self.gamma,
-            'b': self.b,
-        }
 
         if np.isscalar(v):
             v = np.array([v])
+
+        symbols = {
+            'rho': rho,
+            'c': self.c.reshape(v.shape),
+            'alpha': self.alpha,
+            'beta': self.beta,
+            'gamma': self.gamma,
+            'b': self.b.reshape(v.shape),
+        }
+
+        rho_hat = ne.evaluate('(rho + 2 * gamma) / (alpha * beta**2)', global_dict=symbols)
 
         ne.evaluate('(v * rho - c) * beta / (rho + 2 * gamma) -b',
             global_dict=symbols, out=v, casting='unsafe')
@@ -98,7 +100,7 @@ class ProxFn(object):
             global_dict=symbols, out=xhat, casting='unsafe')
 
         if v.size == 1:
-            return xhat
+            return xhat[0]
             
         return xhat
 
