@@ -19,8 +19,6 @@ import numpy as np
 from scipy import signal
 import matplotlib.pyplot as plt
 
-from common import get_kernel, get_test_image
-
 ############################################################
 
 # Load image
@@ -114,8 +112,6 @@ output_ref = fn.prox(rho, v.copy())
 # Error
 print('Maximum error IsoL1 {0}'.format(np.amax(np.abs(output_ref - output))))
 
-exit()
-
 ############################################################################
 # Test Poisson prox
 ############################################################################
@@ -131,7 +127,7 @@ b = np_img * np_img
 output = np.zeros_like(v)
 
 tic()
-hl = Halide('prox_Poisson.cpp', recompile=True, verbose=False, cleansource=True)  # Call
+hl = Halide('prox_Poisson', recompile=True)  # Call
 print('Compilation took: {0:.1f}ms'.format(toc()))
 
 tic()
@@ -155,6 +151,7 @@ output_ref = fp.prox(rho, v.copy())
 
 # Error
 print('Maximum error Poisson {0}'.format(np.amax(np.abs(output_ref - output))))
+exit()
 
 ############################################################################
 # Test NLM

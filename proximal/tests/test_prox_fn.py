@@ -201,7 +201,7 @@ class TestProxFn(BaseTest):
 
         self.assertItemsAlmostEqual(output, output_ref)
 
-    def _test_poisson_halide(self):
+    def test_poisson_halide(self):
         """Halide Poisson norm test
         """
         # Test problem

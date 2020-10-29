@@ -1,5 +1,5 @@
 ////////////////////////////////////////////////////////////////////////////////
-//Test function for Poisson penalty proximal operator from "core/prox_operators.h"
+// Test function for Poisson penalty proximal operator from "core/prox_operators.h"
 ////////////////////////////////////////////////////////////////////////////////
 
 #include <Halide.h>
@@ -9,38 +9,35 @@ using namespace Halide::BoundaryConditions;
 #include "core/prox_operators.h"
 
 class proxPoisson_gen : public Generator<proxPoisson_gen> {
-public:
+   public:
+    Input<Buffer<float>> input{"input", 3};
+    Input<Buffer<float>> M{"M", 3};
+    Input<Buffer<float>> b{"b", 3};
+    Input<float> theta{"theta"};
 
-    ImageParam input{Float(32), 3, "input"};
-    ImageParam M{Float(32), 3, "M"};
-    ImageParam b{Float(32), 3, "b"};
-    Param<float> theta{"theta"};
+    Output<Buffer<float>> output{"output", 3};
 
-    Func build() {
+    void generate() {
         // Inputs
         Expr width = input.width();
         Expr height = input.height();
 
-        Func input_func;
-        input_func(x, y, c) = input(x, y, c);
-
-        Func M_func;
-        M_func(x, y, c) = M(x, y, c);
-
-        Func b_func;
-        b_func(x, y, c) = b(x, y, c);
-
         // Prox L1 function
-        Func proxPoisson_input = proxPoisson(input_func, width, height, M_func, b_func, theta);
-        
-        //Allow for arbitrary strides
-        input.set_stride(0, Expr());
-        M.set_stride(0, Expr());
-        b.set_stride(0, Expr());
-        proxPoisson_input.output_buffer().set_stride(0, Expr()); 
+        output(x, y, c) = proxPoisson(input, width, height, M, b, theta)(x, y, c);
+    }
 
-        return proxPoisson_input;
+    void schedule() {
+        if (auto_schedule) {
+            input.set_estimates({{0, 512}, {0, 512}, {0, 1}});
+            M.set_estimates({{0, 512}, {0, 512}, {0, 1}});
+            b.set_estimates({{0, 512}, {0, 512}, {0, 1}});
+            output.set_estimates({{0, 512}, {0, 512}, {0, 1}});
+            return;
+        }
+
+        // Schedule
+        output.parallel(y);
     }
 };
 
-auto prox_poisson = RegisterGenerator<proxPoisson_gen>("prox_poisson");
+HALIDE_REGISTER_GENERATOR(proxPoisson_gen, proxPoisson);
