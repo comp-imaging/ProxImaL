@@ -9,30 +9,17 @@ from proximal import *
 from proximal.utils.utils import Impl
 
 # Generate data.
-I = scipy.misc.ascent()[:128, :128]
+I = scipy.misc.ascent()
 np.random.seed(1)
 b = I + 10 * np.random.randn(*I.shape)
 
-H = np.array(
-    [
-        [-1., 0, I.shape[1]],
-        [0, 1., 0],
-        [0., 0., 1.],
-    ],
-    dtype=np.float32,
-    order='F',
-)
-
 # Construct problem.
-impl = Impl['halide']
 x = Variable(I.shape)
-prob = Problem(sum_squares(
-    conv(b / 255., x) - conv(b / 255., x)) +
-               .1 * sum_squares(x) + nonneg(x, implem=impl),
-               implem=impl)
+prob = Problem(sum_squares(x - b / 255) + .1 * norm1(grad(x)) + nonneg(x),
+               implem=Impl['halide'])
 
 # Solve problem.
-result = prob.solve(verbose=True, solver='ladmm')
+result = prob.solve(verbose=True, solver='pc')
 print('Optimized cost function value = {}'.format(result))
 
 plt.figure(figsize=(15, 8))
