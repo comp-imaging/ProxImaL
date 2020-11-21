@@ -2,7 +2,7 @@ from __future__ import print_function, division
 
 # Imports
 import numpy as np
-from scipy.misc import ascent
+from scipy.misc import ascent, face
 import cv2
 
 import os
@@ -51,8 +51,12 @@ except:
 # Image utils
 ###############################################################################
 
-def get_test_image(WIDTH):
-    I = cv2.resize(ascent().astype(np.float32), (WIDTH, WIDTH))
+def get_test_image(WIDTH, color=False):
+    if not color:
+        I = cv2.resize(ascent().astype(np.float32), (WIDTH, WIDTH))
+    else:
+        I = cv2.resize(face(gray=False)[:, :768].astype(np.float32), (WIDTH, WIDTH))
+
     I /= 255.
 
     return np.asfortranarray(I, dtype=np.float32)
@@ -198,7 +202,7 @@ def psf2otf(K, outsize, dims=None):
     # Discard the imaginary part of the psf if it's withi roundoff error.
     eps = np.finfo(np.float32).eps
     if np.amax(np.absolute(otf.imag)) / np.amax(np.absolute(otf)) <= nOps * eps:
-        otf = otf.real
+        otf.imag = 0.
 
     return otf
 

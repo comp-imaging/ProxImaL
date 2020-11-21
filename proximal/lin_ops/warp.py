@@ -27,8 +27,8 @@ class warp(LinOp):
                 'Error, warp supports only up to 4d inputs (expects first 3 to be image).')
 
         # Has to have third dimension
-        if len(arg.shape) != 3:
-            raise Exception('Images must have third dimension')
+        #if len(arg.shape) != 3:
+        #    raise Exception('Images must have third dimension')
 
         shape = arg.shape
         if len(H.shape) == 3:
@@ -38,19 +38,9 @@ class warp(LinOp):
         self.tmpfwd = np.zeros((shape[0], shape[1],
                                 shape[2] if (len(shape) > 2) else 1,
                                 H.shape[2] if (len(H.shape) > 2) else 1),
-                               dtype=np.float32, order='FORTRAN')
+                               dtype=np.float32, order='F')
         self.tmpadj = np.zeros((shape[0], shape[1], shape[2] if (
-            len(shape) > 2) else 1), dtype=np.float32, order='FORTRAN')
-
-        # Halide homographies
-        if len(H.shape) == 2:
-            self.Hf = np.asfortranarray(H[..., np.newaxis].astype(
-                np.float32))  # Third axis for halide
-            self.Hinvf = np.asfortranarray(
-                self.Hinv[..., np.newaxis].astype(np.float32))  # Third axis for halide
-        else:
-            self.Hf = np.asfortranarray(H.astype(np.float32))
-            self.Hinvf = np.asfortranarray(self.Hinv.astype(np.float32))
+            len(shape) > 2) else 1), dtype=np.float32, order='F')
 
         super(warp, self).__init__([arg], shape, implem)
 
@@ -63,8 +53,7 @@ class warp(LinOp):
         if self.implementation == Impl['halide']:
 
             # Halide implementation
-            tmpin = np.asfortranarray(inputs[0].astype(np.float32))
-            Halide('A_warp.cpp').A_warp(tmpin, self.Hinvf, self.tmpfwd)  # Call
+            Halide('A_warp').A_warp(inputs[0], self.H, self.tmpfwd)  # Call
             np.copyto(outputs[0], np.reshape(self.tmpfwd, self.shape))
 
         else:
@@ -72,8 +61,8 @@ class warp(LinOp):
             # CV2 version
             inimg = inputs[0]
             if len(self.H.shape) == 2:
-                warpedInput = cv2.warpPerspective(np.asfortranarray(inimg), self.H.T,
-                                                  inimg.shape[1::-1], flags=cv2.INTER_LINEAR,
+                warpedInput = cv2.warpPerspective(np.asfortranarray(inimg), self.H,
+                                                  inimg.shape[1::-1], flags=cv2.INTER_LINEAR | cv2.WARP_INVERSE_MAP,
                                                   borderMode=cv2.BORDER_CONSTANT, borderValue=0.)
                 # Necessary due to array layout in opencv
                 np.copyto(outputs[0], warpedInput)
@@ -81,8 +70,8 @@ class warp(LinOp):
             else:
                 for j in range(self.H.shape[2]):
                     warpedInput = cv2.warpPerspective(np.asfortranarray(inimg),
-                                                      self.H[:, :, j].T, inimg.shape[1::-1],
-                                                      flags=cv2.INTER_LINEAR,
+                                                      self.H[:, :, j], inimg.shape[1::-1],
+                                                      flags=cv2.INTER_LINEAR | cv2.WARP_INVERSE_MAP,
                                                       borderMode=cv2.BORDER_CONSTANT,
                                                       borderValue=0.)
                     # Necessary due to array layout in opencv
@@ -98,13 +87,11 @@ class warp(LinOp):
         if self.implementation == Impl['halide']:
 
             # Halide implementation
-            if len(self.H.shape) == 2:
-                tmpin = np.asfortranarray(inputs[0][..., np.newaxis].astype(np.float32))
+            Halide('At_warp').At_warp(inputs[0], self.Hinv, self.tmpadj)  # Call
+            if outputs[0].ndim == 2:
+                np.copyto(outputs[0], self.tmpadj[..., 0])
             else:
-                tmpin = np.asfortranarray(inputs[0].astype(np.float32))
-
-            Halide('At_warp.cpp').At_warp(tmpin, self.Hf, self.tmpadj)  # Call
-            np.copyto(outputs[0], self.tmpadj)
+                np.copyto(outputs[0], self.tmpadj)
 
         else:
 
@@ -112,7 +99,7 @@ class warp(LinOp):
             inimg = inputs[0]
             if len(self.H.shape) == 2:
                 # + cv2.WARP_INVERSE_MAP
-                warpedInput = cv2.warpPerspective(np.asfortranarray(inimg), self.Hinv.T,
+                warpedInput = cv2.warpPerspective(np.asfortranarray(inimg), self.H,
                                                   inimg.shape[1::-1], flags=cv2.INTER_LINEAR,
                                                   borderMode=cv2.BORDER_CONSTANT, borderValue=0.)
                 np.copyto(outputs[0], warpedInput)
@@ -121,7 +108,7 @@ class warp(LinOp):
                 outputs[0][:] = 0.0
                 for j in range(self.H.shape[2]):
                     warpedInput = cv2.warpPerspective(np.asfortranarray(inimg[:, :, :, j]),
-                                                      self.Hinv[:, :, j].T, inimg.shape[1::-1],
+                                                      self.H, inimg.shape[1::-1],
                                                       flags=cv2.INTER_LINEAR,
                                                       borderMode=cv2.BORDER_CONSTANT,
                                                       borderValue=0.)

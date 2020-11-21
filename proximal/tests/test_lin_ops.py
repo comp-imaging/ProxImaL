@@ -460,49 +460,48 @@ class TestLinOps(BaseTest):
         # self.assertItemsAlmostEqual(output, Kf)
         # self.assertItemsAlmostEqual(output_trans, KtKf)
 
-    def _test_warp_halide(self):
+    def test_warp_halide(self):
         """Test warp lin op in halide.
         """
         # Load image
-        np_img = get_test_image(512)
+        WIDTH = 512
+        np_img = get_test_image(WIDTH)
 
         # Generate problem
         theta_rad = 5.0 * np.pi / 180.0
         H = np.array(
-            [[np.cos(theta_rad), -np.sin(theta_rad), 0.0001],
-             [np.sin(theta_rad), np.cos(theta_rad), 0.0003], [0., 0., 1.]],
+            [[np.cos(theta_rad), -np.sin(theta_rad), WIDTH * 0.5],
+             [np.sin(theta_rad), np.cos(theta_rad), 0.], [0., 0., 1.]],
             dtype=np.float32,
             order='F')
 
         # Reference
         output_ref = cv2.warpPerspective(np_img,
-                                         H.T,
+                                         H,
                                          np_img.shape[1::-1],
-                                         flags=cv2.INTER_LINEAR,
+                                         flags=cv2.INTER_LINEAR |
+                                         cv2.WARP_INVERSE_MAP,
                                          borderMode=cv2.BORDER_CONSTANT,
                                          borderValue=0.)
 
         # Halide
         output = np.zeros_like(np_img)
-        Hc = np.asfortranarray(
-            np.linalg.pinv(H)[..., np.newaxis])  # Third axis for halide
-        Halide('A_warp', recompile=True).A_warp(np_img, Hc, output)  # Call
+        Halide('A_warp', recompile=True).A_warp(np_img, H, output)  # Call
+
+        self.assertItemsAlmostEqual(output, output_ref, eps=1e-1)
 
         # Transpose
         output_trans = np.zeros_like(np_img)
-        Hinvc = np.asfortranarray(H[..., np.newaxis])  # Third axis for halide
+        Hinvc = np.asfortranarray(np.linalg.pinv(H))
         Halide('At_warp', recompile=True).At_warp(output, Hinvc,
                                                   output_trans)  # Call
 
         # Compute reference
-        output_ref_trans = cv2.warpPerspective(output_ref,
-                                               H.T,
+        output_ref_trans = cv2.warpPerspective(output,
+                                               H,
                                                np_img.shape[1::-1],
-                                               flags=cv2.INTER_LINEAR +
-                                               cv2.WARP_INVERSE_MAP,
+                                               flags=cv2.INTER_LINEAR,
                                                borderMode=cv2.BORDER_CONSTANT,
                                                borderValue=0.)
-        # Opencv does inverse warp
-        self.assertItemsAlmostEqual(output, output_ref, places=1)
-        # Opencv does inverse warp
-        self.assertItemsAlmostEqual(output_trans, output_ref_trans, places=1)
+
+        self.assertItemsAlmostEqual(output_trans, output_ref_trans, eps=1e-1)

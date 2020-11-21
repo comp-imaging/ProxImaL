@@ -19,6 +19,8 @@ pipeline_src = [
     'src/At_grad.cpp',
     'src/A_grad.cpp',
     'src/A_mask.cpp',
+    'src/A_warp.cpp',
+    'src/At_warp.cpp',
 ]
 
 halide_generator = executable(
@@ -82,6 +84,16 @@ pipeline_name = [[
     ], [
         'WImg',
         ['A_mask', 'At_mask'],
+        true,
+        [],
+    ], [
+        'warpImg',
+        ['A_warp'],
+        true,
+        [],
+    ], [
+        'warpImgT',
+        ['At_warp'],
         true,
         [],
 ]]

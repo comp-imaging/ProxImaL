@@ -32,7 +32,7 @@ class diff_fn(ProxFn):
         def prox_fprime(x):
             return self.fprime(x).ravel() + rho * (x.ravel() - v.ravel())
 
-        x, f, d = fmin_l_bfgs_b(prox_func, v, prox_fprime,
+        x, _, _ = fmin_l_bfgs_b(prox_func, v, prox_fprime,
                                 bounds=self.bounds, factr=self.factr)
         return np.reshape(x, self.lin_op.shape)
 

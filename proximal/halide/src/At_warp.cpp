@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////////////////////
-//Warp with n homographies as part of image formation.
-//The different homographies are ordered in stack of matrices.
+// Warp with n homographies as part of image formation.
+// The different homographies are ordered in stack of matrices.
 ////////////////////////////////////////////////////////////////////////////////
 
 #include <Halide.h>
@@ -10,34 +10,41 @@ using namespace Halide::BoundaryConditions;
 #include "core/image_formation.h"
 
 class warp_trans_gen : public Generator<warp_trans_gen> {
-public:
+    Var xo, xi;
 
-    ImageParam input{Float(32), 4, "input"};
-    ImageParam Hinv{Float(32), 3, "H"};
-    
-    Func build() {
+   public:
+    Input<Buffer<float>> input{"input", 4};
+    Input<Buffer<float>> Hinv{"H", 3};
+    Output<Buffer<float>> output{"output", 3};
+
+    void generate() {
         Expr width = input.width();
         Expr height = input.height();
         Expr nhom = Hinv.channels();
 
-        //Input
-        Func input_func("in");
-        input_func(x, y, c, g) = input(x, y, c, g);
-        
-        //Input H
-        Func Hinv_func("Hinv");
-        Hinv_func(i, j, g) = Hinv(i, j, g);
+        // TODO: swap x-y axes here because of how Numpy defines an axis in Fortran order,
+        // A better way is to either
+        // (i) define stride in halide_dimension_t, or
+        // (ii) use c-order in numpy
+        Func input_swap_axes;
+        input_swap_axes(y, x, c, k) = input(x, y, c, k);
 
-        //Warping
-        Func warp_trans_input = At_warpHomography(input_func, width, height, Hinv_func, nhom);
+        // Again, swap axes back
+        output(y, x, c) = At_warpHomography(input_swap_axes, width, height, Hinv, nhom)(x, y, c);
+    }
 
-        //Allow for arbitrary strides
-        input.set_stride(0, Expr());
-        Hinv.set_stride(0, Expr());
-        warp_trans_input.output_buffer().set_stride(0, Expr()); 
+    void schedule() {
+        if (auto_schedule) {
+            input.set_estimates({{0, 512}, {0, 512}, {0, 1}, {0, 1}});
+            Hinv.set_estimates({{0, 3}, {0, 3}, {0, 1}});
+            output.set_estimates({{0, 512}, {0, 512}, {0, 1}});
+            return;
+        }
+        const auto vec_width = natural_vector_size<float>();
+        output.vectorize(y, 8);
 
-        return warp_trans_input;
+        output.split(x, xo, x, 32).parallel(xo);
     }
 };
 
-auto warpImg = RegisterGenerator<warp_trans_gen>("warpImg");
+HALIDE_REGISTER_GENERATOR(warp_trans_gen, warpImgT);
