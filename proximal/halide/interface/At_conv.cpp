@@ -8,9 +8,11 @@ int At_conv_glue(const array_float_t input, const array_float_t K,
 
         auto input_buf = getHalideBuffer<3>(input);
         auto K_buf = getHalideBuffer<3>(K);
-        auto output_buf = getHalideBuffer<3>(output);
+        auto output_buf = getHalideBuffer<3>(output, true);
 
-        return convImgT(input_buf, K_buf, output_buf);
+        const int success = convImgT(input_buf, K_buf, output_buf);
+        output_buf.copy_to_host();
+        return success;
     }
 
 } // proximal

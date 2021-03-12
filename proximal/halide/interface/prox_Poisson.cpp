@@ -10,9 +10,11 @@ prox_Poisson_glue(const array_float_t input, const array_float_t M, const array_
     auto M_buf = getHalideBuffer<3>(M);
     auto b_buf = getHalideBuffer<3>(b);
 
-    auto output_buf = getHalideBuffer<3>(output);
+    auto output_buf = getHalideBuffer<3>(output, true);
 
-    return proxPoisson(input_buf, M_buf, b_buf, theta, output_buf);
+    const bool success = proxPoisson(input_buf, M_buf, b_buf, theta, output_buf);
+    output_buf.copy_to_host();
+    return success;
 }
 
 }  // namespace proximal

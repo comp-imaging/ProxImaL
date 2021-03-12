@@ -8,9 +8,11 @@ int At_warp_glue(const array_float_t input, const array_float_t H,
 
         auto input_buf = getHalideBuffer<4>(input);
         auto H_buf = getHalideBuffer<3>(H);
-        auto output_buf = getHalideBuffer<3>(output);
+        auto output_buf = getHalideBuffer<3>(output, true);
 
-        return warpImgT(input_buf, H_buf, output_buf);
+        const bool success = warpImgT(input_buf, H_buf, output_buf);
+        output_buf.copy_to_host();
+        return success;
     }
 
 } // proximal

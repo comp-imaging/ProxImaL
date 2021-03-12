@@ -3,9 +3,10 @@ project('proximal-halide', 'cpp',
         'buildtype=debugoptimized',
 ])
 
-halide_toolchain = subproject('halide')
+halide_toolchain = subproject('halide-' + build_machine.cpu_family())
 halide_generator_dep = halide_toolchain.get_variable('halide_generator_dep')
 halide_runtime_dep = halide_toolchain.get_variable('halide_runtime_dep')
+halide_library_path = halide_toolchain.get_variable('halide_library_path')
 
 pipeline_src = [
     'src/A_conv.cpp',
@@ -89,19 +90,53 @@ pipeline_name = [[
     ], [
         'warpImg',
         ['A_warp'],
-        true,
+        false,
         [],
     ], [
         'warpImgT',
         ['At_warp'],
-        true,
+        false,
         [],
 ]]
 
 python_dep = dependency('python3')
 pybind11_dep = subproject('pybind11').get_variable('pybind11_dep')
 
+cuda_toolchain = find_program('nvcc', required: false)
+
 foreach p : pipeline_name
+    compile_cmd = [
+        'LD_LIBRARY_PATH=' + halide_library_path,
+        halide_generator,
+        '-o', meson.current_build_dir(),
+        '-g', p[0],
+        '-e', 'o,h',
+        'machine_params=4,6291000,40',
+    ]
+
+    auto_schedule = p[2]
+
+    if cuda_toolchain.found() and auto_schedule
+        compile_cmd += [
+            'target=host-cuda',
+            'auto_schedule=true',
+            '-s','Li2018',
+            '-p','autoschedule_li2018',
+        ]
+    elif auto_schedule
+        compile_cmd += [
+            'target=host',
+            'auto_schedule=true',
+            '-s','Mullapudi2016',
+            '-p','autoschedule_mullapudi2016',
+        ]
+    else
+        compile_cmd += [
+            'target=host',
+            'auto_schedule=false',
+        ]
+    endif
+
     obj = custom_target(
         p[0] + '.o',
         output: [
@@ -110,13 +145,7 @@ foreach p : pipeline_name
         ],
         input: halide_generator,
         command: [
-            halide_generator,
-            '-o', meson.current_build_dir(),
-            '-g', p[0],
-            '-e', 'o,h',
-            'target=host',
-            'auto_schedule=@0@'.format(p[2]),
-            'machine_params=8,6291000,40',
+            compile_cmd,
             p[3],
         ],
     )
