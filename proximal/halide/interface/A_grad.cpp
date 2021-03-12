@@ -6,9 +6,11 @@ namespace proximal {
 int
 A_grad_glue(const array_float_t input, array_float_t output) {
     auto input_buf = getHalideBuffer<3>(input);
-    auto output_buf = getHalideBuffer<4>(output);
+    auto output_buf = getHalideBuffer<4>(output, true);
 
-    return gradImg(input_buf, output_buf);
+    const int success = gradImg(input_buf, output_buf);
+    output_buf.copy_to_host();
+    return success;
 }
 
 }  // namespace proximal

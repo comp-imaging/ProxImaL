@@ -6,9 +6,11 @@ namespace proximal {
 int prox_L1_glue(const array_float_t input, const float theta, array_float_t output) {
 
         auto input_buf = getHalideBuffer<4>(input);
-        auto output_buf = getHalideBuffer<4>(output);
+        auto output_buf = getHalideBuffer<4>(output, true);
 
-        return proxL1(input_buf, theta, output_buf);
+        const int success = proxL1(input_buf, theta, output_buf);
+        output_buf.copy_to_host();
+        return success;
     }
 
 } // proximal

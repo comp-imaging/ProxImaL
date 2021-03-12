@@ -1,0 +1,10 @@
+[wrap-file]
+directory = Halide-10.0.0-arm-64-linux
+
+source_url = https://github.com/halide/Halide/releases/download/v10.0.0/Halide-10.0.0-arm-64-linux-db901f7f7084025abc3cbb9d17b0f2d3f1745900.tar.gz
+source_filename = Halide-10.0.0-arm-64-linux.tar.gz
+source_hash = f686e14eb030f52d894837de04c5de09c619da4fd0e62e2da6d65ffa075b87d3
+
+patch_directory = halide
+
+
