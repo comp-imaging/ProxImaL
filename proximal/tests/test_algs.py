@@ -27,14 +27,13 @@ class TestAlgs(BaseTest):
         prox_fns = [px.sum_squares(X, b=B)]
         sltn = admm.solve(prox_fns, [], 1.0, eps_abs=1e-4, eps_rel=1e-4)
         self.assertItemsAlmostEqual(X.value, B, eps=2e-2)
-        self.assertAlmostEqual(sltn, 0)
+        self.assertAlmostEqual(sltn, 0, eps=1e-5)
 
         prox_fns = [px.norm1(X, b=B, beta=2)]
         sltn = admm.solve(prox_fns, [], 1.0)
         self.assertItemsAlmostEqual(X.value, B / 2., eps=2e-2)
-        self.assertAlmostEqual(sltn, 0)
+        self.assertAlmostEqual(sltn, 0, eps=1e-5)
 
-    @pytest.mark.skip(reason="algorithm failed to converge")
     def test_admm_two_prox_fn(self):
         """Test ADMM algorithm, two prox functions.
         """
@@ -45,7 +44,7 @@ class TestAlgs(BaseTest):
         sltn = admm.solve(prox_fns, [], 1.0, eps_rel=1e-5, eps_abs=1e-5)
 
         cvx_X = cvx.Variable((10, 5))
-        cost = cvx.sum_squares(cvx_X - B) + cvx.norm(cvx_X, 1)
+        cost = cvx.sum_squares(cvx_X - B) + cvx.pnorm(cvx_X, 1)
         prob = cvx.Problem(cvx.Minimize(cost))
         prob.solve()
         self.assertItemsAlmostEqual(X.value, cvx_X.value, eps=2e-1)
@@ -62,7 +61,6 @@ class TestAlgs(BaseTest):
         self.assertItemsAlmostEqual(X.value, cvx_X.value, eps=2e-2)
         self.assertAlmostEqual(sltn, prob.value)
 
-    @pytest.mark.skip(reason="algorithm failed to converge")
     def test_admm_extra_param(self):
         ''' With parameters for px.sum_squares '''
         X = px.Variable((10, 5))
@@ -74,7 +72,7 @@ class TestAlgs(BaseTest):
 
         cvx_X = cvx.Variable((10, 5))
         cost = 0.1 * cvx.sum_squares(2 * cvx_X - B) + cvx.sum_squares(cvx_X) + \
-            cvx.norm(cvx_X, 1) + cvx.trace(B.T @ cvx_X)
+            cvx.pnorm(cvx_X, 1) + cvx.trace(B.T @ cvx_X)
         prob = cvx.Problem(cvx.Minimize(cost))
         prob.solve()
         self.assertItemsAlmostEqual(X.value, cvx_X.value, eps=2e-2)
@@ -96,9 +94,9 @@ class TestAlgs(BaseTest):
         prox_fns = [px.nonneg(x), px.sum_squares(px.conv(kernel, x), b=b)]
         sltn = admm.solve(prox_fns, [], 1.0, eps_abs=1e-5, eps_rel=1e-5)
 
-        kernel_mat = np.matrix("2 1 3; 3 2 1; 1 3 2")
+        kernel_mat = np.array([[2, 1, 3], [3, 2, 1], [1, 3, 2]])
         cvx_X = cvx.Variable(3)
-        cost = cvx.norm(kernel_mat * cvx_X - b)
+        cost = cvx.pnorm(kernel_mat @ cvx_X - b)
         prob = cvx.Problem(cvx.Minimize(cost), [cvx_X >= 0])
         prob.solve()
         self.assertItemsAlmostEqual(x.value, cvx_X.value, eps=2e-2)
@@ -115,7 +113,6 @@ class TestAlgs(BaseTest):
     def test_pock_chambolle_cuda(self):
         self._test_pock_chambolle('pycuda')
 
-    @pytest.mark.skip(reason="algorithm failed to converge")
     def test_pock_chambolle_numpy(self):
         self._test_pock_chambolle('numpy')
 
@@ -139,7 +136,7 @@ class TestAlgs(BaseTest):
                         eps_abs=1e-5,
                         **kw)
         self.assertItemsAlmostEqual(X.value, B, eps=2e-2)
-        self.assertAlmostEqual(sltn, 0)
+        self.assertAlmostEqual(sltn, 0, eps=1e-5)
 
         prox_fns = [px.norm1(X, b=B, beta=2)]
         sltn = pc.solve(prox_fns, [],
@@ -165,7 +162,7 @@ class TestAlgs(BaseTest):
                         **kw)
 
         cvx_X = cvx.Variable((10, 5))
-        cost = cvx.sum_squares(cvx_X - B) + cvx.norm(cvx_X, 1)
+        cost = cvx.sum_squares(cvx_X - B) + cvx.pnorm(cvx_X, 1)
         prob = cvx.Problem(cvx.Minimize(cost))
         prob.solve()
         self.assertItemsAlmostEqual(X.value, cvx_X.value, eps=2e-2)
@@ -185,7 +182,7 @@ class TestAlgs(BaseTest):
 
         # With linear operators.
         kernel = np.array([1, 2, 3])
-        kernel_mat = np.matrix("2 1 3; 3 2 1; 1 3 2")
+        kernel_mat = np.array([[2, 1, 3], [3, 2, 1], [1, 3, 2]])
         x = px.Variable(3)
         b = np.array([-41, 413, 2])
         prox_fns = [px.nonneg(x), px.sum_squares(px.conv(kernel, x), b=b)]
@@ -198,7 +195,7 @@ class TestAlgs(BaseTest):
                         eps_rel=1e-5,
                         **kw)
         cvx_X = cvx.Variable(3)
-        cost = cvx.norm(kernel_mat * cvx_X - b)
+        cost = cvx.pnorm(kernel_mat @ cvx_X - b, 2)
         prob = cvx.Problem(cvx.Minimize(cost), [cvx_X >= 0])
         prob.solve()
         self.assertItemsAlmostEqual(x.value, cvx_X.value, eps=2e-2)
@@ -245,7 +242,6 @@ class TestAlgs(BaseTest):
         self.assertItemsAlmostEqual(x.value, [0])
         self.assertItemsAlmostEqual(y.value, [1])
 
-    @pytest.mark.skip(reason="algorithm failed to converge")
     def test_half_quadratic_splitting_single_prox_fn(self):
         """Test half quadratic splitting.
         """
@@ -257,7 +253,7 @@ class TestAlgs(BaseTest):
                          max_iters=100,
                          max_inner_iters=50)
         self.assertItemsAlmostEqual(X.value, B, eps=2e-2)
-        self.assertAlmostEqual(sltn, 0)
+        self.assertAlmostEqual(sltn, 0, eps=1e-5)
 
         prox_fns = [px.norm1(X, b=B, beta=2)]
         sltn = hqs.solve(prox_fns, [],
@@ -265,9 +261,8 @@ class TestAlgs(BaseTest):
                          max_iters=100,
                          max_inner_iters=50)
         self.assertItemsAlmostEqual(X.value, B / 2., eps=2e-2)
-        self.assertAlmostEqual(sltn, 0)
+        self.assertAlmostEqual(sltn, 0, eps=1e-5)
 
-    @pytest.mark.skip(reason="algorithm failed to converge")
     def test_half_quadratic_splitting_two_prox_fn(self):
         X = px.Variable((10, 5))
         B = np.reshape(np.arange(50), (10, 5))
@@ -282,7 +277,7 @@ class TestAlgs(BaseTest):
                          max_inner_iters=500)
 
         cvx_X = cvx.Variable((10, 5))
-        cost = cvx.sum_squares(cvx_X - B) + cvx.norm(cvx_X, 1)
+        cost = cvx.sum_squares(cvx_X - B) + cvx.pnorm(cvx_X, 1)
         prob = cvx.Problem(cvx.Minimize(cost))
         prob.solve()
         self.assertItemsAlmostEqual(X.value, cvx_X.value, eps=2e-2)
@@ -302,7 +297,7 @@ class TestAlgs(BaseTest):
 
         # With linear operators.
         kernel = np.array([1, 2, 3])
-        kernel_mat = np.matrix("2 1 3; 3 2 1; 1 3 2")
+        kernel_mat = np.array([[2, 1, 3], [3, 2, 1], [1, 3, 2]])
         x = px.Variable(3)
         b = np.array([-41, 413, 2])
         prox_fns = [px.nonneg(x), px.sum_squares(px.conv(kernel, x), b=b)]
@@ -315,7 +310,7 @@ class TestAlgs(BaseTest):
                   max_inner_iters=500)
 
         cvx_X = cvx.Variable(3)
-        cost = cvx.norm(kernel_mat * cvx_X - b)
+        cost = cvx.norm(kernel_mat @ cvx_X - b)
         prob = cvx.Problem(cvx.Minimize(cost), [cvx_X >= 0])
         prob.solve()
         self.assertItemsAlmostEqual(x.value, cvx_X.value, eps=1e-0)
@@ -331,7 +326,6 @@ class TestAlgs(BaseTest):
                   max_inner_iters=500)
         self.assertItemsAlmostEqual(x.value, cvx_X.value, eps=1e-0)
 
-    @pytest.mark.skip(reason="algorithm failed to converge")
     def test_lin_admm_single_prox_fn(self):
         """Test linearized admm. algorithm.
         """
@@ -344,7 +338,7 @@ class TestAlgs(BaseTest):
                            eps_rel=1e-5,
                            eps_abs=1e-5)
         self.assertItemsAlmostEqual(X.value, B, eps=2e-2)
-        self.assertAlmostEqual(sltn, 0)
+        self.assertAlmostEqual(sltn, 0, eps=1e-5)
 
         prox_fns = [px.norm1(X, b=B, beta=2)]
         sltn = ladmm.solve(prox_fns, [],
@@ -355,7 +349,6 @@ class TestAlgs(BaseTest):
         self.assertItemsAlmostEqual(X.value, B / 2., eps=2e-2)
         self.assertAlmostEqual(sltn, 0, eps=2e-2)
 
-    @pytest.mark.skip(reason="algorithm failed to converge")
     def test_lin_admm_two_prox_fn(self):
         X = px.Variable((10, 5))
         B = np.reshape(np.arange(50), (10, 5))
@@ -367,7 +360,7 @@ class TestAlgs(BaseTest):
                            eps_abs=1e-5)
 
         cvx_X = cvx.Variable((10, 5))
-        cost = cvx.sum_squares(cvx_X - B) + cvx.norm(cvx_X, 1)
+        cost = cvx.sum_squares(cvx_X - B) + cvx.pnorm(cvx_X, 1)
         prob = cvx.Problem(cvx.Minimize(cost))
         prob.solve()
         self.assertItemsAlmostEqual(X.value, cvx_X.value, eps=2e-2)
@@ -385,7 +378,7 @@ class TestAlgs(BaseTest):
 
         # With linear operators.
         kernel = np.array([1, 2, 3])
-        kernel_mat = np.matrix("2 1 3; 3 2 1; 1 3 2")
+        kernel_mat = np.array([[2, 1, 3], [3, 2, 1], [1, 3, 2]])
         x = px.Variable(3)
         b = np.array([-41, 413, 2])
         prox_fns = [px.nonneg(x), px.sum_squares(px.conv(kernel, x), b=b)]
@@ -396,7 +389,7 @@ class TestAlgs(BaseTest):
                            eps_rel=1e-5)
 
         cvx_X = cvx.Variable(3)
-        cost = cvx.norm(kernel_mat * cvx_X - b)
+        cost = cvx.pnorm(kernel_mat @ cvx_X - b, 2)
         prob = cvx.Problem(cvx.Minimize(cost), [cvx_X >= 0])
         prob.solve()
         self.assertItemsAlmostEqual(x.value, cvx_X.value, eps=2e-2)
@@ -410,7 +403,6 @@ class TestAlgs(BaseTest):
                            eps_rel=1e-5)
         self.assertItemsAlmostEqual(x.value, cvx_X.value, eps=2e-2)
 
-    @pytest.mark.skip(reason="algorithm failed to converge")
     def test_equil(self):
         """Test equilibration.
         """
@@ -439,4 +431,4 @@ class TestAlgs(BaseTest):
         u, v = np.log(d), np.log(e)
         sltn_val = np.square(tmp).sum() / 2 - u.sum() - v.sum() + \
             gamma * (np.linalg.norm(v)**2 + np.linalg.norm(u)**2)
-        self.assertAlmostEqual((obj_val - sltn_val) / sltn_val, 0, eps=1e-3)
+        self.assertAlmostEqual(obj_val, sltn_val, eps=1e-3)
