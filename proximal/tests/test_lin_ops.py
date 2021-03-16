@@ -74,7 +74,7 @@ class TestLinOps(BaseTest):
         y_val = np.reshape(np.arange(6) * 1.0 - 5, x.shape)
         out = np.zeros(fn.shape)
         fn.forward([x_val, y_val], [out])
-        self.assertItemsAlmostEqual(out, 2 * np.arange(6) - 5)
+        self.assertItemsAlmostEqual(out.ravel(), 2 * np.arange(6) - 5)
 
         # Adjoint.
         x_val = np.reshape(np.arange(6) * 1.0, x.shape)
@@ -89,7 +89,7 @@ class TestLinOps(BaseTest):
         x_val = np.reshape(np.arange(6) * 1.0, x.shape)
         y_val = np.reshape(np.arange(6) * 1.0 - 5, x.shape)
         fn = sum([x_val, y_val])
-        self.assertItemsAlmostEqual(fn.value, 2 * np.arange(6) - 5)
+        self.assertItemsAlmostEqual(fn.value.ravel(), 2 * np.arange(6) - 5)
 
         # Diagonal form.
         x = Variable(5)
@@ -308,7 +308,7 @@ class TestLinOps(BaseTest):
         x = W.copy()
         out = np.zeros(x.shape).flatten()
         fn.adjoint(x, out)
-        self.assertItemsAlmostEqual(out, -2 * W * W)
+        self.assertItemsAlmostEqual(out, (-2 * W * W).ravel())
 
         # Forward.
         var = Variable((2, 5))
@@ -325,7 +325,7 @@ class TestLinOps(BaseTest):
         x = W.copy()
         out = np.zeros(x.shape).flatten()
         fn.adjoint(x, out)
-        self.assertItemsAlmostEqual(out, W * W / 2.)
+        self.assertItemsAlmostEqual(out, (W * W / 2.).ravel())
 
         # Dividing by a scalar.
         # Forward.
@@ -357,7 +357,7 @@ class TestLinOps(BaseTest):
         x = W.copy()
         out = np.zeros(x.shape).flatten()
         fn.adjoint(x, out)
-        self.assertItemsAlmostEqual(out, W * W + 2 * W)
+        self.assertItemsAlmostEqual(out, (W * W + 2 * W).ravel())
 
         # Adding in a constant.
         # CompGraph should ignore the constant.
@@ -391,7 +391,7 @@ class TestLinOps(BaseTest):
         x = W.copy()
         out = np.zeros(x.shape).flatten()
         fn.adjoint(x, out)
-        self.assertItemsAlmostEqual(out, W * W + 2 * W)
+        self.assertItemsAlmostEqual(out, (W * W + 2 * W).ravel())
 
     def test_mask_halide(self):
         """Test mask lin op in halide.

@@ -2,6 +2,7 @@
 import numpy as np
 from typing import Union
 from numbers import Real
+from pytest import approx
 
 
 class BaseTest:
@@ -17,30 +18,24 @@ class BaseTest:
         if type(b) is list:
             b = np.array(a)
 
-        vmax = np.max(
-            (np.linalg.norm(a.ravel(),
-                            np.Inf), np.linalg.norm(b.ravel(), np.Inf)))
+        assert a.shape == b.shape
 
-        rel_diff = np.linalg.norm(a.ravel() - b.ravel(), np.Inf)
+        norm_infinity_b = np.linalg.norm(b.ravel(), np.Inf)
 
-        if vmax == 0:
-            assert rel_diff < eps
+        if norm_infinity_b == 0:
+            # b is a zero matrix / vector
+            assert a == approx(b, abs=eps)
             return
 
-        rel_diff /= vmax
-
-        assert rel_diff < eps
+        assert a == approx(b, abs=norm_infinity_b * eps)
 
     def assertAlmostEqual(self, a: Real, b: Real, places=4, eps=1e-5):
         ''' Make sure that max absolute difference is smaller than a threshold '''
-        delta = abs(a - b)
-        vmax = max(abs(a), abs(b))
-        if vmax == 0:
-            assert delta < eps
+        if b == 0:
+            assert a == approx(b, abs=eps)
             return
 
-        rel_diff = delta / vmax
-        assert rel_diff < eps
+        assert a == approx(b, rel=eps)
 
     def assertEqual(self, a, b):
         self.assertEquals(a, b)
