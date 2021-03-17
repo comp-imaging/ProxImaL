@@ -19,6 +19,6 @@ prox_Poisson_glue(const array_float_t input, const array_float_t M, const array_
 
 }  // namespace proximal
 
-PYBIND11_MODULE(libprox_Poisson, m) {
+PYBIND11_MODULE(prox_Poisson, m) {
     m.def("run", &proximal::prox_Poisson_glue, "Apply proximal function of Poisson statistics");
 }

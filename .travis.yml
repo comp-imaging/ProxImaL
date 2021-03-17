@@ -21,6 +21,7 @@ addons:
 virtualenv:
   system_site_packages: true
 script:
+- bash continuous_integration/test_mesonbuild.sh
 - bash continuous_integration/test_script.sh
 notifications:
   email: false

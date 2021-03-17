@@ -29,7 +29,7 @@ class mul_elemwise(LinOp):
 
             # Halide implementation
             tmpin = np.asfortranarray(inputs[0].astype(np.float32))
-            Halide('A_mask.cpp').A_mask(tmpin, self.weight, self.tmpout)  # Call
+            Halide('A_mask').run(tmpin, self.weight, self.tmpout)  # Call
             np.copyto(outputs[0], self.tmpout)
 
         else:

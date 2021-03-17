@@ -17,6 +17,6 @@ int At_mask(const array_float_t input, const array_float_t mask,
 
 } // proximal
 
-PYBIND11_MODULE(libAt_mask, m) {
+PYBIND11_MODULE(At_mask, m) {
     m.def("run", &proximal::At_mask, "Apply conjugate elementwise multiplication");
 }

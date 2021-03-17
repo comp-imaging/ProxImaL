@@ -99,7 +99,8 @@ pipeline_name = [[
         [],
 ]]
 
-python_dep = dependency('python3')
+py = import('python').find_installation('python3')
+python_dep = py.dependency()
 pybind11_dep = subproject('pybind11').get_variable('pybind11_dep')
 
 cuda_toolchain = find_program('nvcc', required: false)
@@ -151,10 +152,7 @@ foreach p : pipeline_name
     )
 
     foreach library_name : p[1]
-        # TODO: use meson python extension_module to infer the suffix
-        # of the library
-        #lib = py.extension_module(
-        lib = library(
+        lib = py.extension_module(
             library_name,
             sources: [
                 'interface/@0@.cpp'.format(library_name),
@@ -166,5 +164,7 @@ foreach p : pipeline_name
                 halide_runtime_dep,
             ],
         )
+
+        alias_target(library_name, lib)
     endforeach
 endforeach

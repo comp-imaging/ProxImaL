@@ -44,7 +44,7 @@ class Halide(object):
 
         # Save arguments
         self.func = func
-        self.module_name = 'lib{}'.format(func)
+        self.module_name = func
         self.builddir = builddir
         self.recompile = recompile
         self.reconfigure = reconfigure
@@ -86,7 +86,7 @@ class Halide(object):
         ''' Generate the new code (exits on fail) '''
 
         subprocess.check_call(
-            ['ninja', '-C', self.builddir, '{}.so'.format(self.module_name)])
+            ['ninja', '-C', self.builddir, self.module_name])
 
     def run(self, *args):
         """ Execute Halide code that was compiled before. """

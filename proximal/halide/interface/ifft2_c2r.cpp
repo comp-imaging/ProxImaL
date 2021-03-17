@@ -13,6 +13,6 @@ int ifft2_c2r_glue(const array_complex_t input, array_float_t output) {
 
 } // proximal
 
-PYBIND11_MODULE(libifft2_c2r, m) {
+PYBIND11_MODULE(ifft2_c2r, m) {
     m.def("run", &proximal::ifft2_c2r_glue, "Apply 2D ifft");
 }

@@ -17,6 +17,6 @@ int A_mask(const array_float_t input, const array_float_t mask,
 
 } // proximal
 
-PYBIND11_MODULE(libA_mask, m) {
+PYBIND11_MODULE(A_mask, m) {
     m.def("run", &proximal::A_mask, "Apply elementwise multiplication");
 }
