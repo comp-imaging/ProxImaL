@@ -15,6 +15,6 @@ int prox_IsoL1_glue(const array_float_t input, const float theta, array_float_t 
 
 } // proximal
 
-PYBIND11_MODULE(libprox_IsoL1, m) {
+PYBIND11_MODULE(prox_IsoL1, m) {
     m.def("run", &proximal::prox_IsoL1_glue, "Apply soft thresholding");
 }

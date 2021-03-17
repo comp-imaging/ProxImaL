@@ -17,6 +17,6 @@ int A_conv_glue(const array_float_t input, const array_float_t K,
 
 } // proximal
 
-PYBIND11_MODULE(libA_conv, m) {
+PYBIND11_MODULE(A_conv, m) {
     m.def("run", &proximal::A_conv_glue, "Apply 2D convolution");
 }

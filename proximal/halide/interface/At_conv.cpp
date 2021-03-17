@@ -17,6 +17,6 @@ int At_conv_glue(const array_float_t input, const array_float_t K,
 
 } // proximal
 
-PYBIND11_MODULE(libAt_conv, m) {
+PYBIND11_MODULE(At_conv, m) {
     m.def("run", &proximal::At_conv_glue, "Apply 2D adjoint convolution");
 }

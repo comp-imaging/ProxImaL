@@ -17,6 +17,6 @@ int A_warp_glue(const array_float_t input, const array_float_t H,
 
 } // proximal
 
-PYBIND11_MODULE(libA_warp, m) {
+PYBIND11_MODULE(A_warp, m) {
     m.def("run", &proximal::A_warp_glue, "Apply affine transform");
 }

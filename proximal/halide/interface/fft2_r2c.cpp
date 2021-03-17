@@ -14,6 +14,6 @@ int fft2_r2c_glue(const array_float_t input, const int xshift,
 
 } // proximal
 
-PYBIND11_MODULE(libfft2_r2c, m) {
+PYBIND11_MODULE(fft2_r2c, m) {
     m.def("run", &proximal::fft2_r2c_glue, "Apply 2D adjoint convolution");
 }

@@ -15,6 +15,6 @@ A_grad_glue(const array_float_t input, array_float_t output) {
 
 }  // namespace proximal
 
-PYBIND11_MODULE(libA_grad, m) {
+PYBIND11_MODULE(A_grad, m) {
     m.def("run", &proximal::A_grad_glue, "Compute adjoint of gradient");
 }
