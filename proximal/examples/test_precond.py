@@ -95,21 +95,21 @@ op2 = mul_elemwise(op2_d, op2)
 
 stacked_ops = vstack([op1, op2])
 L = est_CompGraph_norm(CompGraph(stacked_ops))
-print "||K||_2 = ", L
+print("||K||_2 = ", L)
 # Quadratic or non quadratic splitting
-print 'Splitting quadratics'
+print('Splitting quadratics')
 
-# print np.linalg.norm(new_x.weight)
+# print(np.linalg.norm(new_x.weight))
 # op1_d /= np.sqrt(L)
 # op2_d /= np.sqrt(L)
 # e /= np.sqrt(L)
-# print np.linalg.norm(new_x.weight)
+# print(np.linalg.norm(new_x.weight))
 
 nonquad_fns = [weighted_norm1(1 / op1_d, op1, alpha=lambda_tv)]  # Anisotropic
 # nonquad_fns = [group_norm1( grad(x, dims = 2), [2], alpha = lambda_tv )] #Isotropic
 quad_funcs = [weighted_sum_squares(1 / op2_d, op2, b=op2_d * b, alpha=lambda_data)]
 
-# print 'No splitting'
+# print('No splitting')
 # #nonquad_fns = [sum_squares(conv(K, x), b=b, alpha = 400), norm1( grad(x, dims = 2), alpha = lambda_tv ) ] #Anisotropic
 # nonquad_fns = [sum_squares(conv(K, x), b=b, alpha = 400), group_norm1( grad(x, dims = 2), [2] ) ] #Isotropic
 # quad_funcs = []
@@ -169,9 +169,9 @@ elif method == 'hqs':
         eps_rel=1e-6, max_iters=10, max_inner_iters=10, x0=b,
         try_diagonalize=diag, metric=psnrval, verbose=verbose)
 
-print convlog.objective_val
+print(convlog.objective_val)
 
-print reduce(lambda x, y: x + y, [fn.value for fn in orig_fns])
+print(reduce(lambda x, y: x + y, [fn.value for fn in orig_fns]))
 
 print('Running took: {0:.1f}s'.format(toc() / 1000.0))
 

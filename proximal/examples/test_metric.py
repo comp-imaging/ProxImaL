@@ -24,7 +24,6 @@ img = Image.open('./data/angela.jpg')  # opens the file using Pillow - it's not 
 np_img = np.asfortranarray(im2nparray(img))
 np_img_color = np_img
 np_img = np.mean(np_img_color, axis=2)
-# print 'Type ', np_img.dtype , 'Shape', np_img.shape
 
 plt.ion()
 plt.figure()

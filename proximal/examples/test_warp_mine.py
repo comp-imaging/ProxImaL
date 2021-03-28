@@ -28,7 +28,7 @@ img = Image.open('./data/largeimage.png')  # opens the file using Pillow - it's 
 
 np_img = np.asfortranarray(im2nparray(img))
 #np_img = np.mean( np_img, axis=2)
-print 'Type ', np_img.dtype, 'Shape', np_img.shape
+print('Type ', np_img.dtype, 'Shape', np_img.shape)
 
 plt.ion()
 plt.figure()

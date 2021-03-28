@@ -26,10 +26,10 @@ eng.addpath(r'../../apps/poisson/hyperlaplacian_code', nargout=0)
 # Call script function
 # eng.deblurring_launch_single_poisson(nargout=0)
 #result = np.array( eng.workspace['I_deconv'] )
-# print result.shape, ' ', result.dtype
+# print(result.shape, ' ', result.dtype)
 
 result = np.array(eng.deblurring_launch_single_poisson_test())
-print result.shape, ' ', result.dtype
+print(result.shape, ' ', result.dtype)
 
 # Show result
 plt.ion()

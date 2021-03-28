@@ -34,9 +34,9 @@ np_img = np.asfortranarray(im2nparray(img).astype(np.float32))
 
 #np_img = np.array([[[1.1,0.7],[1.5,1.0]],[[1.1,1.0],[1.0,1.0]]], dtype=np.float32, order='FORTRAN')
 #np_img = np.mean( np_img, axis=2)
-print 'Type ', np_img.dtype, 'Shape', np_img.shape
+print('Type ', np_img.dtype, 'Shape', np_img.shape)
 output = np.array([0.0], dtype=np.float32)
-print 'Type ', output.dtype, 'Shape', output.shape
+print('Type ', output.dtype, 'Shape', output.shape)
 
 output_ref_reordered = sqrt(np.sum(np.sum(np_img * np_img, 1)))
 print('ref reordered: ', output_ref_reordered)
@@ -65,10 +65,10 @@ output = output[0]
 tic()
 output_ref = np.linalg.norm(np_img.ravel(), 2)
 print('Running numpy norm took: {0:.1f}ms'.format(toc()))
-print output_ref.dtype
+print(output_ref.dtype)
 
 # Ours vs ref
-print 'Ref vs. our output: ', output_ref, output
+print('Ref vs. our output: ', output_ref, output)
 
 
 # Error

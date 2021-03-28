@@ -33,9 +33,9 @@ np_img = np.asfortranarray(im2nparray(img))
 
 #np_img = np.array([[[1.1,0.7],[1.5,1.0]],[[1.1,1.0],[1.0,1.0]]], dtype=np.float32, order='FORTRAN')
 #np_img = np.mean( np_img, axis=2)
-print 'Type ', np_img.dtype, 'Shape', np_img.shape
+print('Type ', np_img.dtype, 'Shape', np_img.shape)
 output = np.array([0.0], dtype=np.float32)
-print 'Type ', output.dtype, 'Shape', output.shape
+print('Type ', output.dtype, 'Shape', output.shape)
 
 ############################################################
 # NORM2
@@ -56,7 +56,6 @@ hl_norm2(np_img, output)  # Dummy call (to load dll?)
 timeNorm2_halide = 0.0
 timeNorm2_numpy = 0.0
 for x in range(0, numIterations):
-# print "x %d" % (x)
     tic()
     hl_norm2(np_img, output)  # Call
     timeNorm2_halide += toc()
@@ -94,7 +93,6 @@ hl_dot(np_img0, np_img1, output)  # Dummy call (to load dll?)
 timeDot_halide = 0.0
 timeDot_numpy = 0.0
 for x in range(0, numIterations):
-# print "x %d" % (x)
     tic()
     hl_dot(np_img0, np_img1, output)  # Call
     timeDot_halide += toc()

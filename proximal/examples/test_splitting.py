@@ -50,8 +50,8 @@ args.quadratics = args.quadratics != 0
 args.convolutional = args.convolutional != 0
 diag = args.diagonalize != 0
 verbose = args.verbose
-print "\n<<<RUNNING method=%s, using quadratics=%d, using convolutional grad=%d, trying to diagonalize=%d, verbose = %d >>>\n\n" % (args.method,
-                                                                                                                                    args.quadratics, args.convolutional, diag, verbose)
+print("\n<<<RUNNING method=%s, using quadratics=%d, using convolutional grad=%d, trying to diagonalize=%d, verbose = %d >>>\n\n" % (args.method,
+                                                                                                                                    args.quadratics, args.convolutional, diag, verbose))
 
 ############################################################
 
@@ -108,12 +108,12 @@ x = Variable(I.shape)
 if args.quadratics:
 
     if not args.convolutional:
-        print 'Splitting quadratics'
+        print('Splitting quadratics')
         # nonquad_fns = [norm1( grad(x, dims = 2), alpha = lambda_tv )] #Anisotropic
         nonquad_fns = [group_norm1(grad(x, dims=2), [2], alpha=lambda_tv)]  # Isotropic
         quad_funcs = [sum_squares(conv(K, x), b=b, alpha=lambda_data)]
     else:
-        print 'Splitting quadratics and convolutional gradient'
+        print('Splitting quadratics and convolutional gradient')
         # Sparse gradient deconvolution with quadratic definition using deconvolution
         quad_funcs = [sum_squares(conv(K, x), b=b, alpha=400.0)]
         nonquad_fns = [norm1(conv(dx, x), alpha=lambda_tv), norm1(
@@ -122,14 +122,14 @@ if args.quadratics:
 else:
 
     if not args.convolutional:
-        print 'No splitting'
+        print('No splitting')
         # nonquad_fns = [sum_squares(conv(K, x), b=b, alpha = 400), norm1( grad(x,
         # dims = 2), alpha = lambda_tv ) ] #Anisotropic
         nonquad_fns = [sum_squares(conv(K, x), b=b, alpha=400),
                                    group_norm1(grad(x, dims=2), [2])]  # Isotropic
         quad_funcs = []
     else:
-        print 'No splitting and convolutional gradient'
+        print('No splitting and convolutional gradient')
         # Sparse gradient deconvolution with quadratic definition using deconvolution
         nonquad_fns = [sum_squares(conv(K, x), b=b, alpha=400.0), norm1(
             conv(dx, x), alpha=lambda_tv), norm1(conv(dy, x), alpha=lambda_tv)]
@@ -138,7 +138,7 @@ else:
 # Prox functions are the union
 prox_fns = nonquad_fns + quad_funcs
 
-print prox_fns
+print(prox_fns)
 
 tic()
 if args.method == 'pc':

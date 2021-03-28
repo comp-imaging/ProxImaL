@@ -36,9 +36,9 @@ np_img = np.asfortranarray(im2nparray(img))
 np_img0 = np.mean(np_img, axis=2)
 np_img1 = np_img0
 
-print 'Type ', np_img.dtype, 'Shape', np_img.shape
+print('Type ', np_img.dtype, 'Shape', np_img.shape)
 output = np.array([0.0], dtype=np.float32)
-print 'Type ', output.dtype, 'Shape', output.shape
+print('Type ', output.dtype, 'Shape', output.shape)
 
 output_ref_reordered = np.sum(np.sum(np_img0 * np_img1, 1))
 print('ref reordered: ', output_ref_reordered)
@@ -70,7 +70,7 @@ output_ref = np.dot(np_img0.ravel(), np_img1.ravel())
 print('Running numpy .dot took: {0:.1f}ms'.format(toc()))
 
 # Ours vs ref
-print 'Ref vs. our output: ', output_ref, output
+print('Ref vs. our output: ', output_ref, output)
 
 
 # Error
