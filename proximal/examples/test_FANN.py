@@ -18,6 +18,7 @@ from PIL import Image
 import matlab.engine
 import StringIO
 import subprocess
+import cvxpy
 
 ############################################################
 
