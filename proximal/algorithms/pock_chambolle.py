@@ -1,6 +1,5 @@
 from __future__ import print_function
 import tempfile
-import os
 from proximal.lin_ops import (CompGraph, est_CompGraph_norm, Variable,
                               vstack)
 from proximal.utils.timings_log import TimingsLog, TimingsEntry
@@ -224,7 +223,7 @@ def solve(psi_fns, omega_fns, tau=None, sigma=None, theta=None,
                 # ravel() avoids a redundant memcpy
                 x[:] = prox(fn, 1.0 / ctau, xtmp, x_init=prev_x,
                                      lin_solver=lin_solver, options=lin_solver_options).ravel()
-            else: 
+            else:
                 x[:] = adapter.flatten( prox(fn, 1.0 / ctau, xtmp, x_init=prev_x,
                                      lin_solver=lin_solver, options=lin_solver_options))
 
@@ -281,11 +280,9 @@ def solve(psi_fns, omega_fns, tau=None, sigma=None, theta=None,
                     objval = sum(ov)
                     objstr = ", obj_val = %02.03e [%s] " % (objval, ", ".join("%02.03e" % x for x in ov))
 
-                # Evaluate metric potentially
-                metstr = '' if metric is None else ", {}".format(metric.message(v))
                 print(
-                    "iter %d: ||r||_2 = %.3f, eps_pri = %.3f, ||s||_2 = %.3f, eps_dual = %.3f%s%s"
-                    % (i, np.linalg.norm(adapter.to_np(r)), eps_pri, np.linalg.norm(adapter.to_np(s)), eps_dual, objstr, metstr)
+                    "iter %d: ||r||_2 = %.3f, eps_pri = %.3f, ||s||_2 = %.3f, eps_dual = %.3f%s"
+                    % (i, np.linalg.norm(adapter.to_np(r)), eps_pri, np.linalg.norm(adapter.to_np(s)), eps_dual, objstr)
                 )
 
             iter_timing["pc_iteration_tot"].toc()

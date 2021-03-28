@@ -4,10 +4,8 @@ from __future__ import print_function, division
 import numpy as np
 from scipy.misc import ascent, face
 import cv2
-
 import os
 from numpy.fft import fftn, ifftn, fft2, ifft2
-import cv2
 import timeit
 import sys
 

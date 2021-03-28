@@ -4,8 +4,6 @@ from __future__ import print_function
 import importlib
 import subprocess
 import os
-import sys
-import typing
 import numpy as np
 
 
@@ -98,9 +96,7 @@ class Halide(object):
         error = launch.run(*args)
 
         if error != 0:
-            raise RuntimeError('Halide call to {0} returned {2}'.format(
-                function_name_c, error)
-                  )
+            raise RuntimeError(f'Halide call to {self.function_name_c} returned {error}')
 
 class Params:
     """ Supported Params. """
