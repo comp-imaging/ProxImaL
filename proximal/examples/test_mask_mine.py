@@ -42,7 +42,7 @@ mask = np.asfortranarray(np.random.randn(*list(np_img.shape)).astype(np.float32)
 mask = np.maximum(mask, 0.)
 #mask[mask < 0.5] = 0.
 #mask[mask >= 0.5] = 1.
-print 'Type ', mask.dtype, 'Shape', mask.shape
+print('Type ', mask.dtype, 'Shape', mask.shape)
 
 # Halide('A_mask.cpp', recompile=True) #Call
 
