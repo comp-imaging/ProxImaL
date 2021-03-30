@@ -99,7 +99,7 @@ pipeline_name = [[
         [],
 ]]
 
-py = import('python').find_installation('python3')
+py = import('python').find_installation()
 python_dep = py.dependency()
 pybind11_dep = subproject('pybind11').get_variable('pybind11_dep')
 
