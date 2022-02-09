@@ -403,6 +403,28 @@ class TestAlgs(BaseTest):
                            eps_rel=1e-5)
         self.assertItemsAlmostEqual(x.value, cvx_X.value, eps=2e-2)
 
+    def test_lin_admm_two_prox_fn_shape_matching(self):
+        # With nested linear operators.
+        kernel_mat = np.array([[2, 1, 3], [3, 2, 1], [1, 3, 2]])
+
+        N = 3
+        factor = 1
+        b = np.ones((N, N))
+        x = px.Variable((N * factor, N * factor))
+        prox_fns = [
+            px.norm1(x),
+            px.sum_squares(px.subsample(px.conv(kernel_mat, x),
+                                        (factor, factor)),
+                           b=b),
+        ]
+        psi_fns, omega_fns = ladmm.partition(prox_fns)
+        sltn = ladmm.solve(psi_fns,
+                           omega_fns,
+                           0.1,
+                           max_iters=3000,
+                           eps_abs=1e-5,
+                           eps_rel=1e-5)
+
     def test_equil(self):
         """Test equilibration.
         """
