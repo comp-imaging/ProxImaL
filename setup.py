@@ -23,6 +23,6 @@ setup(
                       "scipy >= 0.15",
                       "numexpr",
                       "Pillow",
-                      "meson >= 0.54"],
+                      "meson >= 0.58"],
     use_2to3=True,
 )

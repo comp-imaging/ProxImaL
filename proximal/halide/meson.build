@@ -1,4 +1,5 @@
 project('proximal-halide', 'cpp',
+    meson_version: '>=0.58.1',
     default_options: [
         'buildtype=debugoptimized',
 ])
@@ -107,7 +108,6 @@ cuda_toolchain = find_program('nvcc', required: false)
 
 foreach p : pipeline_name
     compile_cmd = [
-        'LD_LIBRARY_PATH=' + halide_library_path,
         halide_generator,
         '-o', meson.current_build_dir(),
         '-g', p[0],
@@ -145,6 +145,9 @@ foreach p : pipeline_name
             p[0] + '.h',
         ],
         input: halide_generator,
+        env: {
+            'LD_LIBRARY_PATH': halide_library_path,
+        },
         command: [
             compile_cmd,
             p[3],
