@@ -24,5 +24,4 @@ setup(
                       "numexpr",
                       "Pillow",
                       "meson >= 0.58"],
-    use_2to3=True,
 )
