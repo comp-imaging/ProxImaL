@@ -171,3 +171,8 @@ foreach p : pipeline_name
         alias_target(library_name, lib)
     endforeach
 endforeach
+
+subdir('src/test_data')
+subdir('src/core')
+subdir('src/algorithm')
+subdir('src/user-problem')

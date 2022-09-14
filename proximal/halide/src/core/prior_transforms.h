@@ -20,16 +20,17 @@ namespace {
 // K = [ dx;
 //       dy];
 Func K_grad_mat(const Func input, const Expr width, const Expr height) {
-    
+    using Halide::BoundaryConditions::mirror_image;
+
     Func Kx("Kx");
 
     // Compute gradient
     Func inBounded("inBounded");
-    inBounded = mirror_image(input, 0, width, 0, height);
-    
-	Func dx("dx");
-	Func dy("dy");
-	dx(x, y, c) =  inBounded(x + 1, y, c) - inBounded(x, y, c);
+    inBounded = mirror_image(input, {{0, width}, {0, height}});
+
+    Func dx("dx");
+    Func dy("dy");
+    dx(x, y, c) = inBounded(x + 1, y, c) - inBounded(x, y, c);
     dy(x, y, c) =  inBounded(x, y + 1, c) - inBounded(x, y, c);
 	
 	Kx(x, y, c, k) = select(k == 0, dy(x, y, c), dx(x, y, c));
@@ -39,27 +40,24 @@ Func K_grad_mat(const Func input, const Expr width, const Expr height) {
 
 //KT just for gradient
 Func KT_grad_mat(const Func input, const Expr width, const Expr height) {
-   
-	Func KTp("KTp");
+    using Halide::BoundaryConditions::mirror_image;
+
+    Func KTp("KTp");
     Func KTx("KTx");
     Func KTy("KTy");
     Func KT("KT");
     
     // Compute gradient for current iteration
     Func inBounded("inBounded");
-    inBounded = mirror_image(input, 0, width, 0, height);
+    inBounded = mirror_image(input, {{0, width}, {0, height}});
 
-	KTy(x, y, c) = select(
-			y == 0, inBounded(x, 0, c, 0),
-			y == height-1, -inBounded(x, height - 2, c, 0),
-			inBounded(x, y, c, 0) - inBounded(x, y - 1, c, 0)
-			);
+    KTy(x, y, c) =
+        select(y == 0, inBounded(x, 0, c, 0), y == height - 1, -inBounded(x, height - 2, c, 0),
+               inBounded(x, y, c, 0) - inBounded(x, y - 1, c, 0));
 
-	KTx(x, y, c) =   select(
-			x == 0,  inBounded(0, y, c, 1),
-			x == width-1, -inBounded(width - 2, y, c, 1),
-			inBounded(x, y, c, 1) - inBounded(x - 1, y, c, 1)
-			);
+    KTx(x, y, c) =
+        select(x == 0, inBounded(0, y, c, 1), x == width - 1, -inBounded(width - 2, y, c, 1),
+               inBounded(x, y, c, 1) - inBounded(x - 1, y, c, 1));
 	
     //Final result is sum of all matrix-vector products
     KT(x, y, c) = -KTx(x, y, c) - KTy(x, y, c);
