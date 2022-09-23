@@ -55,7 +55,7 @@ public:
         //Input
         Func input_func("in");
         Func paddedInput("paddedInput");
-        paddedInput = repeat_image( constant_exterior(input, 0.f), 0, wtarget, 0, htarget);
+        paddedInput = repeat_image( constant_exterior(input, 0.f), {{0, wtarget}, {0, htarget}});
         input_func(x, y, c) = paddedInput( x + shiftx, y + shifty, c );
 
         //Warping

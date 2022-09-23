@@ -42,7 +42,7 @@ Func At_conv(Func input, Expr width, Expr height, Func K, Expr filter_width, Exp
 
     //Clamped
     Func img_bounded("img_bounded");
-    img_bounded = BoundaryConditions::repeat_image(input, 0, width, 0, height);
+    img_bounded = BoundaryConditions::repeat_image(input, {{0, width}, {0, height}});
 
     //Define the convolution
     Func img_conv("img_conv");

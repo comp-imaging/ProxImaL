@@ -278,7 +278,7 @@ ComplexFunc twiddle_factors(int N, Expr gain, int sign,
     // function. Generally, any given FFT will only have one set of twiddle
     // factors where gain != 1.
     ComplexFunc W(prefix + "W");
-    if (is_one(gain)) {
+    if (is_const_one(gain)) {
         W = (*cache)[N];
     }
     if (!W.defined()) {
@@ -501,8 +501,7 @@ ComplexFunc fft2d_c2c(ComplexFunc x,
     TwiddleFactorSet twiddle_cache;
 
     // transpose the input to the FFT.
-    ComplexFunc xT, x_tiled;
-    std::tie(xT, x_tiled) = tiled_transpose(x, N1, target, prefix);
+    auto [xT, x_tiled] = tiled_transpose(x, N1, target, prefix);
 
     // Compute the DFT of dimension 1 (originally dimension 0).
     ComplexFunc dft1T = fft_dim1(xT,
@@ -516,8 +515,7 @@ ComplexFunc fft2d_c2c(ComplexFunc x,
                                  &twiddle_cache);
 
     // transpose back.
-    ComplexFunc dft1, dft1_tiled;
-    std::tie(dft1, dft1_tiled) = tiled_transpose(dft1T, N0, target, prefix);
+    auto [dft1, dft1_tiled] = tiled_transpose(dft1T, N0, target, prefix);
 
     // Compute the DFT of dimension 1.
     ComplexFunc dft = fft_dim1(dft1,
@@ -783,8 +781,7 @@ ComplexFunc fft2d_r2c(Func r,
     int zipped_extent0 = std::min((N1 + 1) / 2, zip_width);
 
     // transpose so we can FFT dimension 0 (by making it dimension 1).
-    ComplexFunc unzippedT, unzippedT_tiled;
-    std::tie(unzippedT, unzippedT_tiled) = tiled_transpose(zipped_0, zipped_extent0, target, prefix);
+    auto [unzippedT, unzippedT_tiled] = tiled_transpose(zipped_0, zipped_extent0, target, prefix);
 
     // DFT down the columns again (the rows of the original).
     ComplexFunc dftT = fft_dim1(unzippedT,
@@ -874,6 +871,10 @@ ComplexFunc fft2d_r2c(Func r,
     dft.update(4).allow_race_conditions().vectorize(n0z1, vector_size);
     dft.update(5).allow_race_conditions().vectorize(n0z2, vector_size);
 
+    // Intentionally serial
+    dft.update(0).unscheduled();
+    dft.update(3).unscheduled();
+
     // Our result is undefined outside these bounds.
     dft.bound(n0, 0, N0);
     dft.bound(n1, 0, (N1 + 1) / 2 + 1);
@@ -905,7 +906,7 @@ Func fft2d_c2r(ComplexFunc c,
     // Add a boundary condition to prevent scheduling from causing the
     // algorithms below to reach out of the bounds we promise to define in
     // forward FFTs.
-    c = ComplexFunc(repeat_edge((Func)c, Expr(0), Expr(N0), Expr(0), Expr((N1 + 1) / 2 + 1)));
+    c = ComplexFunc(repeat_edge((Func)c, {{Expr(0), Expr(N0)}, {Expr(0), Expr((N1 + 1) / 2 + 1)}}));
 
     // If this FFT is small, the logic related to zipping and unzipping
     // the FFT may be expensive compared to just brute forcing with a complex
@@ -949,8 +950,7 @@ Func fft2d_c2r(ComplexFunc c,
         }
 
         // transpose the input.
-        ComplexFunc cT, cT_tiled;
-        std::tie(cT, cT_tiled) =
+        auto [cT, cT_tiled] =
             tiled_transpose(c_zipped, zipped_extent0, target, prefix);
 
         // Take the inverse DFT of the columns (rows in the final result).
@@ -971,8 +971,7 @@ Func fft2d_c2r(ComplexFunc c,
         }
 
         // transpose so we can take the DFT of the columns again.
-        ComplexFunc dft0, dft0_tiled;
-        std::tie(dft0, dft0_tiled) = tiled_transpose(dft0T, zip_width, target, prefix, true);
+        auto [dft0, dft0_tiled] = tiled_transpose(dft0T, zip_width, target, prefix, true);
 
         // Unzip the DC and Nyquist DFTs.
         ComplexFunc dft0_unzipped("dft0_unzipped");
@@ -1020,7 +1019,7 @@ Func fft2d_c2r(ComplexFunc c,
                        target,
                        &twiddle_cache);
 
-        ComplexFunc dft_padded = ComplexFunc(repeat_edge((Func)dft, Expr(), Expr(), Expr(0), Expr(N1)));
+        ComplexFunc dft_padded = ComplexFunc(repeat_edge((Func)dft, {{Expr(), Expr()}, {Expr(0), Expr(N1)}}));
 
         // Extract the real inverse DFTs.
         Expr unzip_n0 = (n0 / (zip_width * 2)) * zip_width + (n0 % zip_width);
