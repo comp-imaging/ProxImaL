@@ -1,9 +1,9 @@
 [wrap-file]
-directory = Halide-10.0.0-x86-64-linux
+directory = Halide-14.0.0-x86-64-linux
 
-source_url = https://github.com/halide/Halide/releases/download/v10.0.0/Halide-10.0.0-x86-64-linux-db901f7f7084025abc3cbb9d17b0f2d3f1745900.tar.gz
-source_filename = Halide-10.0.0-x86-64-linux.tar.gz
-source_hash = 36c196e83c6727b358ea2bbeb60a70c491c698b0b95da6c07d5028f94a30c61c
+source_url = https://github.com/halide/Halide/releases/download/v14.0.0/Halide-14.0.0-x86-64-linux-6b9ed2afd1d6d0badf04986602c943e287d44e46.tar.gz
+source_filename = Halide-14.0.0-x86-64-linux.tar.gz
+source_hash = be3bdd067acb9ee0d37d0830821113cd69174bee46da466a836d8829fef7cf91
 
 patch_directory = halide
 
