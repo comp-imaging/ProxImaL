@@ -1,0 +1,99 @@
+#pragma once
+#include <Halide.h>
+
+#include <utility>
+
+using namespace Halide;
+
+#include "prior_transforms.h"
+#include "problem-config.h"
+#include "problem-interface.h"
+#include "prox_operators.h"
+#include "prox_parameterized.h"
+
+namespace problem_definition {
+
+using proximal::prox::ParameterizedProx;
+
+/** Transform between variables z and u.
+ *
+ * This is a demonstration of how ProxImaL should generate Halide code for the
+ * (L-)ADMM solver. In this example, the end-user defines the TV-regularizaed
+ * denoising problem with non-negative constraints in Proximal language. Then,
+ * the ProxImaL-Gen module exports the following functions automatically.
+ *
+ * Currently (Sept, 2022), ProxImaL has not yet implemented Halide-codegen
+ * feature in ProxImal. Here, we manualy craft the transform in Halide code as
+ * an example.
+ */
+struct Transform {
+    constexpr static auto width = problem_config::output_width;
+    constexpr static auto height = problem_config::output_height;
+    constexpr static auto N = problem_config::psi_size;
+
+    /** Compute dx, dy of a two dimensional image with c number of channels. */
+    FuncTuple<N> forward(const Func& z) {
+        /* Begin code-generation */
+        {{ K.halide_forward_graph.gen_code() }}
+        /* End code-generation */
+    }
+
+    Func adjoint(const FuncTuple<N>& u) {
+        /* Begin code-generation */
+        {{ K.halide_adjoint_graph.gen_code() }}
+        /* End code-generation */
+    }
+} K;
+
+#if __cplusplus >= 202002L
+
+// If C++20 is supported, validate the transform structure.
+static_assert(LinOpGrah<Transform>);
+#endif
+
+/** List of functions in set Omega, after problem splitting by ProxImaL. */
+const ParameterizedProx omega_fn{
+    /* Begin code-generation */
+    /* . prox = */ [](const Func& v, const Expr& rho) -> Func {
+        {{ omega_fns[0].generateHalideCode() }}
+    },
+    /* .alpha = */ {{ omega_fns[0].alpha }},
+    /* .beta = */ {{ omega_fns[0].beta }},
+    /* .gamma = */ {{ omega_fns[0].gamma }},
+    /* ._c = */ {{ omega_fns[0].c }},
+    /* .d = */ {{ omega_fns[0].d }},
+    /* .n_dim = 3, */
+    /* End code-generation */
+};
+
+#if __cplusplus >= 202002L
+
+// If C++20 is supported, validate the transform structure.
+static_assert(Prox<ParameterizedProx>);
+#endif
+
+/** List of functions in set Psi, after problem splitting by ProxImaL.
+ *
+ * Note(Antony): these proximal functions can be parameterized with
+ * proximal::prox::ParameterizedProx . But first the class needs to be generalized to 4D signal.
+ *
+ * TODO(Antony): Use C++20 reference designator to initialize fields. This requires Halide >= 14.0.
+ */
+const std::array<ParameterizedProx, problem_config::psi_size> psi_fns{
+    /* Begin code generation */
+{% for p in psi_fns %}
+    /* . prox = */ [](const Func& v, const Expr& rho) -> Func {
+        {{ p.generateHalideCode() }}
+    },
+    /* .alpha = */ {{ p.alpha }},
+    /* .beta = */ {{ p.beta }},
+    /* .gamma = */ {{ p.gamma }},
+    /* ._c = */ {{ p.c }},
+    /* .d = */ {{ p.d }},
+    /* .n_dim = */ {{ p.lin_op.shape.size }}
+    }
+{% endfor %}
+    /* End code-generation */
+};
+
+}  // namespace problem_definition
