@@ -1,0 +1,19 @@
+#pragma once
+
+/** User-defined problem configurations. This is supposed to be generated automatically by
+ * ProxImal-Gen */
+namespace problem_config {
+
+/** Number of functions in the set "psi", for (L-)ADMM solvers. */
+constexpr auto psi_size = {{ len(psi_fns) }};
+
+/** input data size of the user-provided (distorted and noisy) image. */
+constexpr auto input_width = {{ omega_fns[0].lin_op.shape[0] }};
+constexpr auto input_height = {{ omega_fns[0].lin_op.shape[0] }};
+constexpr auto input_size = input_width * input_height;
+
+/** output data size of the restored image. */
+constexpr auto output_width = {{ K.output_size }};
+constexpr auto output_height = 1;
+constexpr auto output_size = output_width * output_height;
+}  // namespace problem_config
