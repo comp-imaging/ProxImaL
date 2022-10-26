@@ -46,15 +46,23 @@ solver_bin = custom_target(
     build_by_default: true,
 )
 
-test_runtime_exe = executable('test-runtime',
+ladmm_runtime_lib = library('ladmm-runtime',
+    sources: [
+        'ladmm-runtime.cpp',
+        solver_bin,
+    ],
+    dependencies: halide_runtime_dep,
+)
+
+test_runtime_exe = executable('test-ladmm-runtime',
     sources: [
         # TODO(Antony): to separate the ADMM runtime library from the test code.
-        'test-runtime.cpp',
-        solver_bin,
+        'test.cpp',
     ],
     cpp_args: [
         '-DRAW_IMAGE_PATH="@0@"'.format(parrot_img),
     ],
+    link_with: ladmm_runtime_lib,
     dependencies: [
         halide_runtime_dep,
         dependency('libpng'),
