@@ -107,11 +107,11 @@ def solve(psi_fns, omega_fns, tau=None, sigma=None, theta=None,
             L = est_CompGraph_norm(K, try_fast_norm)
 
     # Initialize
-    x = adapter.zeros(K.input_size)
-    y = adapter.zeros(K.output_size)
-    xbar = adapter.zeros(K.input_size)
-    u = adapter.zeros(K.output_size)
-    z = adapter.zeros(K.output_size)
+    x = adapter.zeros(K.input_size, dtype=np.float32, order='F')
+    y = adapter.zeros(K.output_size, dtype=np.float32, order='F')
+    xbar = adapter.zeros(K.input_size, dtype=np.float32, order='F')
+    u = adapter.zeros(K.output_size, dtype=np.float32, order='F')
+    z = adapter.zeros(K.output_size, dtype=np.float32, order='F')
 
     if x0 is not None:
         x[:] = adapter.reshape(adapter.from_np(x0), K.input_size)
@@ -122,11 +122,11 @@ def solve(psi_fns, omega_fns, tau=None, sigma=None, theta=None,
     xbar[:] = x
 
     # Buffers.
-    Kxbar = adapter.zeros(K.output_size)
-    Kx = adapter.zeros(K.output_size)
-    KTy = adapter.zeros(K.input_size)
-    KTu = adapter.zeros(K.input_size)
-    s = adapter.zeros(K.input_size)
+    Kxbar = adapter.zeros(K.output_size, dtype=np.float32, order='F')
+    Kx = adapter.zeros(K.output_size, dtype=np.float32, order='F')
+    KTy = adapter.zeros(K.input_size, dtype=np.float32, order='F')
+    KTu = adapter.zeros(K.input_size, dtype=np.float32, order='F')
+    s = adapter.zeros(K.input_size, dtype=np.float32, order='F')
 
     prev_x = x.copy()
     prev_Kx = Kx.copy()

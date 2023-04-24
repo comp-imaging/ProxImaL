@@ -52,19 +52,19 @@ def solve(psi_fns, omega_fns, rho=1.0,
     v_update = get_least_squares_inverse(op_list, None, try_diagonalize, verbose)
 
     # Initialize everything to zero.
-    v = np.zeros(K.input_size)
-    z = np.zeros(K.output_size)
-    u = np.zeros(K.output_size)
+    v = np.zeros(K.input_size, dtype=np.float32, order='F')
+    z = np.zeros(K.output_size, dtype=np.float32, order='F')
+    u = np.zeros(K.output_size, dtype=np.float32, order='F')
 
     # Initialize
     if x0 is not None:
-        v[:] = np.reshape(x0, K.input_size)
+        v[:] = np.asfortranarray(np.reshape(x0, K.input_size))
         K.forward(v, z)
 
     # Buffers.
-    Kv = np.zeros(K.output_size)
-    KTu = np.zeros(K.input_size)
-    s = np.zeros(K.input_size)
+    Kv = np.zeros(K.output_size, dtype=np.float32, order='F')
+    KTu = np.zeros(K.input_size, dtype=np.float32, order='F')
+    s = np.zeros(K.input_size, dtype=np.float32, order='F')
 
     # Log for prox ops.
     prox_log = TimingsLog(prox_fns)
@@ -94,10 +94,10 @@ def solve(psi_fns, omega_fns, rho=1.0,
         offset = 0
         for fn in psi_fns:
             slc = slice(offset, offset + fn.lin_op.size, None)
-            Kv_u_slc = np.reshape(Kv_u[slc], fn.lin_op.shape)
+            Kv_u_slc = np.asfortranarray(np.reshape(Kv_u[slc], fn.lin_op.shape))
             # Apply and time prox.
             prox_log[fn].tic()
-            z[slc] = fn.prox(rho, Kv_u_slc, i).flatten()
+            z[slc] = fn.prox(rho, Kv_u_slc, i).ravel()
             prox_log[fn].toc()
             offset += fn.lin_op.size
         # Update u.

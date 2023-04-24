@@ -3,7 +3,7 @@
 
 namespace proximal {
 
-int ifft2_c2r_glue(const array_complex_t input, array_float_t output) {
+int ifft2_c2r_glue(const array_cxfloat_t input, array_float_t output) {
 
         auto input_buf = getHalideComplexBuffer<4>(input);
         auto output_buf = getHalideBuffer<3>(output, true);

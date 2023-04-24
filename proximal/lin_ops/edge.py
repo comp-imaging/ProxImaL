@@ -8,7 +8,7 @@ class Edge(object):
         self.start = start
         self.end = end
         self.shape = shape
-        self.data = np.zeros(self.shape)
+        self.data = np.zeros(self.shape, dtype=np.float32, order='F')
         self.mag = None  # Used to get norm bounds.
 
     @property

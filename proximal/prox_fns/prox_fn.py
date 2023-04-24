@@ -81,6 +81,15 @@ class ProxFn(object):
         if np.isscalar(v):
             v = np.array([v])
 
+        if self.implementation == Impl['halide']:
+            # To justify Halide-acceleration Prox function, explicit memory copy
+            # and type casting must be disabled. Otherwise, the image buffer
+            # will be copied three times per Prox function calls, i.e. slower
+            # than the pure Numpy/Numexpr implementation for small images.
+            assert v.shape == self.lin_op.shape, "Buffer shape must match that of the linear operator"
+            assert v.dtype is np.dtype(np.float32), "Buffer type must be float32"
+            assert np.isfortran(v), "Buffer data layout must be Fortran style"
+
         symbols = {
             'rho': rho,
             'c': self.c.reshape(v.shape),
@@ -247,7 +256,7 @@ __global__ void prox(const float *v, float *xhat, float rho %(argstring)s)
         """Evaluate the function on v.
         """
         return self.alpha * self._eval(self.beta * v - self.b) + \
-            np.sum(self.c * v) + self.gamma * np.square(v).sum() + self.d
+            np.sum(self.c * v.astype(np.float64)) + self.gamma * np.square(v.astype(np.float64)).sum() + self.d
 
     @property
     def value(self):

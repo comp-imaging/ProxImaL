@@ -210,7 +210,7 @@ class LinOp(object):
         inputs = []
         for node in self.input_nodes:
             inputs.append(node.value)
-        output = np.zeros(self.shape)
+        output = np.zeros(self.shape, dtype=np.float32, order='F')
         self.forward(inputs, [output])
         return output
 
