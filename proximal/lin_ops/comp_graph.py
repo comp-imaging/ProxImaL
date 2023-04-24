@@ -48,7 +48,7 @@ class CompGraph(object):
             for node in curr.input_nodes:
                 # Zero out constants. Constants are handled in absorb_offset
                 if isinstance(node, Constant):
-                    node = Constant(np.zeros(curr.shape))
+                    node = Constant(np.zeros(curr.shape, dtype=np.float32, order='F'))
                     node.orig_node = None
                     self.constants.append(node)
                 else:
@@ -385,7 +385,7 @@ class CompGraph(object):
             offset += var.size
             
     def x0(self):
-        res = np.zeros(self.input_size)
+        res = np.zeros(self.input_size, dtype=np.float32, order='F')
         for var in self.orig_end.variables():
             if var.initval is not None:
                 offset = self.var_info[var.uuid]

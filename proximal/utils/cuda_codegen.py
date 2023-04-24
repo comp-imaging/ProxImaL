@@ -50,7 +50,7 @@ class NumpyAdapter:
     To keep algorithms free of cuda clutter, we use these adapter classes to map
     calls to either numpy or gpuarray.
     """
-    def __init__(self, floattype = np.float64):
+    def __init__(self, floattype = np.float32):
         self.floattype = floattype
 
     def zeros(self, *args, **kw):
@@ -67,10 +67,11 @@ class NumpyAdapter:
         return self.floattype(s)
 
     def reshape(self, *args):
-        return np.reshape(*args)
+        # Not sure why np.reshape(..., order='F') doesn't work.
+        return np.asfortranarray(np.reshape(*args))
 
     def flatten(self, matrix):
-        return matrix.flatten()
+        return matrix.ravel()
 
     def copyto(self, tgt, src):
         np.copyto(tgt, src)

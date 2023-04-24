@@ -55,11 +55,11 @@ def solve(psi_fns, omega_fns,
 
     # Initialize
     if x0 is not None:
-        x = np.reshape(x0, K.input_size)
+        x = np.asfortranarray(np.reshape(x0, K.input_size))
     else:
-        x = np.zeros(K.input_size)
+        x = np.zeros(K.input_size, dtype=np.float32, order='F')
 
-    Kx = np.zeros(K.output_size)
+    Kx = np.zeros(K.output_size, dtype=np.float32, order='F')
     w = Kx.copy()
 
     # Temporary iteration counts
@@ -103,7 +103,7 @@ def solve(psi_fns, omega_fns,
                 slc = slice(offset, offset + fn.lin_op.size, None)
                 # Apply and time prox.
                 prox_log[fn].tic()
-                w[slc] = fn.prox(rho, np.reshape(Kx[slc], fn.lin_op.shape), ii).flatten()
+                w[slc] = fn.prox(rho, np.asfortranarray(np.reshape(Kx[slc], fn.lin_op.shape)), ii).ravel()
                 prox_log[fn].toc()
                 offset += fn.lin_op.size
 

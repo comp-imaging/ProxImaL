@@ -5,15 +5,22 @@
 #include "HalideBuffer.h"
 
 namespace py = pybind11;
-using array_float_t = py::array_t<float, py::array::f_style | py::array::forcecast>;
-using array_complex_t = py::array_t<std::complex<float>, py::array::f_style | py::array::forcecast>;
+
+template<typename T>
+using array_t = py::array_t<T, py::array::f_style>;
+
+template<typename T>
+using array_complex_t = py::array_t<std::complex<T>, py::array::f_style>;
+
+using array_float_t = array_t<float>;
+using array_cxfloat_t = array_complex_t<float>;
 
 namespace {
 
 /** Return halide buffer, with broadcasting */
 template <int N, typename T>
 Halide::Runtime::Buffer<T>
-getHalideBuffer(py::array_t<T, py::array::f_style | py::array::forcecast> input, bool host_dirty=true) {
+getHalideBuffer(const array_t<T>& input, bool host_dirty=true) {
     const int w = input.shape(1);
     const int h = input.shape(0);
     const int s = (input.ndim() >= 3) ? input.shape(2) : 1;
@@ -42,7 +49,7 @@ getHalideBuffer(py::array_t<T, py::array::f_style | py::array::forcecast> input,
 /** Return halide buffer, with broadcasting */
 template <int N, typename T>
 Halide::Runtime::Buffer<T>
-getHalideComplexBuffer(py::array_t<std::complex<T>, py::array::f_style | py::array::forcecast> input, bool host_dirty=true) {
+getHalideComplexBuffer(const array_complex_t<T>& input, bool host_dirty=true) {
     const int w = input.shape(1);
     const int h = input.shape(0);
     const int s = (input.ndim() >= 3) ? input.shape(2) : 1;

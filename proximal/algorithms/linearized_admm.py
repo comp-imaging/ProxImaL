@@ -58,18 +58,18 @@ def solve(psi_fns, omega_fns, lmb=1.0, mu=None, quad_funcs=None,
         lmb, mu = est_params_lin_admm(K, lmb, verbose, scaled, try_fast_norm)
 
     # Initialize everything to zero.
-    v = np.zeros(K.input_size)
-    z = np.zeros(K.output_size)
-    u = np.zeros(K.output_size)
+    v = np.zeros(K.input_size, dtype=np.float32, order='F')
+    z = np.zeros(K.output_size, dtype=np.float32, order='F')
+    u = np.zeros(K.output_size, dtype=np.float32, order='F')
 
     # Buffers.
-    Kv = np.zeros(K.output_size)
-    KTu = np.zeros(K.input_size)
-    s = np.zeros(K.input_size)
+    Kv = np.zeros(K.output_size, dtype=np.float32, order='F')
+    KTu = np.zeros(K.input_size, dtype=np.float32, order='F')
+    s = np.zeros(K.input_size, dtype=np.float32, order='F')
 
-    Kvzu = np.zeros(K.output_size)
-    v_prev = np.zeros(K.input_size)
-    z_prev = np.zeros(K.output_size)
+    Kvzu = np.zeros(K.output_size, dtype=np.float32, order='F')
+    v_prev = np.zeros(K.input_size, dtype=np.float32, order='F')
+    z_prev = np.zeros(K.output_size, dtype=np.float32, order='F')
 
     # Log for prox ops.
     prox_log = TimingsLog(prox_fns)
@@ -94,11 +94,11 @@ def solve(psi_fns, omega_fns, lmb=1.0, mu=None, quad_funcs=None,
         K.forward(v, Kv)
         ne.evaluate('Kv - z + u', out=Kvzu)
         K.adjoint(Kvzu, v)
-        ne.evaluate('v_prev - (mu / lmb) * v', out=v)
+        ne.evaluate('v_prev - (mu / lmb) * v', out=v, casting='unsafe')
 
         if len(omega_fns) > 0:
             v_shape = omega_fns[0].lin_op.shape
-            v[:] = omega_fns[0].prox(1.0 / mu, v.reshape(v_shape), x_init=v_prev.copy(),
+            v[:] = omega_fns[0].prox(1.0 / mu, np.asfortranarray(v.reshape(v_shape)), x_init=v_prev.copy(),
                                      lin_solver=lin_solver, options=lin_solver_options).ravel()
 
         # Update z.
@@ -107,7 +107,7 @@ def solve(psi_fns, omega_fns, lmb=1.0, mu=None, quad_funcs=None,
         offset = 0
         for fn in psi_fns:
             slc = slice(offset, offset + fn.lin_op.size, None)
-            Kv_u_slc = np.reshape(Kv_u[slc], fn.lin_op.shape)
+            Kv_u_slc = np.asfortranarray(np.reshape(Kv_u[slc], fn.lin_op.shape))
             # Apply and time prox.
             prox_log[fn].tic()
             z[slc] = fn.prox(1.0 / lmb, Kv_u_slc, i).ravel()
@@ -123,8 +123,8 @@ def solve(psi_fns, omega_fns, lmb=1.0, mu=None, quad_funcs=None,
         ztmp = ne.evaluate('(z - z_prev) / lmb')
         K.adjoint(ztmp, s)
         eps_pri = np.sqrt(K.output_size) * eps_abs + eps_rel * \
-            max([np.linalg.norm(Kv), np.linalg.norm(z)])
-        eps_dual = np.sqrt(K.input_size) * eps_abs + eps_rel * np.linalg.norm(KTu) / (1.0 / lmb)
+            max([np.linalg.norm(Kv.astype(np.float64)), np.linalg.norm(z.astype(np.float64))])
+        eps_dual = np.sqrt(K.input_size) * eps_abs + eps_rel * np.linalg.norm(KTu.astype(np.float64)) / (1.0 / lmb)
 
         # Convergence log
         if convlog is not None:
