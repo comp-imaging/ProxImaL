@@ -114,7 +114,7 @@ class TestLinOps(BaseTest):
 
         fn.forward([x], [out])
         ks = np.array(kernel.shape)
-        cc = np.floor((ks - 1) / 2.0).astype(np.int)  # Center coordinate
+        cc = np.floor((ks - 1) / 2.0).astype(np.int32)  # Center coordinate
         y = np.zeros((2, 3))
         for i in range(2):
             for j in range(3):
