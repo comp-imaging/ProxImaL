@@ -19,15 +19,13 @@ solver_generator = executable(
 )
 
 solver_bin = custom_target(
-    'ladmm_iter.a',
+    'ladmm_iter.[ah]',
     output: [
-        'ladmm_iter.a',
+        'ladmm_iter.' + statlib_file_ext,
         'ladmm_iter.h',
     ],
     input: solver_generator,
-    env: {
-        'LD_LIBRARY_PATH': halide_library_path,
-    },
+    env: env,
     command: [
         solver_generator,
         '-o', meson.current_build_dir(),
@@ -54,6 +52,10 @@ ladmm_runtime_lib = library('ladmm-runtime',
     dependencies: halide_runtime_dep,
 )
 
+libpng_dep = dependency('libpng', required: false)
+
+if libpng_dep.found()
+
 test_runtime_exe = executable('test-ladmm-runtime',
     sources: [
         # TODO(Antony): to separate the ADMM runtime library from the test code.
@@ -73,3 +75,7 @@ test('Halide-optimized L-ADMM with Proximal-Codegen',
     test_runtime_exe,
     is_parallel: false,
 )
+
+endif
+
+alias_target('ladmm-runtime', ladmm_runtime_lib)

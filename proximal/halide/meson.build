@@ -2,9 +2,10 @@ project('proximal-halide', 'cpp',
     meson_version: '>=0.58.1',
     default_options: [
         'buildtype=debugoptimized',
+        'cpp_std=c++17',
 ])
 
-halide_toolchain = subproject('halide-' + build_machine.cpu_family())
+halide_toolchain = subproject('halide-@0@-@1@'.format(build_machine.cpu_family(), build_machine.system()))
 halide_generator_dep = halide_toolchain.get_variable('halide_generator_dep')
 halide_runtime_dep = halide_toolchain.get_variable('halide_runtime_dep')
 halide_library_path = halide_toolchain.get_variable('halide_library_path')
@@ -106,6 +107,16 @@ pybind11_dep = subproject('pybind11').get_variable('pybind11_dep')
 
 cuda_toolchain = find_program('nvcc', required: false)
 
+if build_machine.system() == 'windows'
+    env = { 'PATH': halide_library_path }
+    object_file_ext = 'obj'
+    statlib_file_ext = 'lib'
+else
+    env = { 'LD_LIBRARY_PATH': halide_library_path }
+    object_file_ext = 'o'
+    statlib_file_ext = 'a'
+endif
+
 foreach p : pipeline_name
     compile_cmd = [
         halide_generator,
@@ -139,15 +150,13 @@ foreach p : pipeline_name
     endif
 
     obj = custom_target(
-        p[0] + '.o',
+        p[0] + '.[oh]',
         output: [
-            p[0] + '.o',
+            p[0] + '.' + object_file_ext,
             p[0] + '.h',
         ],
         input: halide_generator,
-        env: {
-            'LD_LIBRARY_PATH': halide_library_path,
-        },
+        env: env,
         command: [
             compile_cmd,
             p[3],
