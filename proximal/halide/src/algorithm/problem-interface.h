@@ -18,7 +18,6 @@ using FuncTuple = std::array<Halide::Func, N>;
 
 #if __cplusplus >= 202002L
 
-#warning Halide 10.0 is incompatible to C++20. Upgrade to newer versions.
 /** A compute graph composed of various LinOps written in Halide.
  *
  * The (L-)ADMM solvers expects the linear mapping between variable z and u, by

@@ -117,6 +117,8 @@ else
     statlib_file_ext = 'a'
 endif
 
+proximal_python_interface = []
+
 foreach p : pipeline_name
     compile_cmd = [
         halide_generator,
@@ -177,6 +179,8 @@ foreach p : pipeline_name
             ],
         )
 
+        proximal_python_interface += lib
+
         alias_target(library_name, lib)
     endforeach
 endforeach
@@ -185,3 +189,5 @@ subdir('src/test_data')
 subdir('src/core')
 subdir('src/algorithm')
 subdir('src/user-problem')
+
+alias_target('python_interface', proximal_python_interface)
