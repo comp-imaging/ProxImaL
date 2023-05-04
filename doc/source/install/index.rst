@@ -38,12 +38,12 @@ To install ProxImaL without `Anaconda`_, see the section on installation from so
 
        pip install proximal 
 
-4. (Optional) Test the installation with ``nose``. The tests require that you have `CVXPY`_ installed.
+4. (Optional) Test the installation with ``pytest``. The tests require that you have `CVXPY`_ installed.
 
   ::
 
-       conda install nose
-       nosetests proximal 
+       conda install pytest
+       pytest proximal/tests/
 
 Install from source
 -------------------
@@ -58,7 +58,7 @@ ProxImaL has the following dependencies:
 * `cv2`_
 
 `Halide`_ installation is optional, but necessary for the best performance. 
-To test the ProxImaL installation, you additionally need `Nose`_ and `CVXPY`_.
+To test the ProxImaL installation, you additionally need `Pytest`_ and `CVXPY`_.
 
 Once you've installed the dependencies, installing ProxImaL from source is simple:
 
@@ -75,7 +75,7 @@ Once you've installed the dependencies, installing ProxImaL from source is simpl
 .. _multiprocess: https://github.com/uqfoundation/multiprocess/
 .. _NumPy: http://www.numpy.org/
 .. _SciPy: http://www.scipy.org/
-.. _Nose: http://nose.readthedocs.org
+.. _Pytest: https://pytest.org/
 .. _PIL: http://www.pythonware.com/products/pil/
 .. _cv2: http://opencv.org/
 .. _Halide: http://halide-lang.org/
