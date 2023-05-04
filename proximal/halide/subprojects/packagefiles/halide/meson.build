@@ -4,7 +4,13 @@ project('halide toolchain', 'cpp',
 cc = meson.get_compiler('cpp', native: true)
 
 halide_inc = include_directories('include')
-halide_lib = cc.find_library('Halide', dirs: join_paths(meson.current_source_dir(), 'lib'))
+
+if build_machine.system() == 'windows'
+    halide_library_path = meson.current_source_dir() / 'lib/Release'
+else
+    halide_library_path = meson.current_source_dir() / 'lib'
+endif
+halide_lib = cc.find_library('Halide', dirs: halide_library_path)
 
 halide_generator_dep = declare_dependency(
     sources: [
@@ -16,10 +22,14 @@ halide_generator_dep = declare_dependency(
     #native: true,
 )
 
-halide_library_path = meson.current_source_dir() / 'lib'
-
 if not meson.is_cross_build()
     cxx = meson.get_compiler('cpp')
+
+    if build_machine.system() != 'windows'
+        dl_lib = cxx.find_library('dl')
+    else
+        dl_lib = []
+    endif
 
     halide_runtime_dep = declare_dependency(
         include_directories: [
@@ -30,7 +40,7 @@ if not meson.is_cross_build()
             dependency('libpng', required: false),
             dependency('libjpeg', required: false),
             dependency('threads'),
-            cxx.find_library('dl'),
+            dl_lib,
         ],
     )
 endif

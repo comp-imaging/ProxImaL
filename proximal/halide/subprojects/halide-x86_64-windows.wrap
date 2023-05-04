@@ -1,0 +1,10 @@
+[wrap-file]
+directory = Halide-10.0.0-x86-64-windows
+
+source_url = https://github.com/halide/Halide/releases/download/v10.0.0/Halide-10.0.0-x86-64-windows-db901f7f7084025abc3cbb9d17b0f2d3f1745900.zip
+source_filename = Halide-10.0.0-x86-64-windows.zip
+source_hash = 0f61525267177fd7c0b9ddbb12a4723e6edd89e2ceede930c3a2b447d15f80a5
+
+patch_directory = halide
+
+

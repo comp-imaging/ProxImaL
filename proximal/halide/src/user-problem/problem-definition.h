@@ -83,18 +83,18 @@ static_assert(Prox<ParameterizedProx>);
  */
 const std::array<ParameterizedProx, problem_config::psi_size> psi_fns{
     /* Begin code generation */
-    ParameterizedProx{.prox = [](const Func& u, const Expr& theta) -> Func {
+    ParameterizedProx{/* .prox = */ [](const Func& u, const Expr& theta) -> Func {
                           using problem_config::output_width;
                           using problem_config::output_height;
 
                           return proxIsoL1(u, output_width, output_height, theta);
                       },
-                      .alpha = 0.1f,
-                      .beta = 1.0f,
-                      .gamma = 0.0f,
-                      ._c = 0.0f,
-                      .d = 0.0f,
-                      .n_dim = 4},
+                      /* .alpha = */ 0.1f,
+                      /* .beta = */ 1.0f,
+                      /* .gamma = */ 0.0f,
+                      /* ._c = */ 0.0f,
+                      /* .d = */ 0.0f,
+                      /*.n_dim = */ 4},
     ParameterizedProx{
         /* .prox = */ [](const Func& u, const Expr&) -> Func { return proxNonneg<3>(u); }
         /* .alpha = 1.0f, */
