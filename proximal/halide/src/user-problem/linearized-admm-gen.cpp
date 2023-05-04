@@ -36,7 +36,7 @@ class LinearizedADMMIter : public Generator<LinearizedADMMIter> {
      * times. The end-users can decide whether to re-run this pipeline for
      * another n_iter times in their own runtime.
      */
-    GeneratorParam<size_t> n_iter{"n_iter", 1, 1, 500};
+    GeneratorParam<uint32_t> n_iter{"n_iter", 1ul, 1ul, 500ul};
 
     /** Optimal solution, after a hard termination after iterating for n_iter
      * times. */

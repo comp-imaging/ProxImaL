@@ -92,3 +92,6 @@ site/
 # Mo stuff
 .DS_Store
 *#*
+
+# 3rd party C++ libraries for Proximal-codegen
+proximal/halide/subprojects/*/

@@ -1,0 +1,10 @@
+[wrap-file]
+directory = Halide-14.0.0-x86-64-osx
+
+source_url = https://github.com/halide/Halide/releases/download/v14.0.0/Halide-14.0.0-x86-64-osx-6b9ed2afd1d6d0badf04986602c943e287d44e46.tar.gz
+source_filename = Halide-14.0.0-x86-64-osx.tar.gz
+source_hash = 569b1cda858d278d9dd68e072768d8347775e419f2ff39ff34d001ceb299e3c4
+
+patch_directory = halide
+
+
