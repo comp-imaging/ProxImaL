@@ -28,23 +28,25 @@ using FuncTuple = std::array<Halide::Func, N>;
  * two member functions: K.forward(), and K.adjoint().
  */
 template <typename T, size_t N>
-concept LinOpGraph = requires(T a) {
+concept LinOpGraphImpl = requires(T a, const Halide::Func& f, const FuncTuple<N>& ft) {
     // forward function expects a Halide::Func as a data plane / data cube, and
     // returns a tuple of data planes.
-    { a.forward(Halide::Func) }
-    ->FuncTuple<N>;
+    { a.forward(f) }
+    -> std::same_as<FuncTuple<N>>;
 
     // adjoint function expects an array of Halide::Func, and returns
     // one single Func.
-    { a.adjoint(const FuncTuple<N>&) }
-    ->Halide::Func;
+    { a.adjoint(ft) }
+    -> std::same_as<Halide::Func>;
 };
 
 template <typename T>
-concept Prox = requires(T a) {
-    { a.operator()(const Func&, const Expr&, const Func&) }
-    ->Halide::Func;
+concept Prox = requires(T a, const Halide::Func& f, const Halide::Expr& e) {
+    { a.operator()(f, e, f) }
+    -> std::same_as<Halide::Func>;
 };
+
+#define LinOpGraph LinOpGraphImpl<N>
 
 #else
 

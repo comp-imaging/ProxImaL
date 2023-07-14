@@ -43,7 +43,7 @@ norm(const FuncTuple<N>& v, const RDom r) {
 namespace algorithm {
 namespace linearized_admm {
 
-template <LinOpGraph G, size_t N, Prox P, Prox P2>
+template <size_t N, LinOpGraph G, Prox P, Prox P2>
 std::tuple<Func, FuncTuple<N>, FuncTuple<N>>
 iterate(const Func& v, const FuncTuple<N>& z, const FuncTuple<N>& u, G& K, const P& omega_fn,
         std::array<P2, N> psi_fns, const Expr& lmb, const Expr& mu, const Func& b) {
@@ -98,7 +98,7 @@ iterate(const Func& v, const FuncTuple<N>& z, const FuncTuple<N>& u, G& K, const
     return {v_new, z_new, u_new};
 }
 
-template <LinOpGraph G, size_t N>
+template <size_t N, LinOpGraph G>
 std::tuple<Expr, Expr, Expr, Expr>
 computeConvergence(const Func& v, const FuncTuple<N>& z, const FuncTuple<N>& u,
                    const FuncTuple<N>& z_prev, G& K, const float lmb, const uint32_t input_size,
