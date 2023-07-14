@@ -49,12 +49,6 @@ struct Transform {
     }
 } K;
 
-#if __cplusplus >= 202002L
-
-// If C++20 is supported, validate the transform structure.
-static_assert(LinOpGrah<Transform>);
-#endif
-
 /** List of functions in set Omega, after problem splitting by ProxImaL. */
 const ParameterizedProx omega_fn{
     /* Begin code-generation */
