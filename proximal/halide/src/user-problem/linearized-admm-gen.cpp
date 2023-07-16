@@ -10,18 +10,18 @@ class LinearizedADMMIter : public Generator<LinearizedADMMIter> {
 
    public:
     /** User-provided distorted, and noisy image. */
-    Input<Buffer<float>> input{"input", 3};
+    Input<Buffer<float, 3>> input{"input"};
 
     /** Initial estimate of the restored image. */
-    Input<Buffer<float>> v{"v", 3};
+    Input<Buffer<float, 3>> v{"v"};
 
     // TODO(Antony): How do we determine the number of inputs z_i at run time? Generator::configure() ?
     // Does Buffer<Func[2]> results in terse code? How to set dimensions?
-    Input<Buffer<float>> z0{"z0", 4};
-    Input<Buffer<float>> z1{"z1", 3};
+    Input<Buffer<float, 4>> z0{"z0"};
+    Input<Buffer<float, 3>> z1{"z1"};
 
-    Input<Buffer<float>> u0{"u0", 4};
-    Input<Buffer<float>> u1{"u1", 3};
+    Input<Buffer<float, 4>> u0{"u0"};
+    Input<Buffer<float, 3>> u1{"u1"};
 
     /** Problem scaling factor.
      *
@@ -40,14 +40,14 @@ class LinearizedADMMIter : public Generator<LinearizedADMMIter> {
 
     /** Optimal solution, after a hard termination after iterating for n_iter
      * times. */
-    Output<Buffer<float>> v_new{"v_new", 3};
+    Output<Buffer<float, 3>> v_new{"v_new"};
 
     // TODO(Antony): How do we figure out the number of outputs z_i at run time? configure() ?
-    Output<Buffer<float>> z0_new{"z0_new", 4};
-    Output<Buffer<float>> z1_new{"z1_new", 3};
+    Output<Buffer<float, 4>> z0_new{"z0_new"};
+    Output<Buffer<float, 3>> z1_new{"z1_new"};
 
-    Output<Buffer<float>> u0_new{"u0_new", 4};
-    Output<Buffer<float>> u1_new{"u1_new", 3};
+    Output<Buffer<float, 4>> u0_new{"u0_new"};
+    Output<Buffer<float, 3>> u1_new{"u1_new"};
 
     // Convergence metrics
     Output<float> r{"r"};  //!< Primal residual
@@ -108,23 +108,29 @@ class LinearizedADMMIter : public Generator<LinearizedADMMIter> {
 
     /** Inform Halide of the fixed input and output image sizes. */
     void setBounds() {
-        for (auto* a : {&input, &v, &z0, &u0, &z1, &u1}) {
+        for (auto* a : {&input, &v, &z1, &u1}) {
             a->dim(0).set_bounds(0, W);
             a->dim(1).set_bounds(0, H);
             a->dim(2).set_bounds(0, 1);
         }
 
         for (auto* a : {&z0, &u0}) {
+            a->dim(0).set_bounds(0, W);
+            a->dim(1).set_bounds(0, H);
+            a->dim(2).set_bounds(0, 1);
             a->dim(3).set_bounds(0, 2);
         }
 
-        for (auto* a : {&v_new, &z0_new, &u0_new, &z1_new, &u1_new}) {
+        for (auto* a : {&v_new, &z1_new, &u1_new}) {
             a->dim(0).set_bounds(0, W);
             a->dim(1).set_bounds(0, H);
             a->dim(2).set_bounds(0, 1);
         }
 
         for (auto* a : {&z0_new, &u0_new}) {
+            a->dim(0).set_bounds(0, W);
+            a->dim(1).set_bounds(0, H);
+            a->dim(2).set_bounds(0, 1);
             a->dim(3).set_bounds(0, 2);
         }
     }
