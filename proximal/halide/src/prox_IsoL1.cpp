@@ -27,6 +27,7 @@ public:
         if (using_autoscheduler()) {
             input.set_estimates({{0, 512}, {0, 512}, {0, 1}, {0, 2}});
             output.set_estimates({{0, 512}, {0, 512}, {0, 1}, {0, 2}});
+            theta.set_estimate(1.0f);
             return;
         }
 
