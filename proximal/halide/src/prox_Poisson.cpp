@@ -32,6 +32,7 @@ class proxPoisson_gen : public Generator<proxPoisson_gen> {
             M.set_estimates({{0, 512}, {0, 512}, {0, 1}});
             b.set_estimates({{0, 512}, {0, 512}, {0, 1}});
             output.set_estimates({{0, 512}, {0, 512}, {0, 1}});
+            theta.set_estimate(1.0f);
             return;
         }
 
