@@ -24,7 +24,7 @@ public:
     }
 
     void schedule() {
-        if (auto_schedule) {
+        if (using_autoscheduler()) {
             input.set_estimates({{0, 512}, {0, 512}, {0, 1}, {0, 2}});
             proxL1_input.set_estimates({{0, 512}, {0, 512}, {0, 1}, {0, 2}});
             return;

@@ -142,7 +142,7 @@ class LinearizedADMMIter : public Generator<LinearizedADMMIter> {
     void schedule() {
         setBounds();
 
-        if (auto_schedule) {
+        if (using_autoscheduler()) {
             // Estimate the image sizes of the inputs.
             for (auto* a : {&input, &v, &z1, &u1}) {
                 a->set_estimates({{0, W}, {0, H}, {0, 1}});

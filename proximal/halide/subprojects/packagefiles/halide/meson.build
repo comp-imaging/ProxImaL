@@ -1,5 +1,5 @@
 project('halide toolchain', 'cpp',
-    version: '14.0.0')
+    version: '16.0.0')
 
 cc = meson.get_compiler('cpp', native: true)
 

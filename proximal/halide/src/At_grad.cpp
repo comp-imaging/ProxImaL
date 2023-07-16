@@ -22,7 +22,7 @@ class grad_trans_gen : public Generator<grad_trans_gen> {
     }
 
     void schedule() {
-        if (auto_schedule) {
+        if (using_autoscheduler()) {
             input.set_estimates({{0, 512}, {0, 512}, {0, 1}, {0, 2}});
             output.set_estimates({{0, 512}, {0, 512}, {0, 1}});
             return;

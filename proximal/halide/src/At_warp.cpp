@@ -34,7 +34,7 @@ class warp_trans_gen : public Generator<warp_trans_gen> {
     }
 
     void schedule() {
-        if (auto_schedule) {
+        if (using_autoscheduler()) {
             input.set_estimates({{0, 512}, {0, 512}, {0, 1}, {0, 1}});
             Hinv.set_estimates({{0, 3}, {0, 3}, {0, 1}});
             output.set_estimates({{0, 512}, {0, 512}, {0, 1}});
