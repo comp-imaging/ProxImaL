@@ -43,12 +43,12 @@ Func fft2_r2c(Func input, int W, int H) {
 class fft2_r2c_gen : public Generator<fft2_r2c_gen> {
 public:
 
-    Input<Buffer<float>> input{"input", 3};
+    Input<Buffer<float, 3>> input{"input"};
     Input<int> shiftx{"shiftx"};
     Input<int> shifty{"shifty"};
     GeneratorParam<int> wtarget{"wtarget", 512, 2, 4096};
     GeneratorParam<int> htarget{"htarget", 512, 2, 4096};
-    Output<Buffer<float>> fftIn{"fftIn", 4};
+    Output<Buffer<float, 4>> fftIn{"fftIn"};
 
     void generate() {
 

@@ -11,9 +11,9 @@ using namespace Halide::BoundaryConditions;
 
 class warp_gen : public Generator<warp_gen> {
    public:
-    Input<Buffer<float>> input{"input", 3};
-    Input<Buffer<float>> H{"H", 3};
-    Output<Buffer<float>> output{"output", 4};
+    Input<Buffer<float, 3>> input{"input"};
+    Input<Buffer<float, 3>> H{"H"};
+    Output<Buffer<float, 4>> output{"output"};
 
     void generate() {
         Expr width = input.width();

@@ -13,9 +13,9 @@ class warp_trans_gen : public Generator<warp_trans_gen> {
     Var xo, xi;
 
    public:
-    Input<Buffer<float>> input{"input", 4};
-    Input<Buffer<float>> Hinv{"H", 3};
-    Output<Buffer<float>> output{"output", 3};
+    Input<Buffer<float, 4>> input{"input"};
+    Input<Buffer<float, 3>> Hinv{"H"};
+    Output<Buffer<float, 3>> output{"output"};
 
     void generate() {
         Expr width = input.width();

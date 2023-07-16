@@ -61,7 +61,6 @@ Func At_conv(Func input, Expr width, Expr height, Func K, Expr filter_width, Exp
 //Mask diagonal weighting matrix
 Func A_M(Func input, Expr width, Expr height, Func mask) {
 
-	int vec_width = 8;
     //Define the mask
     Func input_mask("input_mask");
     input_mask(x, y, c) = mask(x, y, c) * input(x, y, c);

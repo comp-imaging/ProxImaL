@@ -10,12 +10,12 @@ using namespace Halide::BoundaryConditions;
 
 class proxPoisson_gen : public Generator<proxPoisson_gen> {
    public:
-    Input<Buffer<float>> input{"input", 3};
-    Input<Buffer<float>> M{"M", 3};
-    Input<Buffer<float>> b{"b", 3};
+    Input<Buffer<float, 3>> input{"input"};
+    Input<Buffer<float, 3>> M{"M"};
+    Input<Buffer<float, 3>> b{"b"};
     Input<float> theta{"theta"};
 
-    Output<Buffer<float>> output{"output", 3};
+    Output<Buffer<float, 3>> output{"output"};
 
     void generate() {
         // Inputs

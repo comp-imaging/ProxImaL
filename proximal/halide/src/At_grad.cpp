@@ -10,8 +10,8 @@ using namespace Halide::BoundaryConditions;
 
 class grad_trans_gen : public Generator<grad_trans_gen> {
    public:
-    Input<Buffer<float>> input{"input", 4};
-    Output<Buffer<float>> output{"output", 3};
+    Input<Buffer<float, 4>> input{"input"};
+    Output<Buffer<float, 3>> output{"output"};
 
     void generate() {
         Expr width = input.width();
