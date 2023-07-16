@@ -35,8 +35,8 @@ Func ifft2_c2r(Func input, int W, int H) {
 class ifft2_c2r_gen : public Generator<ifft2_c2r_gen> {
 public:
 
-    Input<Buffer<float>> input{"input", 4};
-    Output<Buffer<float>> fftOut{"output", 3};
+    Input<Buffer<float, 4>> input{"input"};
+    Output<Buffer<float, 3>> fftOut{"output"};
 
     GeneratorParam<int> wtarget{"wtarget", 512, 2, 1024};
     GeneratorParam<int> htarget{"htarget", 512, 2, 1024};

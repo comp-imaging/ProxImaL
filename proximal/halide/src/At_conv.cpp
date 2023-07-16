@@ -11,9 +11,9 @@ using namespace Halide::BoundaryConditions;
 class conv_trans_gen : public Generator<conv_trans_gen> {
 public:
 
-    Input<Buffer<float>> input{"input", 3};
-    Input<Buffer<float>> K{"K", 3};
-    Output<Buffer<float>> conv_trans_input{"output", 3};
+    Input<Buffer<float, 3>> input{"input"};
+    Input<Buffer<float, 3>> K{"K"};
+    Output<Buffer<float, 3>> conv_trans_input{"output"};
     
     void generate() {
         Expr width = input.width();

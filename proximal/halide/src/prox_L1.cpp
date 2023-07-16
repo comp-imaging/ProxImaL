@@ -11,9 +11,9 @@ using namespace Halide::BoundaryConditions;
 class proxL1_gen : public Generator<proxL1_gen> {
 public:
 
-    Input<Buffer<float>> input{"input", 4};
+    Input<Buffer<float, 4>> input{"input"};
     Input<float> theta{"theta"};
-    Output<Buffer<float>> proxL1_input{"proxL1_input", 4};
+    Output<Buffer<float, 4>> proxL1_input{"proxL1_input"};
 
     void generate() {
         Expr width = input.width();

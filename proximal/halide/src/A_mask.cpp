@@ -10,9 +10,9 @@ using namespace Halide::BoundaryConditions;
 
 class mask_gen : public Generator<mask_gen> {
    public:
-    Input<Buffer<float>> input{"input", 3};
-    Input<Buffer<float>> mask{"mask", 3};
-    Output<Buffer<float>> output{"output", 3};
+    Input<Buffer<float, 3>> input{"input"};
+    Input<Buffer<float, 3>> mask{"mask"};
+    Output<Buffer<float, 3>> output{"output"};
 
     void generate() {
         // Image dimensions
