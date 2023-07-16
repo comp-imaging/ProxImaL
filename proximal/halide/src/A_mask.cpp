@@ -24,7 +24,7 @@ class mask_gen : public Generator<mask_gen> {
     }
 
     void schedule() {
-        if (auto_schedule) {
+        if (using_autoscheduler()) {
             input.set_estimates({{0, 512}, {0, 512}, {0, 1}});
             mask.set_estimates({{0, 512}, {0, 512}, {0, 1}});
             output.set_estimates({{0, 512}, {0, 512}, {0, 1}});

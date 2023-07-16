@@ -27,7 +27,7 @@ public:
     }
 
     void schedule() {
-        if (auto_schedule) {
+        if (using_autoscheduler()) {
             input.set_estimates({{0, 512}, {0, 512}, {0, 1}});
             K.set_estimates({{0, 15}, {0, 15}, {0, 1}});
             conv_output.set_estimates({{0, 512}, {0, 512}, {0, 1}});

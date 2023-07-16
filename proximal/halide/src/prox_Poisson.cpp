@@ -27,7 +27,7 @@ class proxPoisson_gen : public Generator<proxPoisson_gen> {
     }
 
     void schedule() {
-        if (auto_schedule) {
+        if (using_autoscheduler()) {
             input.set_estimates({{0, 512}, {0, 512}, {0, 1}});
             M.set_estimates({{0, 512}, {0, 512}, {0, 1}});
             b.set_estimates({{0, 512}, {0, 512}, {0, 1}});

@@ -125,7 +125,6 @@ foreach p : pipeline_name
         '-o', meson.current_build_dir(),
         '-g', p[0],
         '-e', 'o,h',
-        'machine_params=4,6291000,40',
     ]
 
     auto_schedule = p[2]
@@ -133,21 +132,25 @@ foreach p : pipeline_name
     if cuda_toolchain.found() and auto_schedule
         compile_cmd += [
             'target=host-cuda',
-            'auto_schedule=true',
-            '-s','Li2018',
-            '-p','autoschedule_li2018',
+            '-p', 'autoschedule_li2018',
+            'autoscheduler=Li2018',
+            'autoscheduler.parallelism=32',
         ]
     elif auto_schedule
         compile_cmd += [
             'target=host',
-            'auto_schedule=true',
-            '-s','Mullapudi2016',
-            '-p','autoschedule_mullapudi2016',
+            '-p', 'autoschedule_mullapudi2016',
+            'autoscheduler=Mullapudi2016',
+            # Maximum level of CPU core, or GPU threads available
+            'autoscheduler.parallelism=4',
+            # Size of last level (L2) cache
+            'autoscheduler.last_level_cache_size=6291000',
+            # Ratio of the cache read cost to compute cost
+            'autoscheduler.balance=40',
         ]
     else
         compile_cmd += [
             'target=host',
-            'auto_schedule=false',
         ]
     endif
 

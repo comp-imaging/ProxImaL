@@ -31,11 +31,13 @@ solver_bin = custom_target(
         '-o', meson.current_build_dir(),
         '-g', 'ladmm_iter',
         '-e', 'static_library,h,stmt_html',
-        'machine_params=12,6291000,40',
         'target=host',
-        'auto_schedule=true',
-        '-s','Mullapudi2016',
-        '-p','autoschedule_mullapudi2016',
+
+        '-p', 'autoschedule_mullapudi2016',
+        'autoscheduler=Mullapudi2016',
+        'autoscheduler.parallelism=4',
+        'autoscheduler.last_level_cache_size=6291000',
+        'autoscheduler.balance=40',
 
         'n_iter=1',     # number of ADMM iterations before checking convergence
         'mu=0.333',     # Problem scaling factor. Defaults to 1 / sqrt( || K || ).

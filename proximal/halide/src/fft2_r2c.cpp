@@ -63,7 +63,7 @@ public:
     }
 
     void schedule() {
-        if (auto_schedule) {
+        if (using_autoscheduler()) {
             return;
         }
 
