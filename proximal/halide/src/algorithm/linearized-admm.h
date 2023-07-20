@@ -5,6 +5,7 @@
 // Back-porting of the <range> library from C++20 standard.
 // Provides zip_view
 #include "problem-interface.h"
+#include "range/v3/algorithm/transform.hpp"
 #include "range/v3/view/zip.hpp"
 #include "vars.h"
 
@@ -55,15 +56,17 @@ iterate(const Func& v, const FuncTuple<N>& z, const FuncTuple<N>& u, G& K, const
         const FuncTuple<N> Kv = K.forward(v);
 
         FuncTuple<N> Kvzu;
-        for (auto&& [_Kvzu, _Kv, _z, _u, prox] : zip_view(Kvzu, Kv, z, u, psi_fns)) {
-            // Name the variable
-            _Kvzu = Func{"Kvzu"};
+        ranges::transform(zip_view{Kv, z, u, psi_fns}, Kvzu.begin(), [=](const auto& args) -> Func {
+            const auto& [_Kv, _z, _u, prox] = args;
 
             // If z_i is a 4D matrix, make it so. Otherwise, assume a 3D data.
             const auto vars = (prox.n_dim == 4) ? Vars{x, y, c, k} : Vars{x, y, c};
 
+            Func _Kvzu{"Kvzu"};
             _Kvzu(vars) = _Kv(vars) - _z(vars) + _u(vars);
-        }
+
+            return _Kvzu;
+        });
 
         const Func v2 = K.adjoint(Kvzu);
         Func v3;
@@ -75,25 +78,31 @@ iterate(const Func& v, const FuncTuple<N>& z, const FuncTuple<N>& u, G& K, const
     // Update z_i for i = 0..N .
     const FuncTuple<N> Kv2 = K.forward(v_new);
     FuncTuple<N> z_new;
-    {
-        for (auto&& [_z_new, _Kv2, _u, prox] : zip_view(z_new, Kv2, u, psi_fns)) {
-            Func Kv_u{"Kv_u"};
+    ranges::transform(zip_view{Kv2, u, psi_fns}, z_new.begin(), [=](const auto& args) -> Func {
+        // We resort to the ranges::transform() syntax because MacOS+clang14
+        // refuses to reference z_new using the structured binding syntax
+        // `auto&& [...]`. Instead, the compiler makes a copy of z_new, so we
+        // were unable to update the z value in the iteration.
+        const auto& [_Kv2, _u, prox] = args;
+        const auto vars = (prox.n_dim == 4) ? Vars{x, y, c, k} : Vars{x, y, c};
 
-            const auto vars = (prox.n_dim == 4) ? Vars{x, y, c, k} : Vars{x, y, c};
+        Func Kv_u{"Kv_u"};
+        Kv_u(vars) = _Kv2(vars) + _u(vars);
 
-            Kv_u(vars) = _Kv2(vars) + _u(vars);
-
-            _z_new = prox(Kv_u, 1.0f / lmb);
-        }
-    }
+        return prox(Kv_u, 1.0f / lmb);
+    });
 
     // Update u.
     FuncTuple<N> u_new;
-    for (auto&& [_u_new, _u, _Kv, _z, prox] : zip_view(u_new, u, Kv2, z_new, psi_fns)) {
+    ranges::transform(zip_view{u, Kv2, z_new, psi_fns}, u_new.begin(), [=](const auto& args) -> Func {
+        const auto& [_u, _Kv, _z, prox] = args;
         const auto vars = (prox.n_dim == 4) ? Vars{x, y, c, k} : Vars{x, y, c};
 
+        Func _u_new{"u_new"};
         _u_new(vars) = _u(vars) + _Kv(vars) - _z(vars);
-    }
+
+        return _u_new;
+    });
 
     return {v_new, z_new, u_new};
 }
