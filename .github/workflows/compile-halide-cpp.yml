@@ -43,18 +43,20 @@ jobs:
         python -m pip install --upgrade pip
         python -m pip install meson ninja
 
+    - name: Cache 3rd party C++ projects
+      uses: actions/cache@v3
+      with:
+        key: ${{ runner.os }}-meson-cache
+        path: proximal/halide/subprojects/packagecache/
+
     - name: Resolve C++ build dependencies
       run: meson setup proximal/halide proximal/halide/build
     
     - name: Build ProxImaL-codegen
       run: ninja -C proximal/halide/build ladmm-runtime
-      # TODO(Antony): Resolve z-update error in MacOS-clang14 toolchain
-      if: startsWith(matrix.os, 'macos') == false
 
     - name: Build Python interfaces
       run: ninja -C proximal/halide/build python_interface
 
     - name: Run test suite
       run: ninja -C proximal/halide/build test
-      # TODO(Antony): Resolve z-update error in MacOS-clang14 toolchain
-      if: startsWith(matrix.os, 'macos') == false
