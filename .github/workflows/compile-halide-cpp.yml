@@ -54,9 +54,13 @@ jobs:
     
     - name: Build ProxImaL-codegen
       run: ninja -C proximal/halide/build ladmm-runtime
+      # TODO(Antony): Resolve "missing DLLs" in Windows Docker environment.
+      if: startsWith(matrix.os, 'window') == false
 
     - name: Build Python interfaces
       run: ninja -C proximal/halide/build python_interface
+      if: startsWith(matrix.os, 'window') == false
 
     - name: Run test suite
       run: ninja -C proximal/halide/build test
+      if: startsWith(matrix.os, 'window') == false
