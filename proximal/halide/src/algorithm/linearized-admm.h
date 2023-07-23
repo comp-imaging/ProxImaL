@@ -121,20 +121,25 @@ computeConvergence(const Func& v, const FuncTuple<N>& z, const FuncTuple<N>& u,
 
     // Compute primal residual
     FuncTuple<N> r;
-    {
-        for (auto&& [_r, _Kv, _z] : zip_view(r, Kv, z)) {
-            const auto vars = (_z.dimensions() == 4) ? Vars{x, y, c, k} : Vars{x, y, c};
-            _r(vars) = _Kv(vars) - _z(vars);
-        }
-    }
+    ranges::transform(zip_view{Kv, z}, r.begin(), [](const auto& args) -> Func {
+        const auto& [_Kv, _z] = args;
+        const auto vars = (_z.dimensions() == 4) ? Vars{x, y, c, k} : Vars{x, y, c};
+
+        Func _r{"r"};
+        _r(vars) = _Kv(vars) - _z(vars);
+        return _r;
+    });
 
     FuncTuple<N> ztmp;
-    {
-        for (auto&& [_ztmp, _z, _z_prev] : zip_view(ztmp, z, z_prev)) {
-            const auto vars = (_z.dimensions() == 4) ? Vars{x, y, c, k} : Vars{x, y, c};
-            _ztmp(vars) = (_z(vars) - _z_prev(vars)) / lmb;
-        }
-    }
+    ranges::transform(zip_view{z, z_prev}, ztmp.begin(), [=](const auto& args) -> Func {
+        const auto& [_z, _z_prev] = args;
+        const auto vars = (_z.dimensions() == 4) ? Vars{x, y, c, k} : Vars{x, y, c};
+
+        Func _ztmp{"z_diff"};
+        _ztmp(vars) = (_z(vars) - _z_prev(vars)) / lmb;
+
+        return _ztmp;
+    });
 
     // Compute dual residual
     const Func s = K.adjoint(ztmp);
