@@ -14,7 +14,7 @@ using ranges::zip_view;
 
 namespace utils {
 inline Expr
-norm(const Func& v, const RDom r) {
+norm(const Func& v, const RDom& r) {
     // TODO(Antony): n_channels.
     if (v.dimensions() == 4) {
         return sqrt(sum(v(r.x, r.y, r.z, r.w) * v(r.x, r.y, r.z, r.w)));
@@ -25,11 +25,12 @@ norm(const Func& v, const RDom r) {
 
 template <size_t N>
 inline Expr
-norm(const FuncTuple<N>& v, const RDom r) {
-    Expr s = 0;
+norm(const FuncTuple<N>& v, const RDom& r) {
+    Expr s = 0.0f;
 
     // TODO(Antony): item specific n-dimensions
-    for (auto&& _v : v) {
+    // Bug: Segfault here.
+    for (const auto& _v : v) {
         if (_v.dimensions() == 4) {
             s += sum(_v(r.x, r.y, r.z, r.w) * _v(r.x, r.y, r.z, r.w));
         } else {  // n_dim == 3
