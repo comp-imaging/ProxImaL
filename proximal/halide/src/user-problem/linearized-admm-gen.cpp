@@ -69,6 +69,16 @@ class LinearizedADMMIter : public Generator<LinearizedADMMIter> {
         std::vector<FuncTuple<psi_size>> z_list(n_iter);
         std::vector<FuncTuple<psi_size>> u_list(n_iter);
 
+        using problem_config::input_height;
+        using problem_config::input_size;
+        using problem_config::input_width;
+        using problem_config::output_height;
+        using problem_config::output_size;
+        using problem_config::output_width;
+
+        const RDom input_dimensions{0, input_width, 0, input_height, 0, 1};
+        const RDom output_dimensions{0, output_width, 0, output_height, 0, 1, 0, 2};
+
         for (size_t i = 0; i < n_iter; i++) {
             const FuncTuple<psi_size>& z_prev =
                 (i == 0) ? FuncTuple<psi_size>{z0, z1} : z_list[i - 1];
@@ -79,18 +89,11 @@ class LinearizedADMMIter : public Generator<LinearizedADMMIter> {
                 v, z_prev, u_prev, K, omega_fn, psi_fns, lmb, mu, input);
         }
 
-        using problem_config::input_height;
-        using problem_config::input_size;
-        using problem_config::input_width;
-        using problem_config::output_height;
-        using problem_config::output_size;
-        using problem_config::output_width;
-
         const auto& z_prev = (n_iter > 1) ? *(z_list.rbegin() + 1) : FuncTuple<psi_size>{z0, z1};
         const auto [_r, _s, _eps_pri, _eps_dual] = algorithm::linearized_admm::computeConvergence(
             v_list.back(), z_list.back(), u_list.back(), z_prev, K, lmb, input_size,
-            RDom(0, input_width, 0, input_height, 0, 1), output_size,
-            RDom(0, output_width, 0, output_height, 0, 1, 0, 2));
+            input_dimensions, output_size,
+            output_dimensions);
 
         // Export data
         v_new = v_list.back();
