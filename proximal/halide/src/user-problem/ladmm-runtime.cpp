@@ -27,6 +27,10 @@ ladmmSolver(Buffer<const float>& input, const size_t iter_max, const float eps_a
         buf->fill(0.0f);
     }
 
+    for(auto* p : {&v, &z0, &z1, &u0, &u1}) {
+        p->set_host_dirty();
+    }
+
     Buffer<float> z0_new(W, H, 1, 2);
     Buffer<float> z1_new(W, H, 1);
     Buffer<float> u0_new(W, H, 1, 2);
@@ -53,6 +57,10 @@ ladmmSolver(Buffer<const float>& input, const size_t iter_max, const float eps_a
         }
 
         // Terminate the algorithm early, if optimal solution is reached.
+        for(auto* p : {&_r, &_s, &_eps_pri, &_eps_dual}) {
+            p->copy_to_host();
+        }
+
         const bool converged = (r[i] < eps_pri[i]) && (s[i] < eps_dual[i]);
         if (converged) {
             for (auto* v : {&r, &s, &eps_pri, &eps_dual}) {
@@ -70,6 +78,8 @@ ladmmSolver(Buffer<const float>& input, const size_t iter_max, const float eps_a
             std::swap(z1, z1_new);
         }
     }
+
+    v_new.copy_to_host();
 
     constexpr int success = 0;
     return {success, v_new, r, s, eps_pri, eps_dual};
