@@ -13,32 +13,35 @@ using namespace Halide;
 using ranges::zip_view;
 
 namespace utils {
-inline Expr
-norm(const Func& v, const RDom& r) {
-    // TODO(Antony): n_channels.
+Func
+normSquared(const Func& v, const RDom& r) {
+    Func sumsq{"sumsq"};
+    sumsq() = 0.0f;
+
     if (v.dimensions() == 4) {
-        return sqrt(sum(v(r.x, r.y, r.z, r.w) * v(r.x, r.y, r.z, r.w)));
+        sumsq() += v(r.x, r.y, r.z, r.w) * v(r.x, r.y, r.z, r.w);
     } else {  // n_dim == 3
-        return sqrt(sum(v(r.x, r.y, r.z) * v(r.x, r.y, r.z)));
+        sumsq() += v(r.x, r.y, r.z) * v(r.x, r.y, r.z);
     }
+
+    return sumsq;
 }
 
 template <size_t N>
-inline Expr
-norm(const FuncTuple<N>& v, const RDom& r) {
-    Expr s = 0.0f;
+Func
+normSquared(const FuncTuple<N>& v, const RDom& r) {
+    Func sumsq{"sumsq"};
+    sumsq() = 0.0f;
 
-    // TODO(Antony): item specific n-dimensions
-    // Bug: Segfault here.
     for (const auto& _v : v) {
         if (_v.dimensions() == 4) {
-            s += sum(_v(r.x, r.y, r.z, r.w) * _v(r.x, r.y, r.z, r.w));
+            sumsq() += _v(r.x, r.y, r.z, r.w) * _v(r.x, r.y, r.z, r.w);
         } else {  // n_dim == 3
-            s += sum(_v(r.x, r.y, r.z) * _v(r.x, r.y, r.z));
+            sumsq() += _v(r.x, r.y, r.z) * _v(r.x, r.y, r.z);
         }
     }
 
-    return sqrt(s);
+    return sumsq;
 }
 }  // namespace utils
 
@@ -146,14 +149,19 @@ computeConvergence(const Func& v, const FuncTuple<N>& z, const FuncTuple<N>& u,
     const Func s = K.adjoint(ztmp);
 
     // Compute convergence criteria
-    using utils::norm;
-    Expr eps_pri = eps_rel * max(norm(Kv, output_dimensions), norm(z, output_dimensions)) +
-                   output_size * eps_abs;
+    using utils::normSquared;
 
-    Expr eps_dual = norm(KTu, input_dimensions) * eps_rel / (1.0f / lmb) +
-                    std::sqrt(float(input_size)) * eps_abs;
+    const Func Kv_norm = normSquared(Kv, output_dimensions);
+    const Func z_norm = normSquared(z, output_dimensions);
+    const Expr eps_pri = eps_rel * sqrt(max(Kv_norm(), z_norm())) + output_size * eps_abs;
 
-    return {norm(r, output_dimensions), norm(s, input_dimensions), eps_pri, eps_dual};
+    const Func KTu_norm = normSquared(KTu, input_dimensions);
+    const Expr eps_dual =
+        sqrt(KTu_norm()) * eps_rel / (1.0f / lmb) + std::sqrt(float(input_size)) * eps_abs;
+
+    const Func r_norm = normSquared(r, output_dimensions);
+    const Func s_norm = normSquared(s, input_dimensions);
+    return {sqrt(r_norm()), sqrt(s_norm()), eps_pri, eps_dual};
 }
 }  // namespace linearized_admm
 }  // namespace algorithm
