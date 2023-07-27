@@ -49,7 +49,7 @@ plt.show()
 The example above uses simple, well-known priors. Much better results can be obtained using the more sophisticated priors provided in ProxImaL.
 
 ProxImaL was designed and implemented by Felix Heide and Steven Diamond.
-See [the accompanying paper](http://web.stanford.edu/~stevend2/pdf/proximal.pdf) for a full discussion of ProxImaL's design and examples of state-of-the-art results obtained with ProxImaL.
+See [the accompanying paper](https://stevendiamond.me/pdf/proximal.pdf) for a full discussion of ProxImaL's design and examples of state-of-the-art results obtained with ProxImaL.
 
 A tutorial and other documentation can be found at [proximal-lang.org](http://www.proximal-lang.org/).
 
