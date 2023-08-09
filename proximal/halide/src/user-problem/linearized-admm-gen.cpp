@@ -75,12 +75,8 @@ class LinearizedADMMIter : public Generator<LinearizedADMMIter> {
             const FuncTuple<psi_size>& u_prev =
                 (i == 0) ? FuncTuple<psi_size>{u0, u1} : u_list[i - 1];
 
-            const auto [_v_new, _z_new, _u_new] = algorithm::linearized_admm::iterate(
+            std::tie(v_list[i], z_list[i], u_list[i]) = algorithm::linearized_admm::iterate(
                 v, z_prev, u_prev, K, omega_fn, psi_fns, lmb, mu, input);
-
-            v_list[i] = _v_new;
-            z_list[i] = _z_new;
-            u_list[i] = _u_new;
         }
 
         using problem_config::input_height;
