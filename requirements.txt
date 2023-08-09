@@ -1,7 +1,7 @@
 pytest
 pytest-cov
 pillow
-meson==0.58.1
+meson==1.2.1
 numpy
 scipy
 cvxpy
