@@ -5,6 +5,6 @@ meson==0.58.1
 numpy
 scipy
 cvxpy
-numexpr
+numexpr==2.8.4
 opencv-python
 matplotlib
