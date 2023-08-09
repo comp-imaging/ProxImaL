@@ -76,6 +76,7 @@ test_runtime_exe = executable('test-ladmm-runtime',
 test('Halide-optimized L-ADMM with Proximal-Codegen',
     test_runtime_exe,
     is_parallel: false,
+    suite: 'codegen',
 )
 
 endif
