@@ -209,7 +209,7 @@ class LinOp(object):
     def value(self):
         inputs = []
         for node in self.input_nodes:
-            inputs.append(node.value)
+            inputs.append(np.asfortranarray(node.value, dtype=np.float32))
         output = np.zeros(self.shape, dtype=np.float32, order='F')
         self.forward(inputs, [output])
         return output
