@@ -77,9 +77,8 @@ class ProxFn(object):
         """Wrapper on the prox function to handle alpha, etc.
            It is here the iteration for debug purposese etc.
         """
-
         if np.isscalar(v):
-            v = np.array([v])
+            v = np.array([v], order='F')
 
         if self.implementation == Impl['halide']:
             # To justify Halide-acceleration Prox function, explicit memory copy
@@ -88,7 +87,7 @@ class ProxFn(object):
             # than the pure Numpy/Numexpr implementation for small images.
             assert v.shape == self.lin_op.shape, "Buffer shape must match that of the linear operator"
             assert v.dtype is np.dtype(np.float32), "Buffer type must be float32"
-            assert np.isfortran(v), "Buffer data layout must be Fortran style"
+            assert v.flags.f_contiguous, "Buffer data layout must be Fortran style"
 
         symbols = {
             'rho': rho,
