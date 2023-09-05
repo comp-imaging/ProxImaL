@@ -11,14 +11,13 @@
 
 #include "static_image.h"
 
-#include <opencv2/cudaarithm.hpp>
 #include <opencv2/photo/cuda.hpp>
 #include <opencv2/photo.hpp>
 #include <opencv2/imgproc.hpp>
 
 using namespace std;
 using namespace cv;
-using namespace cv::cuda;
+using cv::cuda::GpuMat;
 
 extern "C" int NLM_extern(buffer_t * in, buffer_t * params, float sigma, int w, int h, int ch, buffer_t * out)
 {

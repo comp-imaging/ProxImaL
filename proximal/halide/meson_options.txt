@@ -1,2 +1,3 @@
 option('wtarget', type: 'integer', min: 2, max: 4096, value: 512)
 option('htarget', type: 'integer', min: 2, max: 4096, value: 512)
+option('build_nlm', type: 'boolean', value: false)
