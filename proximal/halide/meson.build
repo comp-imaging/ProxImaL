@@ -26,6 +26,10 @@ pipeline_src = [
     'src/At_warp.cpp',
 ]
 
+if get_option('build_nlm')
+    pipeline_src += 'src/prox_NLM.cpp'
+endif
+
 halide_generator = executable(
     'halide_pipelines',
     sources: pipeline_src,
@@ -106,6 +110,19 @@ python_dep = py.dependency()
 pybind11_dep = subproject('pybind11').get_variable('pybind11_dep')
 
 cuda_toolchain = find_program('nvcc', required: false)
+
+if get_option('build_nlm')
+    # Provides libnlm_extern.so
+    subdir('src/external')
+
+    pipeline_name += [[
+        'proxNLM',
+        ['prox_NLM'],
+        false,
+        [],
+    ]]
+endif
+
 
 if build_machine.system() == 'windows'
     env = { 'PATH': halide_library_path }
