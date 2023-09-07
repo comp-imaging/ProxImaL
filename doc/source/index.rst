@@ -61,20 +61,6 @@ See `the accompanying paper <http://web.stanford.edu/~stevend2/pdf/proximal.pdf>
    :hidden:
 
    install/index
-
-.. toctree::
-    :maxdepth: 3
-    :hidden:
-
-    tutorial/index
-
-..
-   .. toctree::
-      :hidden:
-
-      examples/index
-
-.. toctree::
-   :hidden:
-
+   tutorial/index
+   examples/index
    publications/index

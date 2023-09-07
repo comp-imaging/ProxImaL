@@ -19,7 +19,7 @@ import sys, os
 # To import ProxImaL:
 sys.path.insert(0, os.path.abspath('../..'))
 # To import sphinx extensions we've put in the repository:
-sys.path.insert(0, os.path.abspath('../sphinxext'))
+#sys.path.insert(0, os.path.abspath('../sphinxext'))
 
 __version__ = "0.1.7"
 
@@ -38,7 +38,7 @@ extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.mathjax',
               'sphinx.ext.viewcode',
               'sphinx.ext.napoleon',
-              'numpydoc']
+              ]
 
 # To suppress autodoc/numpydoc warning.
 # http://stackoverflow.com/questions/12206334/sphinx-autosummary-toctree-contains-reference-to-nonexisting-document-warnings
@@ -149,7 +149,7 @@ html_theme_options = {
     'github_repo': 'ProxImaL',
     'github_banner': True,
     'github_type': 'star',
-    'travis_button': True,
+    'travis_button': False,
     'analytics_id': 'UA-50248335-1',
 }
 
