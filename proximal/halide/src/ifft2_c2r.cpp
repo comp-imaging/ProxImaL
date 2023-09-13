@@ -12,9 +12,7 @@ namespace {
 Var x("x"), y("y"), c("c"), k("k");
 
 //Convolution
-Func ifft2_c2r(Func input, int W, int H) {
-
-    Target target = get_target_from_environment();
+Func ifft2_c2r(Func input, int W, int H, const Target& target) {
 
     Fft2dDesc inv_desc;
     inv_desc.gain = 1.0f/(W*H);
@@ -42,11 +40,14 @@ public:
     GeneratorParam<int> htarget{"htarget", 512, 2, 1024};
     
     void generate() {
-        //Warping
-        fftOut(x, y, c) = ifft2_c2r(input, (int)wtarget, (int)htarget)(x, y, c);
+        const auto transformed = ifft2_c2r(input, (int)wtarget, (int)htarget, get_target());
+
+        // Crop the image by the user-defined dimensions
+        fftOut(x, y, c) = transformed(x, y, c);
     }
 
     void schedule() {
+        assert(!using_autoscheduler() && "Auto-scheduler not required for FFT interface");
     }
 };
 
