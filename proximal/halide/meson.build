@@ -1,5 +1,5 @@
 project('proximal-halide', 'cpp',
-    meson_version: '>=0.58.1',
+    meson_version: '>=0.60.0',
     default_options: [
         'buildtype=debugoptimized',
         'cpp_std=c++17',

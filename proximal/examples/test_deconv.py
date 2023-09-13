@@ -53,6 +53,7 @@ Halide('fft2_r2c',
        recompile=True,
        reconfigure=True)
 Halide('ifft2_c2r', recompile=True)
+Halide('prox_L2', recompile=True)
 print(f'Halide compile time = {toc():.0f}ms')
 
 x = Variable(I.shape)
