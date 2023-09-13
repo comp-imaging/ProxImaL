@@ -43,67 +43,57 @@ generator_param = [
   'htarget=@0@'.format(get_option('htarget')),
 ]
 
-pipeline_name = [[
-        'convImg',
-        ['A_conv'],
-        true,
-        [],
-    ], [
-        'convImgT',
-        ['At_conv'],
-        true,
-        [],
-    ], [
-        'proxL1',
-        ['prox_L1'],
-        true,
-        [],
-    ], [
-        'proxIsoL1',
-        ['prox_IsoL1'],
-        true,
-        [],
-    ], [
-        'proxPoisson',
-        ['prox_Poisson'],
-        true,
-        [],
-    ], [
-        'fftR2CImg',
-        ['fft2_r2c'],
-        false,
-        generator_param,
-    ], [
-        'ifftC2RImg',
-        ['ifft2_c2r'],
-        false,
-        generator_param,
-    ], [
-        'gradTransImg',
-        ['At_grad'],
-        true,
-        [],
-    ], [
-        'gradImg',
-        ['A_grad'],
-        true,
-        [],
-    ], [
-        'WImg',
-        ['A_mask', 'At_mask'],
-        true,
-        [],
-    ], [
-        'warpImg',
-        ['A_warp'],
-        false,
-        [],
-    ], [
-        'warpImgT',
-        ['At_warp'],
-        false,
-        [],
-]]
+pipeline_name = [{
+        'name': 'convImg',
+        'interfaces': ['A_conv'],
+        'autoschedule': true,
+    }, {
+        'name': 'convImgT',
+        'interfaces': ['At_conv'],
+        'autoschedule': true,
+    }, {
+        'name': 'proxL1',
+        'interfaces': ['prox_L1'],
+        'autoschedule': true,
+    }, {
+        'name': 'proxIsoL1',
+        'interfaces': ['prox_IsoL1'],
+        'autoschedule': true,
+    }, {
+        'name': 'proxPoisson',
+        'interfaces': ['prox_Poisson'],
+        'autoschedule': true,
+    }, {
+        'name': 'fftR2CImg',
+        'interfaces': ['fft2_r2c'],
+        'autoschedule': false,
+        'generator_param': generator_param,
+    }, {
+        'name': 'ifftC2RImg',
+        'interfaces': ['ifft2_c2r'],
+        'autoschedule': false,
+        'generator_param': generator_param,
+    }, {
+        'name': 'gradTransImg',
+        'interfaces': ['At_grad'],
+        'autoschedule': true,
+    }, {
+        'name': 'gradImg',
+        'interfaces': ['A_grad'],
+        'autoschedule': true,
+    }, {
+        'name': 'WImg',
+        'interfaces': ['A_mask', 'At_mask'],
+        'autoschedule': true,
+    }, {
+        'name': 'warpImg',
+        'interfaces': ['A_warp'],
+        'autoschedule': false,
+    }, {
+        'name': 'warpImgT',
+        'interfaces': ['At_warp'],
+        'autoschedule': false,
+}]
 
 py = import('python').find_installation()
 python_dep = py.dependency()
@@ -115,12 +105,11 @@ if get_option('build_nlm')
     # Provides libnlm_extern.so
     subdir('src/external')
 
-    pipeline_name += [[
-        'proxNLM',
-        ['prox_NLM'],
-        false,
-        [],
-    ]]
+    pipeline_name += {
+        'name': 'proxNLM',
+        'interfaces': ['prox_NLM'],
+        'autoschedule': false,
+    }
 endif
 
 
@@ -140,20 +129,18 @@ foreach p : pipeline_name
     compile_cmd = [
         halide_generator,
         '-o', meson.current_build_dir(),
-        '-g', p[0],
+        '-g', p['name'],
         '-e', 'o,h',
     ]
 
-    auto_schedule = p[2]
-
-    if cuda_toolchain.found() and auto_schedule
+    if cuda_toolchain.found() and p['autoschedule']
         compile_cmd += [
             'target=host-cuda',
             '-p', 'autoschedule_li2018',
             'autoscheduler=Li2018',
             'autoscheduler.parallelism=32',
         ]
-    elif auto_schedule
+    elif p['autoschedule']
         compile_cmd += [
             'target=host',
             '-p', 'autoschedule_mullapudi2016',
@@ -171,27 +158,39 @@ foreach p : pipeline_name
         ]
     endif
 
+    if not p.has_key('generator_param')
+        p += {'generator_param': []}
+    endif
+
     obj = custom_target(
-        p[0] + '.[oh]',
+        p['name'] + '.[oh]',
         output: [
-            p[0] + '.' + object_file_ext,
-            p[0] + '.h',
+            p['name'] + '.' + object_file_ext,
+            p['name'] + '.h',
         ],
         input: halide_generator,
         env: env,
         command: [
             compile_cmd,
-            p[3],
+            p['generator_param'],
         ],
     )
 
-    foreach library_name : p[1]
+    if not p.has_key('link_with')
+        p += {'link_with': []}
+    endif
+
+    foreach library_name : p['interfaces']
         lib = py.extension_module(
             library_name,
             sources: [
                 'interface/@0@.cpp'.format(library_name),
                 obj,
             ],
+            cpp_args: [
+                '-fvisibility=hidden',
+            ],
+            link_with: p['link_with'],
             dependencies: [
                 python_dep,
                 pybind11_dep,
