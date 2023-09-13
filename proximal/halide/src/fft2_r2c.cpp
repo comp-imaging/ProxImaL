@@ -57,12 +57,12 @@ public:
          * TODO(Antony): remove the redundant logic "repeat_image(...)" because the
          * circular boundary condition is already implied by the FFT algorithm.
         */
-        Func input_func("in");
         Func paddedInput("paddedInput");
         paddedInput = repeat_image( constant_exterior(input, 0.f), {{0, wtarget}, {0, htarget}});
 
         /** Option to shift or center 2D convolution kernel relative to the
          * input image by a user-specified offset. */
+        Func input_func("in");
         input_func(x, y, c) = paddedInput( x + shiftx, y + shifty, c );
 
         const auto transformed = fft2_r2c(input_func, (int)wtarget, (int)htarget, get_target());
