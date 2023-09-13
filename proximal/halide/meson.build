@@ -109,6 +109,7 @@ if get_option('build_nlm')
         'name': 'proxNLM',
         'interfaces': ['prox_NLM'],
         'autoschedule': false,
+        'link_with': nlm_extern_lib,
     }
 endif
 
