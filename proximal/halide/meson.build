@@ -18,6 +18,7 @@ pipeline_src = [
     'src/prox_Poisson.cpp',
     'src/fft2_r2c.cpp',
     'src/ifft2_c2r.cpp',
+    'src/least_square_direct.cpp',
     'src/fft/fft.cpp',
     'src/At_grad.cpp',
     'src/A_grad.cpp',
@@ -66,6 +67,11 @@ pipeline_name = [{
     }, {
         'name': 'fftR2CImg',
         'interfaces': ['fft2_r2c'],
+        'autoschedule': false,
+        'generator_param': generator_param,
+    }, {
+        'name': 'least_square_direct',
+        'interfaces': [],
         'autoschedule': false,
         'generator_param': generator_param,
     }, {
