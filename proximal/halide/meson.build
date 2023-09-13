@@ -71,9 +71,15 @@ pipeline_name = [{
         'generator_param': generator_param,
     }, {
         'name': 'least_square_direct',
-        'interfaces': [],
+        'interfaces': ['prox_L2'],
         'autoschedule': false,
         'generator_param': generator_param,
+    }, {
+        'name': 'least_square_direct',
+        'function_name': 'least_square_direct_ignore_offset',
+        'interfaces': ['prox_L2_ignore_offset'],
+        'autoschedule': false,
+        'generator_param': generator_param + 'ignore_offset=true',
     }, {
         'name': 'ifftC2RImg',
         'interfaces': ['ifft2_c2r'],
@@ -133,11 +139,16 @@ endif
 proximal_python_interface = []
 
 foreach p : pipeline_name
+    if not p.has_key('function_name')
+        p += {'function_name': p['name']}
+    endif
+
     compile_cmd = [
         halide_generator,
         '-o', meson.current_build_dir(),
         '-g', p['name'],
         '-e', 'o,h',
+        '-f', p['function_name'],
     ]
 
     if cuda_toolchain.found() and p['autoschedule']
@@ -170,10 +181,10 @@ foreach p : pipeline_name
     endif
 
     obj = custom_target(
-        p['name'] + '.[oh]',
+        p['function_name'] + '.[oh]',
         output: [
-            p['name'] + '.' + object_file_ext,
-            p['name'] + '.h',
+            p['function_name'] + '.' + object_file_ext,
+            p['function_name'] + '.h',
         ],
         input: halide_generator,
         env: env,
