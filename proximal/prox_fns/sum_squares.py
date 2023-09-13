@@ -123,15 +123,8 @@ class least_squares(sum_squares):
                                                 self.freq_shape[1], 1)
                 hsizehalide = (int((hsize[0] + 1) / 2) + 1, hsize[1], hsize[2])
 
-                self.hsizehalide = hsizehalide
-                self.ftmp_halide = np.empty(hsizehalide,
-                                            dtype=np.complex64,
-                                            order='F')
-                self.ftmp_halide_out = np.empty(hsize,
-                                                dtype=np.float32,
-                                                order='F')
-                self.freq_diag = np.reshape(
-                    self.freq_diag[0:hsizehalide[0], ...], hsizehalide)
+                self.freq_diag = np.asfortranarray(
+                    self.freq_diag[0:hsizehalide[0], ...].reshape(hsizehalide), dtype=np.complex64)
 
         super(least_squares, self).__init__(lin_op, implem=implem, **kwargs)
 
@@ -199,36 +192,25 @@ class least_squares(sum_squares):
             if self.implementation == Impl['halide'] and \
                     (len(self.freq_shape) == 2 or
                      (len(self.freq_shape) == 2 and self.freq_dims == 2)):
-
-                Halide('fft2_r2c').fft2_r2c(Ktb.reshape(self.freq_shape), 0, 0,
-                                            self.ftmp_halide)
+                
+                ftmp_halide_out = np.empty(self.freq_shape, dtype=np.float32, order='F')
 
                 if rho is None:
-                    ne.evaluate('F_Ktb / d', {
-                        'F_Ktb': self.ftmp_halide,
-                        'd': self.freq_diag,
-                    },
-                                out=self.ftmp_halide,
-                                casting='unsafe')
+                    Halide('prox_L2_ignore_offset').prox_L2_ignore_offset(
+                        Ktb.reshape(self.freq_shape),
+                        self.freq_diag,
+                        ftmp_halide_out,
+                    )
                 else:
-                    F_Ktb = self.ftmp_halide.copy()
+                    Halide('prox_L2').prox_L2(
+                        Ktb.reshape(self.freq_shape),
+                        float(rho),
+                        np.reshape(v, self.freq_shape),
+                        self.freq_diag,
+                        ftmp_halide_out,
+                    )
 
-                    Halide('fft2_r2c').fft2_r2c(np.reshape(v, self.freq_shape),
-                                                0, 0, self.ftmp_halide)
-                    ne.evaluate('(F_Ktb / rho + x) / (d / rho + 1.0)', {
-                        'F_Ktb': F_Ktb,
-                        'x': self.ftmp_halide,
-                        'rho': rho,
-                        'd': self.freq_diag,
-                    },
-                                out=self.ftmp_halide,
-                                casting='unsafe')
-
-                # Do inverse tranform
-                Halide('ifft2_c2r').ifft2_c2r(self.ftmp_halide,
-                                              self.ftmp_halide_out)
-
-                return self.ftmp_halide_out.ravel()
+                return ftmp_halide_out.ravel()
 
             else:
 
