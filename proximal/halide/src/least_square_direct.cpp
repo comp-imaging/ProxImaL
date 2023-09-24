@@ -14,14 +14,14 @@ namespace {
 class least_square_direct_gen : public Generator<least_square_direct_gen> {
    public:
     Input<Buffer<float, 3>> input{"input"};
-    Input<int> shiftx{"shiftx"};
-    Input<int> shifty{"shifty"};
     Input<float> rho{"rho"};
     Input<Buffer<float, 3>> offset{"offset"};
     Input<Buffer<float, 4>> freq_diag{"freq_diag"};
 
     Output<Buffer<float, 3>> output{"output"};
 
+    GeneratorParam<int> shiftx{"shiftx", 0, -512, 512};
+    GeneratorParam<int> shifty{"shifty", 0, -512, 512};
     GeneratorParam<int> wtarget{"wtarget", 512, 2, 1024};
     GeneratorParam<int> htarget{"htarget", 512, 2, 1024};
     GeneratorParam<bool> ignore_offset{"ignore_offset", false};

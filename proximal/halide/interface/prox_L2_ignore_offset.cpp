@@ -10,10 +10,10 @@ prox_L2_ignore_offset_glue(const array_float_t input,
     auto freq_diag_buf = getHalideComplexBuffer<4>(freq_diag);
     auto output_buf = getHalideBuffer<3>(output, true);
 
-    constexpr auto dont_care = 0;
+    constexpr float dont_care = 0;
     auto& dont_care_buf = input_buf;
 
-    const auto success = least_square_direct_ignore_offset(input_buf, dont_care, dont_care, dont_care, dont_care_buf,
+    const auto success = least_square_direct_ignore_offset(input_buf, dont_care, dont_care_buf,
                                              freq_diag_buf, output_buf);
     output_buf.copy_to_host();
     return success;
