@@ -17,6 +17,7 @@ class least_square_direct_gen : public Generator<least_square_direct_gen> {
     Input<float> rho{"rho"};
     Input<Buffer<float, 3>> offset{"offset"};
     Input<Buffer<float, 4>> freq_diag{"freq_diag"};
+    Input<uint64_t> offset_hash{"offset_hash"};
 
     Output<Buffer<float, 3>> output{"output"};
 
@@ -39,7 +40,12 @@ class least_square_direct_gen : public Generator<least_square_direct_gen> {
         Fft2dDesc fwd_desc{};
         fwd_desc.parallel = true;
         f_input = fft2d_r2c(shifted_input, W, H, target, fwd_desc);
-        f_offset = fft2d_r2c(padded_offset, W, H, target, fwd_desc);
+
+        f_offset_tmp = fft2d_r2c(padded_offset, W, H, target, fwd_desc);
+
+        f_offset_cached(x, y, k, c) = memoize_tag(
+            mux(k, {re(f_offset_tmp(x, y, c)), im(f_offset_tmp(x, y, c))}), offset_hash);
+        f_offset(x, y, c) = {f_offset_cached(x, y, 0, c), f_offset_cached(x, y, 1, c)};
 
         // Cast freq_diag from pair<float> to std:::complex<float>
         diag(x, y, c) = {freq_diag(0, x, y, c), freq_diag(1, x, y, c)};
@@ -121,9 +127,16 @@ class least_square_direct_gen : public Generator<least_square_direct_gen> {
             ;
 
         if(!ignore_offset) {
-            f_offset //
-            .compute_root()
-            .parallel(c);
+            f_offset_cached  //
+                .compute_root()
+                .bound(k, 0, 2)
+                .unroll(k)
+                .vectorize(x, vfloat)
+                .parallel(y)
+                .parallel(c)
+                .memoize();
+
+            f_offset_tmp.compute_at(f_offset_cached, c);
         }
     }
 
@@ -135,7 +148,9 @@ class least_square_direct_gen : public Generator<least_square_direct_gen> {
     Func shifted_input{"shifted_input"};
     Func padded_offset{"padded_offset"};
     ComplexFunc diag{"diag"};
+    Func f_offset_cached{"f_offset_cached"};
     ComplexFunc f_input{"f_input"};
+    ComplexFunc f_offset_tmp{"f_offset_tmp"};
     ComplexFunc f_offset{"f_offset"};
     ComplexFunc weighted_average{"weighted_average"};
     Func inversed{"inversed"};
