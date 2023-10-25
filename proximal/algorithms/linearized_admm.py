@@ -97,9 +97,11 @@ def solve(psi_fns, omega_fns, lmb=1.0, mu=None, quad_funcs=None,
         ne.evaluate('v_prev - (mu / lmb) * v', out=v, casting='unsafe')
 
         if len(omega_fns) > 0:
+            prox_log[omega_fns[0]].tic()
             v_shape = omega_fns[0].lin_op.shape
             v[:] = omega_fns[0].prox(1.0 / mu, np.asfortranarray(v.reshape(v_shape)), x_init=v_prev.copy(),
                                      lin_solver=lin_solver, options=lin_solver_options).ravel()
+            prox_log[omega_fns[0]].toc()
 
         # Update z.
         K.forward(v, Kv)
