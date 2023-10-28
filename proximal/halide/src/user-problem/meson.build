@@ -65,6 +65,7 @@ test_runtime_exe = executable('test-ladmm-runtime',
     ],
     cpp_args: [
         '-DRAW_IMAGE_PATH="@0@"'.format(parrot_img),
+	'-DHALIDE_NO_JPEG',
     ],
     link_with: ladmm_runtime_lib,
     dependencies: [

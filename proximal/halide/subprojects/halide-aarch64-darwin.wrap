@@ -1,0 +1,10 @@
+[wrap-file]
+directory = Halide-16.0.0-arm-64-osx
+
+source_url = https://github.com/halide/Halide/releases/download/v16.0.0/Halide-16.0.0-arm-64-osx-1e963ff817ef0968cc25d811a25a7350c8953ee6.tar.gz
+source_filename = Halide-16.0.0-arm-64-osx.tar.gz
+source_hash = 57e9b1de3a40d50a47e5f728aa12d838471c3c69cb250babf84999577f1e4d51
+
+patch_directory = halide
+
+
