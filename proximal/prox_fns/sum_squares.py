@@ -6,6 +6,7 @@ import numexpr as ne
 from proximal.utils.utils import Impl, fftd, ifftd
 from scipy.sparse.linalg import lsqr, LinearOperator
 from proximal.halide.halide import Halide
+from proximal.utils.memoized_expr import memoized_expr
 
 
 class sum_squares(ProxFn):
@@ -142,14 +143,22 @@ class least_squares(sum_squares):
     def _prox(self, rho, v, b=None, lin_solver="cg", *args, **kwargs):
         """x = argmin_x ||K*x - self.offset - b||_2^2 + (rho/2)||x-v||_2^2.
         """
+
+        # Note(Antony): Memorized expression is implemented at
+        # Halide-accelerated modules already. The following code bloat to be
+        # eliminated.
         if b is None:
-            offset = self.offset
+            offset = memoized_expr("offset", {'offset':self.offset}, self.offset.shape)
+            hash = self.offset.__array_interface__['data'][0]
         else:
-            offset = self.offset + b
+            offset = memoized_expr("offset + b", {'offset': self.offset, 'b': b}, self.offset.shape)
+            hash = b.__array_interface__['data'][0]
+
         return self.solve(offset,
                           rho=rho,
                           v=v,
                           lin_solver=lin_solver,
+                          hash=hash,
                           *args,
                           **kwargs)
 
@@ -160,12 +169,20 @@ class least_squares(sum_squares):
         self.K.forward(v.ravel(), Kv)
         return super(least_squares, self)._eval(Kv - self.offset)
 
-    def solve(self, b, rho=None, v=None, lin_solver="lsqr", *args, **kwargs):
+    def solve(self, b: memoized_expr, rho=None, v=None, lin_solver="lsqr", hash=0, *args, **kwargs):
+        if self.diag is not None or self.freq_diag is not None:
+            # TODO(Antony): Move the cache machanism to Halide.
+            is_cache_miss: bool = not hasattr(self, 'Ktb') or not hasattr(self, 'b_hash') or self.b_hash != hash
+
+            if is_cache_miss:
+                self.Ktb = np.empty(self.K.input_size, dtype=np.float32, order='F')
+                self.K.adjoint(b.evaluate(), self.Ktb)
+                self.b_hash = hash
+
+            Ktb = self.Ktb
+
         # KtK Operator is diagonal
         if self.diag is not None:
-
-            Ktb = np.empty(self.K.input_size, dtype=b.dtype)
-            self.K.adjoint(b, Ktb)
             if rho is None:
                 Ktb /= self.diag
             else:
@@ -185,9 +202,6 @@ class least_squares(sum_squares):
 
         # KtK operator is diagonal in frequency domain.
         elif self.freq_diag is not None:
-            Ktb = np.empty(self.K.input_size, dtype=np.float32, order='F')
-            self.K.adjoint(b, Ktb)
-
             # Frequency inversion
             if self.implementation == Impl['halide'] and \
                     (len(self.freq_shape) == 2 or
@@ -227,9 +241,9 @@ class least_squares(sum_squares):
                 return (ifftd(Ktb, self.freq_dims).real).ravel()
 
         elif lin_solver == "lsqr":
-            return self.solve_lsqr(b, rho, v, *args, **kwargs)
+            return self.solve_lsqr(b.evaluate(), rho, v, *args, **kwargs)
         elif lin_solver == "cg":
-            return self.solve_cg(b, rho, v, *args, **kwargs)
+            return self.solve_cg(b.evaluate(), rho, v, *args, **kwargs)
         else:
             raise Exception("Unknown least squares solver.")
 
