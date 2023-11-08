@@ -1,6 +1,7 @@
 from __future__ import division, print_function
 from proximal.lin_ops import CompGraph, scale, vstack
 from proximal.utils.timings_log import TimingsLog, TimingsEntry
+from proximal.utils.memoized_expr import memoized_expr
 from .invert import get_least_squares_inverse, get_diag_quads
 import numpy as np
 import numexpr as ne
@@ -86,7 +87,8 @@ def solve(psi_fns, omega_fns, rho=1.0,
 
         # Update v.
         tmp = np.hstack([z - u] + const_terms)
-        v = v_update.solve(tmp, x_init=v, lin_solver=lin_solver, options=lin_solver_options)
+        tmp_expr = memoized_expr('tmp', {'tmp': tmp}, tmp.shape)
+        v = v_update.solve(tmp_expr, x_init=v, lin_solver=lin_solver, options=lin_solver_options)
 
         # Update z.
         K.forward(v, Kv)

@@ -3,6 +3,7 @@ import numpy as np
 import math
 from proximal.lin_ops import CompGraph, scale, vstack
 from proximal.utils.timings_log import TimingsLog, TimingsEntry
+from proximal.utils.memoized_expr import memoized_expr
 from .invert import get_least_squares_inverse, get_diag_quads
 
 
@@ -110,7 +111,8 @@ def solve(psi_fns, omega_fns,
             # Update x.
             x_prev[:] = x
             tmp = np.hstack([w] + [cterm / np.sqrt(rho) for cterm in const_terms])
-            x = x_update.solve(tmp, x_init=x, lin_solver=lin_solver, options=lin_solver_options)
+            tmp_expr = memoized_expr('tmp', {'tmp': tmp}, tmp.shape)
+            x = x_update.solve(tmp_expr, x_init=x, lin_solver=lin_solver, options=lin_solver_options)
 
             # Very basic convergence check.
             r_x = np.linalg.norm(x_prev - x)

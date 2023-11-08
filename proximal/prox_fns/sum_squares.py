@@ -147,10 +147,12 @@ class least_squares(sum_squares):
         # Note(Antony): Memorized expression is implemented at
         # Halide-accelerated modules already. The following code bloat to be
         # eliminated.
+        self.offset.setflags(write=False)
         if b is None:
             offset = memoized_expr("offset", {'offset':self.offset}, self.offset.shape)
             hash = self.offset.__array_interface__['data'][0]
         else:
+            b.setflags(write=False)
             offset = memoized_expr("offset + b", {'offset': self.offset, 'b': b}, self.offset.shape)
             hash = b.__array_interface__['data'][0]
 
@@ -169,36 +171,43 @@ class least_squares(sum_squares):
         self.K.forward(v.ravel(), Kv)
         return super(least_squares, self)._eval(Kv - self.offset)
 
-    def solve(self, b: memoized_expr, rho=None, v=None, lin_solver="lsqr", hash=0, *args, **kwargs):
+    def solve(self, b: memoized_expr, rho=None, v=None, lin_solver="lsqr", hash=None, *args, **kwargs):
         if self.diag is not None or self.freq_diag is not None:
             # TODO(Antony): Move the cache machanism to Halide.
-            is_cache_miss: bool = not hasattr(self, 'Ktb') or not hasattr(self, 'b_hash') or self.b_hash != hash
+            is_cache_miss: bool = (hash is None or
+                                   not hasattr(self, 'Ktb') or
+                                   not hasattr(self, 'b_hash') or
+                                   self.b_hash is None or
+                                   self.b_hash != hash)
 
             if is_cache_miss:
                 self.Ktb = np.empty(self.K.input_size, dtype=np.float32, order='F')
                 self.K.adjoint(b.evaluate(), self.Ktb)
-                self.b_hash = hash
+                self.Ktb.setflags(write=False)
 
-            Ktb = self.Ktb
+                self.b_hash = hash
 
         # KtK Operator is diagonal
         if self.diag is not None:
+
+            u = np.empty(self.Ktb.shape, dtype=np.float32, order='F')
+
             if rho is None:
-                Ktb /= self.diag
+                ne.evaluate('Ktb / diag', {'Ktb': self.Ktb, 'diag': self.diag}, out=u, casting='unsafe')
             else:
                 ne.evaluate(
                     '(Ktb + v * half_rho) / (d + half_rho)',
                     {
-                        'Ktb': Ktb,
+                        'Ktb': self.Ktb,
                         'half_rho': rho * 0.5,
-                        'v': np.zeros(Ktb.shape) if v is None else v,
+                        'v': 0.0 if v is None else v,
                         'd': self.diag,
                     },
-                    out=Ktb,
+                    out=u,
                     casting='unsafe',
                 )
 
-            return Ktb
+            return u
 
         # KtK operator is diagonal in frequency domain.
         elif self.freq_diag is not None:
@@ -211,13 +220,13 @@ class least_squares(sum_squares):
 
                 if rho is None:
                     Halide('prox_L2_ignore_offset').prox_L2_ignore_offset(
-                        Ktb.reshape(self.freq_shape),
+                        self.Ktb.reshape(self.freq_shape),
                         self.freq_diag,
                         ftmp_halide_out,
                     )
                 else:
                     Halide('prox_L2').prox_L2(
-                        Ktb.reshape(self.freq_shape),
+                        self.Ktb.reshape(self.freq_shape),
                         float(rho),
                         np.reshape(v, self.freq_shape),
                         self.freq_diag,
@@ -229,7 +238,7 @@ class least_squares(sum_squares):
             else:
 
                 # General frequency inversion
-                Ktb = fftd(np.reshape(Ktb, self.freq_shape), self.freq_dims)
+                Ktb = fftd(np.reshape(self.Ktb, self.freq_shape), self.freq_dims)
 
                 if rho is None:
                     Ktb /= self.freq_diag
