@@ -80,13 +80,15 @@ class LinearizedADMMIter : public Generator<LinearizedADMMIter> {
         const RDom output_dimensions{0, output_width, 0, output_height, 0, 1, 0, 2};
 
         for (size_t i = 0; i < n_iter; i++) {
+            const Func& v_prev =
+                (i == 0) ? v : v_list[i - 1];
             const FuncTuple<psi_size>& z_prev =
                 (i == 0) ? FuncTuple<psi_size>{z0, z1} : z_list[i - 1];
             const FuncTuple<psi_size>& u_prev =
                 (i == 0) ? FuncTuple<psi_size>{u0, u1} : u_list[i - 1];
 
             std::tie(v_list[i], z_list[i], u_list[i]) = algorithm::linearized_admm::iterate(
-                v, z_prev, u_prev, K, omega_fn, psi_fns, lmb, mu, input);
+                v_prev, z_prev, u_prev, K, omega_fn, psi_fns, lmb, mu, input);
         }
 
         const auto& z_prev = (n_iter > 1) ? *(z_list.rbegin() + 1) : FuncTuple<psi_size>{z0, z1};
