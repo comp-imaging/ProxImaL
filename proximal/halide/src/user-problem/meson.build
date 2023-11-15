@@ -18,6 +18,14 @@ solver_generator = executable(
     ],
 )
 
+if host_machine.system() == 'darwin'
+    halide_target = 'host-metal' 
+    metal_dep = dependency('appleframeworks', modules: ['Metal', 'Foundation'])
+else
+    halide_target = 'host'
+    metal_dep = []
+endif
+
 solver_bin = custom_target(
     'ladmm_iter.[ah]',
     output: [
@@ -31,7 +39,7 @@ solver_bin = custom_target(
         '-o', meson.current_build_dir(),
         '-g', 'ladmm_iter',
         '-e', 'static_library,h,stmt_html',
-        'target=host',
+        'target=' + halide_target,
 
         '-p', 'autoschedule_mullapudi2016',
         'autoscheduler=Mullapudi2016',
@@ -51,7 +59,10 @@ ladmm_runtime_lib = library('ladmm-runtime',
         'ladmm-runtime.cpp',
         solver_bin,
     ],
-    dependencies: halide_runtime_dep,
+    dependencies: [
+      metal_dep,
+      halide_runtime_dep,
+    ],
 )
 
 libpng_dep = dependency('libpng', required: false)
