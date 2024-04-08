@@ -209,6 +209,8 @@ foreach p : pipeline_name
             ],
             cpp_args: [
                 '-fvisibility=hidden',
+                '-DCONFIG_FFT_WIDTH=@0@'.format(get_option('wtarget')),
+                '-DCONFIG_FFT_HEIGHT=@0@'.format(get_option('htarget')),
             ],
             link_with: p['link_with'],
             dependencies: [
