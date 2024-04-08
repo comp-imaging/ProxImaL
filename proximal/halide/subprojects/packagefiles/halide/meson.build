@@ -7,9 +7,12 @@ halide_inc = include_directories('include')
 
 if build_machine.system() == 'windows'
     halide_library_path = meson.current_source_dir() / 'lib/Release'
+    # Halide.dll is in a different path, why?
+    halide_dll_path = meson.current_source_dir() / 'bin/Release'
 else
     halide_library_path = meson.current_source_dir() / 'lib'
 endif
+
 halide_lib = cc.find_library('Halide', dirs: halide_library_path)
 
 halide_generator_dep = declare_dependency(

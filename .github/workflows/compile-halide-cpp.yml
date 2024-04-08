@@ -16,27 +16,21 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-20.04, ubuntu-latest, windows-latest, macos-latest]
-        # TODO(Antony): add Python 3.9 to test the Meson build system support
-        python-version: [3.8]
+        python-version: ["3.10"]
 
     steps:
     - name: Fetch sources
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
 
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
+        cache: pip
 
     - name: Install gcc toolchain
       run: sudo apt-get install build-essential
       if: startsWith(matrix.os, 'ubuntu') == true
-
-    - name: Install MSVC toolchain
-      uses: bus1/cabuild/action/msdevshell@v1
-      with:
-        architecture: x64
-      if: startsWith(matrix.os, 'windows') == true
 
     - name: Install Python dependencies
       run: |
@@ -49,18 +43,19 @@ jobs:
         key: ${{ runner.os }}-meson-cache
         path: proximal/halide/subprojects/packagecache/
 
-    - name: Resolve C++ build dependencies
+    - name: Resolve C++ build dependencies (non-Windows)
       run: meson setup proximal/halide proximal/halide/build
-    
-    - name: Build ProxImaL-codegen
-      run: ninja -C proximal/halide/build ladmm-runtime
-      # TODO(Antony): Resolve "missing DLLs" in Windows Docker environment.
       if: startsWith(matrix.os, 'window') == false
+    
+    - name: Resolve C++ build dependencies (msvc toolchain)
+      run: meson setup --vsenv proximal/halide proximal/halide/build
+      if: startsWith(matrix.os, 'window') == true
+
+    - name: Build ProxImaL-codegen
+      run: meson compile -C proximal/halide/build ladmm-runtime:alias
 
     - name: Build Python interfaces
-      run: ninja -C proximal/halide/build python_interface
-      if: startsWith(matrix.os, 'window') == false
+      run: meson compile -C proximal/halide/build python_interface
 
     - name: Run test suite
-      run: ninja -C proximal/halide/build test
-      if: startsWith(matrix.os, 'window') == false
+      run: meson test -C proximal/halide/build --suite codegen

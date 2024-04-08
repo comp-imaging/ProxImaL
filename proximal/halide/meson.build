@@ -125,9 +125,11 @@ if get_option('build_nlm')
     }
 endif
 
-
 if build_machine.system() == 'windows'
-    env = { 'PATH': halide_library_path }
+    env = { 'PATH': [
+        halide_toolchain.get_variable('halide_dll_path'),
+        halide_library_path,
+    ]}
     object_file_ext = 'obj'
     statlib_file_ext = 'lib'
 else

@@ -32,13 +32,13 @@ solver_bin = custom_target(
         'ladmm_iter.' + statlib_file_ext,
         'ladmm_iter.h',
     ],
-    input: solver_generator,
     env: env,
+    input: solver_generator,
     command: [
         solver_generator,
         '-o', meson.current_build_dir(),
         '-g', 'ladmm_iter',
-        '-e', 'static_library,h,stmt_html',
+        '-e', 'static_library,h',
         'target=' + halide_target,
 
         '-p', 'autoschedule_mullapudi2016',
