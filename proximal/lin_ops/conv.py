@@ -38,8 +38,8 @@ class conv(LinOp):
                 output_fft_tmp = np.zeros((int((hsize[0] + 1) / 2) + 1, hsize[1], hsize[2]),
                                           dtype=np.complex64, order='F')
 
-                Halide('fft2_r2c', target_shape=hsize[:2]).fft2_r2c(self.kernel, int(self.kernel.shape[1] / 2),
-                                                int(self.kernel.shape[0] / 2), output_fft_tmp)
+                Halide('fft2_r2c', target_shape=hsize[:2]).fft2_r2c(self.kernel, self.kernel.shape[1] // 2,
+                                                self.kernel.shape[0] // 2, output_fft_tmp)
                 self.forward_kernel[:] = 0.
 
                 if len(arg.shape) == 2:

@@ -21,8 +21,6 @@ class least_square_direct_gen : public Generator<least_square_direct_gen> {
 
     Output<Buffer<float, 3>> output{"output"};
 
-    GeneratorParam<int> shiftx{"shiftx", 0, -512, 512};
-    GeneratorParam<int> shifty{"shifty", 0, -512, 512};
     GeneratorParam<int> wtarget{"wtarget", 512, 2, 1024};
     GeneratorParam<int> htarget{"htarget", 512, 2, 1024};
     GeneratorParam<bool> ignore_offset{"ignore_offset", false};
@@ -31,9 +29,15 @@ class least_square_direct_gen : public Generator<least_square_direct_gen> {
         const int W = wtarget;
         const int H = htarget;
 
-        padded_input = repeat_image(constant_exterior(input, 0.f, {{0, W}, {0, H}}), {{0, W}, {0, H}});
+        // Zeropadding to fit the inputs to the user-provided FFT target width and height.
+        padded_input = constant_exterior(input, 0.f, {{0, input.width()}, {0, input.height()}});
+
         padded_offset(x, y, c) = constant_exterior(offset, 0.f, {{0, W}, {0, H}})(x, y, c);
 
+        // If the input buffer (e.g. blur kernel) is smaller than the FFT
+        // target width, shift the image to the center.
+        const Expr shiftx = select(input.width() < W, (W - input.width()) / 2, 0);
+        const Expr shifty = select(input.height() < H, (H - input.height()) / 2, 0);
         shifted_input(x, y, c) = padded_input(x + shiftx, y + shifty, c);
 
         // Forward DFT
@@ -145,6 +149,7 @@ class least_square_direct_gen : public Generator<least_square_direct_gen> {
     Var x{"x"}, y{"y"}, c{"c"}, k{"k"};
 
     Func padded_input{"padded_input"};
+    Func cyclic_input{"cyclic_input"};
     Func shifted_input{"shifted_input"};
     Func padded_offset{"padded_offset"};
     ComplexFunc diag{"diag"};

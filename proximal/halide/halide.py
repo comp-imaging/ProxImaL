@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 # Includes
 import importlib
 import subprocess
@@ -7,7 +5,7 @@ import os
 import numpy as np
 
 
-class Halide(object):
+class Halide:
 
     def __init__(self,
                  func: str,
@@ -97,10 +95,11 @@ class Halide(object):
         if self.module_name[:4] == 'fft2':
             expected_shape = (launch.htarget, launch.wtarget)
             if np.any(expected_shape != self.target_shape):
-                print('Warning: FFT2 shape mismatch. Expected {expected_shape}, found {self.target_shape}. Please recompile.')
+                print(f'Warning: FFT2 shape mismatch. Expected {expected_shape}, found {self.target_shape}. Please recompile.')
 
             if np.any(expected_shape != args[0].shape):
-                print('Warning: Input image shape mismatch for FFT2. Expected {expected_shape}, found {self.args[0].shape}. Applying circular boundary condition.')
+                print('Warning: Input image shape mismatch for FFT2. '
+                      f'Expected {expected_shape}, found {args[0].shape}. Applying circular boundary condition.')
 
         error = launch.run(*args)
 

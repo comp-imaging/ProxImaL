@@ -229,7 +229,7 @@ class least_squares(sum_squares):
                         self.Ktb.reshape(self.freq_shape),
                         float(rho),
                         np.reshape(v, self.freq_shape),
-                        self.freq_diag,
+                        self.freq_diag.astype(np.complex64),
                         ftmp_halide_out,
                     )
 
