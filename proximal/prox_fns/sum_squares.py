@@ -215,7 +215,7 @@ class least_squares(sum_squares):
             if self.implementation == Impl['halide'] and \
                     (len(self.freq_shape) == 2 or
                      (len(self.freq_shape) == 2 and self.freq_dims == 2)):
-                
+
                 ftmp_halide_out = np.empty(self.freq_shape, dtype=np.float32, order='F')
 
                 if rho is None:
@@ -236,7 +236,6 @@ class least_squares(sum_squares):
                 return ftmp_halide_out.ravel()
 
             else:
-
                 # General frequency inversion
                 Ktb = fftd(np.reshape(self.Ktb, self.freq_shape), self.freq_dims)
 

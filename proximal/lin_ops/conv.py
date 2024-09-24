@@ -10,7 +10,7 @@ class conv(LinOp):
 
     def __init__(self, kernel, arg, dims=None, implem=None):
         self.kernel = kernel
-        if dims is not None and dims < len(arg.shape):
+        if dims is not None and dims <= len(arg.shape):
             self.dims = dims
         else:
             self.dims = None
