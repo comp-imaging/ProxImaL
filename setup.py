@@ -24,7 +24,7 @@ setup(
     url='http://github.com/comp-imaging/ProxImaL/',
     install_requires=["numpy <= 1.23.0",
                       "scipy >= 0.15",
-                      "numexpr <= 2.8.4",
+                      "numexpr <= 2.8.5",
                       "Pillow",
                       "meson >= 0.58"],
 )
