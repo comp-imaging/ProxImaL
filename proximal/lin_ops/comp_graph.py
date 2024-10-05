@@ -53,7 +53,7 @@ class CompGraph(object):
                     self.constants.append(node)
                 else:
                     # avoid copying too many nodes
-                    if not node in node_to_copies:                            
+                    if node not in node_to_copies:                            
                         cnode = cp.copy(node)
                         node.orig_node = node.orig_node
                         node_to_copies[node] = cnode
@@ -63,11 +63,11 @@ class CompGraph(object):
                     # Default implementation.
                     if implem is not None:
                         node.implem = implem
-                if not node in ready and not node in done:
+                if node not in ready and node not in done:
                     ready.append(node)
                 edge = Edge(node, curr, node.shape)
                 input_edges.append(edge)
-                if not node in self.output_edges:
+                if node not in self.output_edges:
                     self.output_edges[node] = [edge]
                 else:
                     self.output_edges[node].append(edge)

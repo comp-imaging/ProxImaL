@@ -292,7 +292,7 @@ def graph_visualize(prox_fns, filename = None):
     dot = graphviz.Digraph()
     nodes = {}
     def node(obj):
-        if not obj in nodes:
+        if obj not in nodes:
             nodes[obj] = 'N%d' % len(nodes)
         return nodes[obj]
     from proximal.prox_fns.prox_fn import ProxFn
@@ -301,7 +301,7 @@ def graph_visualize(prox_fns, filename = None):
         activenodes = [pfn.lin_op]
         while len(activenodes) > 0:
             n = activenodes.pop(0)
-            if not n in nodes:
+            if n not in nodes:
                 dot.node(node(n), str(type(n)))
                 activenodes.extend(n.input_nodes)
         dot.edge(nodes[pfn.lin_op], nodes[pfn])
@@ -309,7 +309,7 @@ def graph_visualize(prox_fns, filename = None):
         visited = set()
         while len(activenodes) > 0:
             n = activenodes.pop(0)
-            if not n in visited:
+            if n not in visited:
                 visited.add(n)
                 activenodes.extend(n.input_nodes)
                 for inn in n.input_nodes:

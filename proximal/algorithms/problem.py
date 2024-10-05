@@ -136,7 +136,7 @@ class Problem(object):
 
                 output_mags = [NotImplemented]
                 L.norm_bound(output_mags)
-                if not NotImplemented in output_mags:
+                if NotImplemented not in output_mags:
                     assert len(output_mags) == 1
                 
                     x = random(L.input_size)
@@ -164,7 +164,7 @@ class Problem(object):
                 for v in K.orig_end.variables():
                     if v.initval is not None:
                         v.initval *= np.sqrt(Knorm)
-            if not test_adjoints in [False, None]:
+            if test_adjoints not in [False, None]:
                 if test_adjoints is True:
                     test_adjoints = 1e-6
                 # test adjoints

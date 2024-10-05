@@ -224,7 +224,7 @@ class ReverseInOut(object):
 
     def input_nodes(self, n):
         if self.reverseNodes:
-            if not n in self.in_nodes:
+            if n not in self.in_nodes:
                 self.in_nodes[n] = list([NodeReverseInOut(x, self) for x in self.o.output_nodes(n)])
             return self.in_nodes[n]
         else:
@@ -232,7 +232,7 @@ class ReverseInOut(object):
 
     def output_nodes(self, n):
         if self.reverseNodes:
-            if not n in self.out_nodes:
+            if n not in self.out_nodes:
                 self.out_nodes[n] = list([NodeReverseInOut(x, self) for x in self.o.input_nodes(n)])
             return self.out_nodes[n]
         else:
@@ -305,7 +305,7 @@ class CudaSubGraph:
                 continue
             visited_nodes[n] = True
             try:
-                if not n in self._output_nodes:
+                if n not in self._output_nodes:
                     self._output_nodes[n] = get_output_nodes(n)
             except KeyError:
                 pass
@@ -322,7 +322,7 @@ class CudaSubGraph:
                         if not isinstance(n, vstack) and inn in innodes[innidx+1:]:
                             # insert a copy node between inn and n
                             nn = copy(n.shape)
-                            if not inn in replacements: replacements[inn] = []
+                            if inn not in replacements: replacements[inn] = []
                             replacements[inn].append(nn)
                             new_innodes.append(nn)
                             self._output_nodes[nn] = [n]
@@ -388,7 +388,7 @@ class CudaSubGraph:
         active = [self.end]
         while len(active) > 0:
             n = active.pop(0)
-            if not n in nodes:
+            if n not in nodes:
                 nodes[n] = 'N%d' % len(nodes)
                 dot.node(nodes[n], str(type(n)))
                 try:
@@ -400,7 +400,7 @@ class CudaSubGraph:
         active = [self.end]
         while len(active) > 0:
             n = active.pop(0)
-            if not n in visited:
+            if n not in visited:
                 visited[n] = True
                 try:
                     innodes = self.input_nodes(n)
