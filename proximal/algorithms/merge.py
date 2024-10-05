@@ -30,9 +30,9 @@ def can_merge(lh_prox, rh_prox):
     """
     # Lin ops must be the same.
     if lh_prox.lin_op == rh_prox.lin_op:
-        if type(lh_prox) == zero_prox or type(rh_prox) == zero_prox:
+        if isinstance(lh_prox, zero_prox) or isinstance(rh_prox, zero_prox):
             return True
-        elif type(lh_prox) == sum_squares or type(rh_prox) == sum_squares:
+        if isinstance(lh_prox, sum_squares) or isinstance(rh_prox, sum_squares):
             return True
 
     return False

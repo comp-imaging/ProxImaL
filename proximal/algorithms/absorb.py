@@ -40,7 +40,7 @@ def absorb_lin_op(prox_fn):
     if isinstance(prox_fn.lin_op, Variable):
         return [prox_fn]
     # Absorb a lin op into sum_entries/zero.
-    if type(prox_fn) == zero_prox and prox_fn.gamma == 0:
+    if isinstance(prox_fn, zero_prox) and prox_fn.gamma == 0:
         outputs = []
         inputs = [prox_fn.c]
         for arg in prox_fn.lin_op.input_nodes:

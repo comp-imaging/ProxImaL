@@ -20,7 +20,7 @@ def partition(prox_fns, try_diagonalize=True):
     omega_fns = []
     if len(quad_fns) == 0:
         for fn in prox_fns:
-            if type(fn.lin_op) == Variable:
+            if isinstance(fn.lin_op, Variable):
                 split_fn = [fn]
                 break
         omega_fns = split_fn

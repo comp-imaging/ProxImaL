@@ -1,9 +1,10 @@
 [tool.ruff]
 line-length=127
 target-version="py310"
+exclude=['proximal/halide/subprojects/']
 
 [tool.ruff.lint]
-select=["E9", "F63", "F7", "F82", "C90"]
+select=["E9", "E713", "E721", "F63", "F7", "F82", "C90"]
 
 [tool.ruff.lint.mccabe]
 max-complexity=30

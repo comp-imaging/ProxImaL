@@ -54,7 +54,7 @@ def get_diag_quads(prox_fns, freq):
     quad_funcs = [fn for fn in prox_fns if isinstance(fn, sum_squares)]
     if freq:
         return [fn for fn in quad_funcs if fn.lin_op.is_diag(freq=True) and
-                type(fn) == sum_squares]
+                isinstance(fn, sum_squares)]
     else:
         return [fn for fn in quad_funcs if fn.lin_op.is_diag(freq=False)]
 

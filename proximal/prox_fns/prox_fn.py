@@ -216,7 +216,7 @@ __global__ void prox(const float *v, float *xhat, float rho %(argstring)s)
         if hasattr(self, "_prox_cuda"):
             if self.kernel_cuda_prox is None:
                 self.gen_cuda_code()
-            if not type(v) == gpuarray.GPUArray:
+            if not isinstance(v, gpuarray.GPUArray):
                 v = gpuarray.to_gpu(v.astype(np.float32))
             xhat = gpuarray.zeros(v.shape, dtype=np.float32)
             if "offset" in kwargs:
@@ -271,7 +271,7 @@ __global__ void prox(const float *v, float *xhat, float rho %(argstring)s)
         """
         if isinstance(other, ProxFn):
             return [self, other]
-        elif type(other) == list:
+        elif isinstance(other, list):
             return [self] + other
         else:
             return NotImplemented
@@ -279,7 +279,7 @@ __global__ void prox(const float *v, float *xhat, float rho %(argstring)s)
     def __radd__(self, other):
         """Called for list + ProxFn.
         """
-        if type(other) == list:
+        if isinstance(other, list):
             return other + [self]
         else:
             return NotImplemented
