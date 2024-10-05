@@ -98,18 +98,18 @@ class ProxFn(object):
             'b': self.b.reshape(v.shape),
         }
 
-        rho_hat = ne.evaluate('(rho + 2 * gamma) / (alpha * beta**2)', global_dict=symbols)
+        rho_hat = ne.evaluate('(rho + 2 * gamma) / (alpha * beta**2)', symbols)
 
         ne.evaluate('(v * rho - c) * beta / (rho + 2 * gamma) -b',
-            global_dict=symbols, out=v, casting='unsafe')
+            symbols | {'v': v}, out=v, casting='unsafe')
 
         xhat = self._prox(rho_hat, v, *args, **kwargs)
         ne.evaluate('(xhat + b) / beta',
-            global_dict=symbols, out=xhat, casting='unsafe')
+            symbols | {'xhat': xhat}, out=xhat, casting='unsafe')
 
         if v.size == 1:
             return xhat[0]
-            
+
         return xhat
 
     def cuda_additional_buffers(self):

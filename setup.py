@@ -22,9 +22,9 @@ setup(
                       'subprojects/packagefiles/halide/meson.build',
                       'meson.build']},
     url='http://github.com/comp-imaging/ProxImaL/',
-    install_requires=["numpy <= 1.23.0",
+    install_requires=["numpy <= 1.26.0",
                       "scipy >= 0.15",
-                      "numexpr <= 2.8.5",
+                      "numexpr <= 2.10.1",
                       "Pillow",
                       "meson >= 0.58"],
 )

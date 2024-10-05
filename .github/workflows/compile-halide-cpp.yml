@@ -34,8 +34,8 @@ jobs:
 
     - name: Install Python dependencies
       run: |
-        python -m pip install --upgrade pip
-        python -m pip install meson ninja
+        pip install --upgrade uv
+        uv pip install --system meson ninja
 
     - name: Cache 3rd party C++ projects
       uses: actions/cache@v3
@@ -46,7 +46,7 @@ jobs:
     - name: Resolve C++ build dependencies (non-Windows)
       run: meson setup proximal/halide proximal/halide/build
       if: startsWith(matrix.os, 'window') == false
-    
+
     - name: Resolve C++ build dependencies (msvc toolchain)
       run: meson setup --vsenv proximal/halide proximal/halide/build
       if: startsWith(matrix.os, 'window') == true

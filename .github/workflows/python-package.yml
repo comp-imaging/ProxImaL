@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.8, 3.9, "3.10"]
+        python-version: ["3.10", "3.11", "3.12"]
 
     steps:
     - uses: actions/checkout@v4
@@ -34,7 +34,7 @@ jobs:
         echo -e 'ruff\npytest\n' >> requirements.txt
         uv pip install --system -r requirements.txt
 
-    - name: Lint with flake8
+    - name: Lint with Ruff
       run: |
         # stop the build if there are Python syntax errors or undefined names
         ruff check proximal
