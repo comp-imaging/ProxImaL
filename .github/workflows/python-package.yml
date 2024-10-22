@@ -38,6 +38,4 @@ jobs:
         # stop the build if there are Python syntax errors or undefined names
         ruff check proximal
     - name: Test with pytest
-      run: |
-        uv pip install --system .
-        pytest proximal/tests
+      run: pytest proximal/tests

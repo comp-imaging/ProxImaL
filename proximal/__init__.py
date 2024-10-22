@@ -1,4 +1,4 @@
-__version__ = "0.1.7"
+__version__ = "0.2.0"
 
 from .prox_fns import *
 from .lin_ops import *
