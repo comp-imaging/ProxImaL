@@ -1,10 +1,85 @@
+[build-system]
+build-backend = "setuptools.build_meta"
+requires = [
+    "setuptools",
+]
+
+[project]
+dependencies = [
+    "meson==1.5.0",
+    "ninja",
+    "numexpr==2.10.1",
+    "numpy==1.26.0",
+    "opencv-python",
+    "pillow",
+    "scipy",
+]
+name = "proximal"
+version = "0.1.7"
+
+[project.optional-dependencies]
+examples = [
+    "matplotlib",
+]
+test = [
+    "pytest",
+    "pytest-cov",
+    "ruff",
+]
+
+[project.urls]
+Repository = "http://github.com/comp-imaging/ProxImaL/"
+
 [tool.ruff]
-line-length=127
-target-version="py310"
-exclude=['proximal/halide/subprojects/']
+exclude = [
+    "proximal/halide/subprojects/",
+]
+line-length = 127
+target-version = "py310"
 
 [tool.ruff.lint]
-select=["E9", "E713", "E721", "F63", "F7", "F82", "C90"]
+select = [
+    "C90",
+    "E9",
+    "E713",
+    "E721",
+    "F7",
+    "F63",
+    "F82",
+]
 
 [tool.ruff.lint.mccabe]
-max-complexity=30
+max-complexity = 30
+
+[tool.setuptools]
+packages = [
+    "proximal",
+    "proximal.algorithms",
+    "proximal.halide",
+    "proximal.lin_ops",
+    "proximal.prox_fns",
+    "proximal.tests",
+    "proximal.tests.data",
+    "proximal.utils",
+]
+
+[tool.setuptools.package-data]
+"proximal.halide" = [
+    "meson.build",
+    "src/*.cpp",
+    "src/algorithm/*",
+    "src/core/*",
+    "src/external/*",
+    "src/fft/*",
+    "src/user-problem/*",
+    "subprojects/halide.wrap",
+    "subprojects/packagefiles/halide/meson.build",
+    "subprojects/pybind11.wrap",
+    "subprojects/range-v3.wrap",
+]
+"proximal.tests.data" = [
+    "angela.jpg",
+]
+
+[tool.setuptools.package-dir]
+proximal = "proximal"

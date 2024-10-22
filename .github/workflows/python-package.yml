@@ -31,8 +31,7 @@ jobs:
       run: |
         sudo apt-get install build-essential
         pip install --upgrade uv
-        echo -e 'ruff\npytest\n' >> requirements.txt
-        uv pip install --system -r requirements.txt
+        uv pip install --system .[test]
 
     - name: Lint with Ruff
       run: |
