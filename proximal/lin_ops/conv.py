@@ -29,15 +29,21 @@ class conv(LinOp):
                 self.kernel = np.stack((self.kernel,) * arg.shape[2], axis=-1)
 
             # Halide kernel
-            if self.implementation == Impl['halide'] and \
-               (len(arg.shape) == 2 or (len(arg.shape) == 3 and arg.dims == 2)):
+            if self.implementation == Impl["halide"] and (
+                len(arg.shape) == 2 or (len(arg.shape) == 3 and arg.dims == 2)
+            ):
                 self.kernel = np.asfortranarray(self.kernel.astype(np.float32))
-                # Halide FFT (pack into diag)
-                # TODO: FIX IMREAL LATER
+
+                # Fourier-transformed real-valued signal has Hermitian symmetry.
+                # Only the right-half plane is needed by Halide-generated
+                # algorithms as the input.
+                #
+                # TODO: Move this logic to proximal.utils
                 hsize = arg.shape if len(arg.shape) == 3 else arg.shape + (1,)
                 output_fft_tmp = np.zeros((int((hsize[0] + 1) / 2) + 1, hsize[1], hsize[2]),
                                           dtype=np.complex64, order='F')
 
+                # Halide FFT (pack into diag)
                 Halide('fft2_r2c', target_shape=hsize[:2]).fft2_r2c(self.kernel, self.kernel.shape[1] // 2,
                                                 self.kernel.shape[0] // 2, output_fft_tmp)
                 self.forward_kernel[:] = 0.
@@ -56,8 +62,9 @@ class conv(LinOp):
         Reads from inputs and writes to outputs.
         """
         self.init_kernel()
-        if self.implementation == Impl['halide'] and \
-                (len(self.shape) == 2 or (len(self.shape) == 3 and self.dims == 2)):
+        if self.implementation == Impl["halide"] and (
+            len(self.shape) == 2 or (len(self.shape) == 3 and self.dims == 2)
+        ):
 
             # Halide implementation
             Halide('A_conv').A_conv(inputs[0], self.kernel, self.tmpout)  # Call

@@ -115,10 +115,16 @@ class least_squares(sum_squares):
 
             self.freq_shape = self.K.orig_end.variables()[0].shape
             self.freq_diag = np.reshape(self.freq_diag, self.freq_shape)
-            if implem == Impl['halide'] and \
-                    (len(self.freq_shape) == 2 or (len(self.freq_shape) == 2 and
-                                                   self.freq_dims == 2)):
-                # TODO: FIX REAL TO IMAG
+            if implem == Impl["halide"] and (
+                len(self.freq_shape) == 2
+                or (len(self.freq_shape) == 3 and self.freq_dims == 2)
+            ):
+
+                # Fourier-transformed real-valued signal has Hermitian symmetry.
+                # Only the right-half plane is needed by Halide-generated
+                # algorithms as the input.
+                #
+                # TODO: Move this logic to proximal.utils
                 hsize = self.freq_shape if len(
                     self.freq_shape) == 3 else (self.freq_shape[0],
                                                 self.freq_shape[1], 1)
@@ -212,9 +218,10 @@ class least_squares(sum_squares):
         # KtK operator is diagonal in frequency domain.
         elif self.freq_diag is not None:
             # Frequency inversion
-            if self.implementation == Impl['halide'] and \
-                    (len(self.freq_shape) == 2 or
-                     (len(self.freq_shape) == 2 and self.freq_dims == 2)):
+            if self.implementation == Impl["halide"] and (
+                len(self.freq_shape) == 2
+                or (len(self.freq_shape) == 3 and self.freq_dims == 2)
+            ):
 
                 ftmp_halide_out = np.empty(self.freq_shape, dtype=np.float32, order='F')
 
