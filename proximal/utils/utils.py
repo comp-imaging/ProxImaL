@@ -2,7 +2,7 @@ from __future__ import print_function, division
 
 # Imports
 import numpy as np
-from scipy.misc import ascent, face
+from scipy.datasets import ascent, face
 import cv2
 import os
 from numpy.fft import fftn, ifftn, fft2, ifft2

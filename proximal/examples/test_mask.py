@@ -47,7 +47,7 @@ print('Running mask in scipy took: {0:.1f}ms'.format(toc()))
 
 # Error
 print('Maximum error {0}'.format(
-    np.linalg.norm(output_ref.ravel() - output.ravel(), np.Inf)))
+    np.linalg.norm(output_ref.ravel() - output.ravel(), np.inf)))
 
 plt.subplot(223)
 plt.imshow(output_ref, interpolation="nearest", clim=(0.0, 1.0), cmap='gray')
@@ -73,6 +73,6 @@ print('Running trans (second) took: {0:.1f}ms'.format(toc()))
 
 # Error
 print('Maximum error {0}'.format(
-    np.linalg.norm(output_ref.ravel() - output_trans.ravel(), np.Inf)))
+    np.linalg.norm(output_ref.ravel() - output_trans.ravel(), np.inf)))
 
 plt.show()

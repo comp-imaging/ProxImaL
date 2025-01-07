@@ -70,7 +70,7 @@ imgplot = plt.imshow(output,
 plt.title('Output from halide')
 
 # Error
-delta = np.linalg.norm(output_ref.ravel() - output.ravel(), np.Inf)
+delta = np.linalg.norm(output_ref.ravel() - output.ravel(), np.inf)
 norm = np.amax((output_ref.max(), output.max()))
 print('Relative error {0}'.format(delta / norm))
 
@@ -111,7 +111,7 @@ plt.imshow(output_ref_trans,
 plt.title('Output trans from CV2')
 
 # Error
-delta = np.linalg.norm(output_ref_trans.ravel() - output_trans.ravel(), np.Inf)
+delta = np.linalg.norm(output_ref_trans.ravel() - output_trans.ravel(), np.inf)
 norm = np.amax((output_ref_trans.max(), output_trans.max()))
 print('Relative error trans {0}'.format(delta / norm))
 plt.show()

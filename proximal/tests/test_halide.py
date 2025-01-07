@@ -1,6 +1,5 @@
-import os
 import numpy as np
-from scipy.misc import ascent
+from scipy.datasets import ascent
 from scipy.signal import convolve2d
 
 import proximal as px
@@ -17,7 +16,7 @@ class TestHalideOps(BaseTest):
         """Test compilation
         """
         Halide('A_conv', reconfigure=True, recompile=True, verbose=False)
-    
+
 
     def _get_testvector(self):
         # Load image
@@ -28,7 +27,7 @@ class TestHalideOps(BaseTest):
         K /= K.size
 
         return np_img, K
-    
+
 
     def test_run(self):
         """ Test running
@@ -43,7 +42,7 @@ class TestHalideOps(BaseTest):
         output_ref = convolve2d(np_img, K, mode='same', boundary='wrap')
 
         self.assertItemsAlmostEqual(output, output_ref)
-    
+
     def _test_algo(self, algo, check_convergence=True):
         """ Ensure all internal buffers of the algortihms are Fortran-style ordered.
         """

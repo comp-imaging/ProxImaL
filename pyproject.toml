@@ -26,6 +26,9 @@ test = [
     "pytest",
     "pytest-cov",
     "ruff",
+
+    # Required by scipy.datasets.accent()
+    "pooch",
 ]
 
 [project.urls]

@@ -9,7 +9,7 @@ from proximal import *
 from proximal.utils.utils import Impl
 
 # Generate data.
-I = scipy.misc.ascent()
+I = scipy.datasets.ascent()
 np.random.seed(1)
 b = I + 10 * np.random.randn(*I.shape)
 

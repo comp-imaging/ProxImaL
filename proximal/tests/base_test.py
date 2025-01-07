@@ -20,7 +20,7 @@ class BaseTest:
 
         assert a.shape == b.shape
 
-        norm_infinity_b = np.linalg.norm(b.ravel(), np.Inf)
+        norm_infinity_b = np.linalg.norm(b.ravel(), np.inf)
 
         if norm_infinity_b == 0:
             # b is a zero matrix / vector

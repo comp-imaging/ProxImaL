@@ -6,8 +6,8 @@
 Welcome to ProxImaL
 =====================
 
-ProxImaL is a Python-embedded modeling language for image optimization problems. 
-It allows you to express your problem in a natural way that follows the math, 
+ProxImaL is a Python-embedded modeling language for image optimization problems.
+It allows you to express your problem in a natural way that follows the math,
 and automatically determines an efficient method for solving the problem.
 ProxImaL makes it easy to experiment with many different priors and other problem reformulations,
 without worrying about the details of how the problem is solved.
@@ -22,7 +22,7 @@ For example, the following code denoises an image using simple sparse gradient a
           import matplotlib.pyplot as plt
 
           # Generate data.
-          I = scipy.misc.ascent()
+          I = scipy.datasets.ascent()
           np.random.seed(1)
           b = I + 10*np.random.randn(*I.shape)
 

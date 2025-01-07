@@ -2,8 +2,8 @@ ProxImaL
 =====================
 ![Build Status](https://github.com/comp-imaging/ProxImaL/actions/workflows/python-package.yml/badge.svg)
 
-ProxImaL is a Python-embedded modeling language for image optimization problems. 
-It allows you to express your problem in a natural way that follows the math, 
+ProxImaL is a Python-embedded modeling language for image optimization problems.
+It allows you to express your problem in a natural way that follows the math,
 and automatically determines an efficient method for solving the problem.
 ProxImaL makes it easy to experiment with many different priors and other problem reformulations,
 without worrying about the details of how the problem is solved.
@@ -17,7 +17,7 @@ import scipy.misc
 import matplotlib.pyplot as plt
 
 # Generate data.
-I = scipy.misc.ascent()
+I = scipy.datasets.ascent()
 np.random.seed(1)
 b = I + 10*np.random.randn(*I.shape)
 
@@ -53,5 +53,5 @@ See [the accompanying paper](https://stevendiamond.me/pdf/proximal.pdf) for a fu
 
 A tutorial and other documentation can be found at [proximal-lang.org](http://www.proximal-lang.org/).
 
-This git repository holds the latest development version of ProxImaL. For installation instructions, 
+This git repository holds the latest development version of ProxImaL. For installation instructions,
 see the [install guide](http://www.proximal-lang.org/en/latest/install/index.html) at [proximal-lang.org](http://www.proximal-lang.org/).
