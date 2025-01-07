@@ -9,17 +9,17 @@ prox_L2_glue(const array_float_t input, const float theta, const array_float_t o
     auto input_buf = getHalideBuffer<3>(input);
     auto offset_buf = getHalideBuffer<3>(offset);
     auto freq_diag_buf = getHalideComplexBuffer<4>(freq_diag);
-    auto output_buf = getHalideBuffer<3>(output, true);
+    auto output_buf = getHalideBuffer<3>(output, false);
 
     // A hash to denote when the Fourier transformed offset signal should be
     // recomputed. TODO(Antony): It is more practical to marshal the
     // proximal.Problem instance hash from Python runtime to here.
-    const auto offset_buf_hash = reinterpret_cast<uintptr_t>(offset_buf.begin());
+    const auto input_buf_hash = reinterpret_cast<uintptr_t>(input_buf.begin());
 
-    const auto success = least_square_direct(input_buf, theta, offset_buf, freq_diag_buf,
-                                             offset_buf_hash, output_buf);
+    const auto has_error = least_square_direct(input_buf, theta, offset_buf, freq_diag_buf,
+                                               input_buf_hash, output_buf);
     output_buf.copy_to_host();
-    return success;
+    return has_error;
 }
 
 }  // namespace proximal

@@ -11,13 +11,15 @@ using Halide::BoundaryConditions::repeat_image;
 
 namespace {
 
+enum component_t : int32_t { RE = 0, IM = 1 };
+
 class least_square_direct_gen : public Generator<least_square_direct_gen> {
    public:
     Input<Buffer<float, 3>> input{"input"};
     Input<float> rho{"rho"};
     Input<Buffer<float, 3>> offset{"offset"};
     Input<Buffer<float, 4>> freq_diag{"freq_diag"};
-    Input<uint64_t> offset_hash{"offset_hash"};
+    Input<uint64_t> input_hash{"offset_hash"};
 
     Output<Buffer<float, 3>> output{"output"};
 
@@ -43,16 +45,16 @@ class least_square_direct_gen : public Generator<least_square_direct_gen> {
         // Forward DFT
         Fft2dDesc fwd_desc{};
         fwd_desc.parallel = true;
-        f_input = fft2d_r2c(shifted_input, W, H, target, fwd_desc);
+        f_input_tmp = fft2d_r2c(shifted_input, W, H, target, fwd_desc);
 
-        f_offset_tmp = fft2d_r2c(padded_offset, W, H, target, fwd_desc);
+        f_input_cached(x, y, k, c) =
+            memoize_tag(mux(k, {f_input_tmp(x, y, c).re(), f_input_tmp(x, y, c).im()}), input_hash);
+        f_input(x, y, c) = {f_input_cached(x, y, RE, c), f_input_cached(x, y, IM, c)};
 
-        f_offset_cached(x, y, k, c) = memoize_tag(
-            mux(k, {re(f_offset_tmp(x, y, c)), im(f_offset_tmp(x, y, c))}), offset_hash);
-        f_offset(x, y, c) = {f_offset_cached(x, y, 0, c), f_offset_cached(x, y, 1, c)};
+        f_offset = fft2d_r2c(padded_offset, W, H, target, fwd_desc);
 
         // Cast freq_diag from pair<float> to std:::complex<float>
-        diag(x, y, c) = {freq_diag(0, x, y, c), freq_diag(1, x, y, c)};
+        diag(x, y, c) = {freq_diag(RE, x, y, c), freq_diag(IM, x, y, c)};
 
         if (ignore_offset) {
             weighted_average(x, y, c) =
@@ -64,12 +66,11 @@ class least_square_direct_gen : public Generator<least_square_direct_gen> {
 
         // Inverse DFT
         Fft2dDesc inv_desc{};
+        inv_desc.gain = 1.0f / (W * H);
         inv_desc.parallel = true;
 
         inversed = fft2d_c2r(weighted_average, W, H, target, inv_desc);
-
-        // Crop the image by the user-defined dimensions
-        output(x, y, c) = inversed(x, y, c) / (W * H);
+        output = inversed;
     }
 
     void validateDimensions() {
@@ -125,23 +126,36 @@ class least_square_direct_gen : public Generator<least_square_direct_gen> {
             .parallel(y)
             .parallel(c);
 
-        f_input //
-            .compute_root()
-            .parallel(c)
-            ;
-
         if(!ignore_offset) {
-            f_offset_cached  //
-                .compute_root()
-                .bound(k, 0, 2)
-                .unroll(k)
+            f_offset
+                .compute_root()  //
+                .parallel(c);
+
+            padded_offset
+                .compute_root()  //
                 .vectorize(x, vfloat)
                 .parallel(y)
-                .parallel(c)
-                .memoize();
-
-            f_offset_tmp.compute_at(f_offset_cached, c);
+                .parallel(c);
         }
+
+        // Cache the Fourier-transformed input
+        f_input_cached  //
+            .compute_root()
+            .bound(k, 0, 2)
+            .unroll(k)
+            .vectorize(x, vfloat)
+            .parallel(y)
+            .parallel(c)
+            .memoize();
+
+        // Compute FFT only when cache is evicted
+        f_input_tmp.compute_at(f_input_cached, c);
+
+        shifted_input
+            .compute_at(f_input_cached, Var::outermost())  //
+            .vectorize(x, vfloat)
+            .parallel(y)
+            .parallel(c);
     }
 
    private:
@@ -149,14 +163,16 @@ class least_square_direct_gen : public Generator<least_square_direct_gen> {
     Var x{"x"}, y{"y"}, c{"c"}, k{"k"};
 
     Func padded_input{"padded_input"};
-    Func cyclic_input{"cyclic_input"};
     Func shifted_input{"shifted_input"};
     Func padded_offset{"padded_offset"};
     ComplexFunc diag{"diag"};
-    Func f_offset_cached{"f_offset_cached"};
+
+    ComplexFunc f_offset;
+
+    Func f_input_cached{"f_input_cached"};
+    ComplexFunc f_input_tmp;
     ComplexFunc f_input{"f_input"};
-    ComplexFunc f_offset_tmp{"f_offset_tmp"};
-    ComplexFunc f_offset{"f_offset"};
+
     ComplexFunc weighted_average{"weighted_average"};
     Func inversed{"inversed"};
 };
