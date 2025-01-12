@@ -153,7 +153,7 @@ computeConvergence(const Func& v, const FuncTuple<N>& z, const FuncTuple<N>& u,
 
     const Func Kv_norm = normSquared(Kv, output_dimensions);
     const Func z_norm = normSquared(z, output_dimensions);
-    const Expr eps_pri = eps_rel * sqrt(max(Kv_norm(), z_norm())) + output_size * eps_abs;
+    const Expr eps_pri = eps_rel * sqrt(max(Kv_norm(), z_norm())) + std::sqrt(float(output_size)) * eps_abs;
 
     const Func KTu_norm = normSquared(KTu, input_dimensions);
     const Expr eps_dual =

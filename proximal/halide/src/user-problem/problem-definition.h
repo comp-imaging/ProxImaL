@@ -83,7 +83,7 @@ const std::array<ParameterizedProx, problem_config::psi_size> psi_fns{
 
                           return proxIsoL1(u, output_width, output_height, theta);
                       },
-                      /* .alpha = */ 0.1f,
+                      /* .alpha = */ 5e-2f,
                       /* .beta = */ 1.0f,
                       /* .gamma = */ 0.0f,
                       /* ._c = */ 0.0f,

@@ -48,8 +48,8 @@ solver_bin = custom_target(
         'autoscheduler.balance=40',
 
         'n_iter=1',     # number of ADMM iterations before checking convergence
-        'mu=0.333',     # Problem scaling factor. Defaults to 1 / sqrt( || K || ).
-        'lmb=3.0',      # Problem scaling factor. Defaults to sqrt( || K || ).
+        'mu=0.11111',     # Problem scaling factor. Defaults to 1 / sqrt( || K || ).
+        'lmb=1.0',      # Problem scaling factor. Defaults to sqrt( || K || ).
     ],
     build_by_default: true,
 )
