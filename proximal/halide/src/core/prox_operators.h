@@ -52,8 +52,9 @@ proxL1(Func input, Expr width, Expr height, Expr theta) {
 
 Func
 proxSumsq(const Func& input, const Expr theta, const std::string&& name = "xhat") {
+    const Expr rho = 1.0f / theta;
     Func output{name};
-    output(x, y, c) = input(x, y, c) * theta / (theta + 2);
+    output(x, y, c) = input(x, y, c) * rho / (rho + 2);
 
     return output;
 }

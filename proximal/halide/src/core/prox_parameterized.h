@@ -77,7 +77,10 @@ struct ParameterizedProx {
     Func operator()(const Func& v, const Expr& rho,
                     const std::optional<Func> _b = std::nullopt) const {
         const auto [v_hat, rho_hat] = forward(v, rho, _b);
-        const Func u_hat = prox(v_hat, rho_hat);
+
+        // Note(Antony): In `halide/core/prox_operators.h`, all proximal functions are defined as
+        // theta = 1 / rho. Make it so.
+        const Func u_hat = prox(v_hat, 1.0f / rho_hat);
         return backward(u_hat, _b);
     }
 };
