@@ -35,8 +35,10 @@ class Problem:
         formatted = f"""\\begin{{align}}
 \\hat u &= \\arg \\min_u f(u) + \\sum_{{j=1}}^{len(self.psi_fns)} g_j\\left( K_j u \\right) \\\\
 """
-        if self.omega_fn is not None:
-            formatted += f"f(u) = {self.omega_fn.toLatex()} \\\\\n"
+        if self.omega_fn is None:
+            formatted += f"f(u) &= \\emptyset \\\\\n"
+        else:
+            formatted += f"f(u) &= {self.omega_fn.toLatex()} \\\\\n"
 
         equations: list[CostFnFormatted] = []
         for i, psi_fn in enumerate(self.psi_fns):

@@ -6,6 +6,7 @@ import numpy as np
 
 from proximal.experimental.lin_ops import FFTConv, Grad, MultiplyAdd
 from proximal.experimental.optimize.absorb import absorb
+from proximal.experimental.optimize.split import split
 from proximal.experimental.problem import Problem
 from proximal.experimental.prox_fns import GroupNorm, Nonneg, SumSquares
 
@@ -40,7 +41,7 @@ print(
 {problem}"""
 )
 
-problem = absorb(problem)
+problem = split(absorb(problem))
 
 print(
     f"""After:
