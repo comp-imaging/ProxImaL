@@ -61,7 +61,7 @@ class SumSquares(ProxFnBase):
 
 @dataclass
 class LeastSquaresFFT(ProxFnBase):
-    diag_freq: ndarray | None = None
+    freq_diag: ndarray | None = None
     new_b: ndarray | None = None
 
     def toLatex(self) -> str:

@@ -12,7 +12,7 @@ class MultiplyAdd:
     input_dims: list[int]
     output_dims: list[int]
 
-    latex_notation: str = "\\mathbf{M}"
+    latex_notation: str = "\\eta"
 
 
 @dataclass

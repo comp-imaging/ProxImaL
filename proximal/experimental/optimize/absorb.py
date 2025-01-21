@@ -5,13 +5,17 @@ from proximal.experimental.prox_fns import LeastSquaresFFT, SumSquares
 
 
 def absorbFFTConv(prox_fn: SumSquares) -> LeastSquaresFFT:
-    if len(prox_fn.lin_ops) == 0 or not isinstance(prox_fn.lin_ops[-1], FFTConv):
+    is_lin_ops_empty: bool = len(prox_fn.lin_ops) == 0
+    has_fft_conv: bool = isinstance(prox_fn.lin_ops[-1], FFTConv)
+    if is_lin_ops_empty or not has_fft_conv:
         # Only FFTConv is supported. Skipping...
         return prox_fn
 
     return LeastSquaresFFT(
         alpha=prox_fn.alpha,
         gamma=prox_fn.gamma,
+        # todo: pre-compute FFT
+        freq_diag=prox_fn.lin_ops[-1].kernel * prox_fn.beta,
         new_b=prox_fn.b,
         lin_ops=prox_fn.lin_ops[:-1],
     )
