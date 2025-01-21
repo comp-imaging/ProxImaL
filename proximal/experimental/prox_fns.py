@@ -32,7 +32,7 @@ class ProxFnBase:
         elif isclose(self.b, 0.0):
             _b = ""
         else:
-            _b = f"- {self.b:0.3g}" if self.b < 0 else f"+ {self.b:0.3g}"
+            _b = f"{self.b:0.3g}" if self.b < 0 else f"+ {self.b:0.3g}"
 
         return _alpha, _beta, _gamma, _b
 

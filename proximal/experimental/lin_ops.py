@@ -12,9 +12,7 @@ class MultiplyAdd:
     input_dims: list[int]
     output_dims: list[int]
 
-    def __init__(self, input_dims: list[int]) -> None:
-        self.input_dims = input_dims
-        self.output_dims = input_dims
+    latex_notation: str = "M"
 
 
 @dataclass
