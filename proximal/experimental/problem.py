@@ -41,7 +41,7 @@ class Problem:
 
         formatted = f"""\\begin{{align}}
 \\hat u &= \\arg \\min_{{u \\in \\mathbb{{R}}^{len(self.u.shape)} }}
-f(u) + \\sum_{{j=1}}^{len(self.psi_fns)} g_j\\left( K_j u \\right) \\\\
+f(u) + \\sum_{{j=1}}^{len(self.psi_fns)} g_j\\left( \\mathbf{{K}}_j u \\right) \\\\
 """
         if self.omega_fn is None:
             formatted += f"f(u) &= \\emptyset \\\\\n"

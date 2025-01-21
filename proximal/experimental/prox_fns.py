@@ -60,6 +60,22 @@ class SumSquares(ProxFnBase):
 
 
 @dataclass
+class LeastSquaresFFT(ProxFnBase):
+    diag_freq: ndarray | None = None
+    new_b: ndarray | None = None
+
+    def toLatex(self) -> str:
+        assert isinstance(self.b, float)
+        assert self.b == 0.0
+
+        alpha, beta, gamma, b = self.formatParameters()
+        if self.new_b is None:
+            return f"{alpha} \\Vert {beta} F^T D F v \\Vert_2^2 {gamma}"
+
+        return f"{alpha} \\Vert {beta} F^T D F v - \\mathbf{{b}} \\Vert_2^2 {gamma}"
+
+
+@dataclass
 class FFTConvSumSquares(ProxFnBase):
     def toLatex(self) -> str:
 

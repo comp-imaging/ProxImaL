@@ -1,6 +1,20 @@
-from proximal.experimental.lin_ops import MultiplyAdd
+from proximal.experimental.lin_ops import FFTConv, MultiplyAdd
 from proximal.experimental.models import ProxFn
 from proximal.experimental.problem import Problem
+from proximal.experimental.prox_fns import LeastSquaresFFT, SumSquares
+
+
+def absorbFFTConv(prox_fn: SumSquares) -> LeastSquaresFFT:
+    if len(prox_fn.lin_ops) == 0 or not isinstance(prox_fn.lin_ops[-1], FFTConv):
+        # Only FFTConv is supported. Skipping...
+        return prox_fn
+
+    return LeastSquaresFFT(
+        alpha=prox_fn.alpha,
+        gamma=prox_fn.gamma,
+        new_b=prox_fn.b,
+        lin_ops=prox_fn.lin_ops[:-1],
+    )
 
 
 def absorbMultiplyAdd(prox_fn: ProxFn) -> ProxFn:
@@ -21,7 +35,10 @@ def absorbMultiplyAdd(prox_fn: ProxFn) -> ProxFn:
 def absorb(problem: Problem) -> Problem:
     assert problem.omega_fn is None, "Problem is already split, why?"
 
-    for psi_fn in problem.psi_fns:
-        problem.psi_fn = absorbMultiplyAdd(psi_fn)
+    for i, psi_fn in enumerate(problem.psi_fns):
+        problem.psi_fns[i] = absorbMultiplyAdd(psi_fn)
+
+        if isinstance(psi_fn, SumSquares):
+            problem.psi_fns[i] = absorbFFTConv(psi_fn)
 
     return problem

@@ -18,13 +18,14 @@ problem = Problem(
         SumSquares(
             lin_ops=[
                 FFTConv(kernel=np.ones(3), input_dims=dims, output_dims=dims),
-                MultiplyAdd(
-                    scale=0.4,
-                    offset=1.0,
-                    input_dims=dims,
-                    output_dims=dims,
-                ),
+                # MultiplyAdd(
+                #    scale=0.4,
+                #    offset=1.0,
+                #    input_dims=dims,
+                #    output_dims=dims,
+                # ),
             ],
+            b=np.ones(dims),
         ),
         GroupNorm(
             alpha=1e-5,
