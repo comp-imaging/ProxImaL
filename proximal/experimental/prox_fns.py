@@ -6,6 +6,19 @@ from numpy import ndarray
 from proximal.experimental.models import LinOp
 
 
+def scientificToLatex(value: float) -> str:
+    formatted = f"{value:0.3g}"
+    if "e" not in formatted:
+        return formatted
+
+    items = formatted.split("e")
+    mantissa = items[0]
+    exponent = int(items[1])
+    if isclose(float(mantissa), 1.0):
+        return f"10^{{ {exponent} }}"
+    return f"{mantissa:s} \\times 10^{{ {exponent:d} }}"
+
+
 @dataclass
 class ProxFnBase:
     lin_ops: list[LinOp]
@@ -17,7 +30,9 @@ class ProxFnBase:
     b: ndarray | float = 0.0
 
     def formatParameters(self) -> tuple[str, str, str, str]:
-        _alpha = f"{self.alpha:0.3g}" if not isclose(self.alpha, 1.0) else ""
+        _alpha = (
+            f"{scientificToLatex(self.alpha):s}" if not isclose(self.alpha, 1.0) else ""
+        )
         _beta = f"{self.beta:0.3g}" if not isclose(self.beta, 1.0) else ""
 
         if self.gamma == 0.0:
@@ -25,7 +40,7 @@ class ProxFnBase:
         elif isclose(self.gamma, 1.0):
             _gamma = "+ \\Vert v \\Vert_2^2"
         else:
-            _gamma = f"+ {self.gamma:0.3g} \\Vert v \\Vert_2^2"
+            _gamma = f"+ {scientificToLatex(self.gamma):s} \\Vert v \\Vert_2^2"
 
         if isinstance(self.b, ndarray):
             _b = "- b"

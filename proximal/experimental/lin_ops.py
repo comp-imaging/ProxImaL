@@ -12,7 +12,7 @@ class MultiplyAdd:
     input_dims: list[int]
     output_dims: list[int]
 
-    latex_notation: str = "M"
+    latex_notation: str = "\\mathbf{M}"
 
 
 @dataclass
@@ -30,7 +30,7 @@ class FFTConv:
     input_dims: list[int]
     output_dims: list[int]
 
-    latex_notation: str = "F^T D F"
+    latex_notation: str = "\\mathcal{F}^T \\mathbf{D} \\mathcal{F}"
 
 
 @dataclass
@@ -43,4 +43,4 @@ class Crop:
     input_dims: list[int]
     output_dims: list[int]
 
-    # Use dataclass?
+    latex_notation: str = "\\mathbf{M}"
