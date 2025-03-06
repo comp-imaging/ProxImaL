@@ -43,7 +43,7 @@ class Problem:
 f(u) + \sum_{{j=1}}^{len(self.psi_fns)} g_j\left( \mathbf{{K}}_j u \right) \\
 """
         if self.omega_fn is None:
-            formatted += rf"""f(u) &= \emptyset \\
+            formatted += r"""f(u) &= \emptyset \\
 """
         else:
             formatted += rf"""f(u) &= {self.omega_fn.toLatex().replace("v", "u")} \\
@@ -73,12 +73,17 @@ f(u) + \sum_{{j=1}}^{len(self.psi_fns)} g_j\left( \mathbf{{K}}_j u \right) \\
             current_dims = self.u.shape
 
             for lin_op in fn.lin_ops:
+                assert current_dims is not None
                 lin_op.input_dims = current_dims
                 lin_op.queryBounds()
                 current_dims = lin_op.output_dims
 
+        if self.omega_fn is None:
+            return
+
         current_dims = self.u.shape
         for lin_op in self.omega_fn.lin_ops:
+            assert current_dims is not None
             lin_op.input_dims = current_dims
             lin_op.queryBounds()
             current_dims = lin_op.output_dims

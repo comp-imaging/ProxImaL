@@ -1,7 +1,8 @@
 # Includes
 import importlib
-import subprocess
 import os
+import subprocess
+
 import numpy as np
 
 
@@ -9,12 +10,12 @@ class Halide:
 
     def __init__(self,
                  func: str,
-                 target_shape=(2048, 2048),
-                 builddir=[],
-                 recompile=False,
-                 reconfigure=False,
-                 target='host',
-                 verbose=False):
+                 target_shape: tuple[int, int]=(2048, 2048),
+                 builddir: str | None =None,
+                 recompile: bool =False,
+                 reconfigure: bool =False,
+                 target: str ='host',
+                 verbose: bool=False):
         """ Compiles and runs a halide pipeline defined in a generator file ``filepath``
             If recompile is not enabled, first, the library is searched and then loaded.
             Otherwise it is recompiled and a new library is defined.
@@ -36,7 +37,7 @@ class Halide:
 
         # Use script location/build as default build directory
         self.cwd = os.path.dirname(os.path.realpath(__file__))
-        if not builddir:
+        if builddir is None:
             builddir = os.path.join(self.cwd,
                                     'build')
 
@@ -58,7 +59,7 @@ class Halide:
         # Syntactic sugar --> create method with name function_name
         setattr(self, self.func, lambda *args: self.run(*args))
 
-    def configure(self):
+    def configure(self) -> None:
 
         is_configured = os.path.exists('{}/build/build.ninja'.format(self.cwd))
 
@@ -80,13 +81,13 @@ class Halide:
                 '-Dwtarget={}'.format(self.target_shape[1]),
                  self.builddir, self.cwd])
 
-    def compile(self):
+    def compile(self) -> None:
         ''' Generate the new code (exits on fail) '''
 
         subprocess.check_call(
             ['ninja', '-C', self.builddir, self.module_name])
 
-    def run(self, *args):
+    def run(self, *args: np.ndarray) -> None:
         """ Execute Halide code that was compiled before. """
 
         launch = importlib.import_module(
@@ -101,10 +102,10 @@ class Halide:
                 print('Warning: Input image shape mismatch for FFT2. '
                       f'Expected {expected_shape}, found {args[0].shape}. Applying circular boundary condition.')
 
-        error = launch.run(*args)
+        error : int = launch.run(*args)
 
         if error != 0:
-            raise RuntimeError(f'Halide call to {self.function_name_c} returned {error}')
+            raise RuntimeError(f'Halide call to {self.func:s} returned {error:d}')
 
 class Params:
     """ Supported Params. """

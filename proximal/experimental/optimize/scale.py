@@ -50,7 +50,7 @@ def generateLinOpImpl(lin_ops: list[LinOp]) -> tuple[LinOpImpl, LinOpImpl]:
     return forward_op, adjoint_op
 
 
-def estimateCompGraphNorm(psi_fns: list[ProxFn], dims: tuple[int], tol=1e-3) -> float:
+def estimateCompGraphNorm(psi_fns: list[ProxFn], dims: tuple[int, ...], tol=1e-3) -> float:
     assert len(psi_fns) > 0
 
     if np.all([len(fn.lin_ops) for fn in psi_fns] == 0):
@@ -85,7 +85,7 @@ def estimateCompGraphNorm(psi_fns: list[ProxFn], dims: tuple[int], tol=1e-3) -> 
 
     # Define linear operator
     n_elem = np.prod(dims)
-    A = LinearOperator((n_elem, n_elem), KtK, KtK)
+    A = LinearOperator((n_elem, n_elem), matvec=KtK, rmatvec=KtK)  # type: ignore[unknown-argument]
 
     Knorm = np.sqrt(eigs(A, k=1, M=None, sigma=None, which="LM", tol=tol)[0].real)
     return float(Knorm)
@@ -93,5 +93,5 @@ def estimateCompGraphNorm(psi_fns: list[ProxFn], dims: tuple[int], tol=1e-3) -> 
 
 def scale(problem: Problem) -> Problem:
     problem.propagateBounds()
-    problem.Knorm = estimateCompGraphNorm(problem.psi_fns, problem.u.shape)
+    problem.Knorm = estimateCompGraphNorm(problem.psi_fns, (*problem.u.shape,))
     return problem

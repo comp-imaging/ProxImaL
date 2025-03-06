@@ -61,7 +61,7 @@ class SumSquares(ProxFnBase):
 @dataclass
 class LeastSquaresFFT(ProxFnBase):
     freq_diag: ndarray | None = None
-    new_b: ndarray | None = None
+    new_b: ndarray | float | None = None
 
     def toLatex(self) -> str:
         assert isinstance(self.b, float)

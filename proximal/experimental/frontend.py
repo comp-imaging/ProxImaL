@@ -10,7 +10,7 @@ from proximal.experimental.ir.prox_fns import GroupNorm, Nonneg, ProxFnBase, Sum
 from proximal.experimental.models import LinOp
 
 
-def getProxFn(name: str) -> ProxFnBase:
+def getProxFn(name: str) -> type[ProxFnBase]:
     match name:
         case "sum_squares":
             return SumSquares
@@ -27,8 +27,10 @@ def getProxFn(name: str) -> ProxFnBase:
 
 def getLinOp(name: str) -> LinOp:
     match name:
+        case "conv":
+            return FFTConv(kernel=np.ones(3), input_dims=None, output_dims=None)
         case "grad":
-            return Grad()
+            return Grad(input_dims=None, output_dims=None)
         case "crop":
             return Crop(left=0, top=0, width=10, height=10)
         case _:

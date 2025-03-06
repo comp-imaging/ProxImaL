@@ -125,7 +125,7 @@ class LinearizedADMM:
 
         b = self.omega_fn.new_b if hasattr(self.omega_fn, "new_b") else self.omega_fn.b
 
-        assert isinstance(b, ndarray), f"Measured image is not a Numpy array"
+        assert isinstance(b, ndarray), "Measured image is not a Numpy array"
 
         config_template = env.get_template("problem-config.h.j2")
         return config_template.render(

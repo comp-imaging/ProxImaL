@@ -4,18 +4,26 @@ from proximal.experimental.ir.prox_fns import LeastSquaresFFT, SumSquares, Weigh
 from proximal.experimental.models import ProxFn
 
 
-def absorbFFTConv(prox_fn: SumSquares) -> LeastSquaresFFT:
+def absorbFFTConv(prox_fn: SumSquares) -> SumSquares | LeastSquaresFFT:
     is_lin_ops_empty: bool = len(prox_fn.lin_ops) == 0
-    has_fft_conv: bool = isinstance(prox_fn.lin_ops[-1], FFTConv)
-    if is_lin_ops_empty or not has_fft_conv:
+    if is_lin_ops_empty:
+        # Nothing to absorb
+        return prox_fn
+
+    lin_op = prox_fn.lin_ops[-1]
+    has_fft_conv: bool = isinstance(lin_op, FFTConv)
+    if not has_fft_conv:
         # Only FFTConv is supported. Skipping...
         return prox_fn
+
+    # A trick to force the static analyzer to recognize the FFTConv type
+    assert isinstance(lin_op, FFTConv)
 
     return LeastSquaresFFT(
         alpha=prox_fn.alpha,
         gamma=prox_fn.gamma,
         # todo: pre-compute FFT
-        freq_diag=prox_fn.lin_ops[-1].kernel * prox_fn.beta,
+        freq_diag=lin_op.kernel * prox_fn.beta,
         new_b=prox_fn.b,
         lin_ops=prox_fn.lin_ops[:-1],
     )
@@ -62,15 +70,12 @@ def absorb(problem: Problem) -> Problem:
     assert problem.omega_fn is None, "Problem is already split, why?"
 
     for i, psi_fn in enumerate(problem.psi_fns):
-        psi_fn = absorbMultiplyAdd(psi_fn)
-        problem.psi_fns[i] = psi_fn
+        problem.psi_fns[i] = absorbMultiplyAdd(psi_fn)
 
         if isinstance(psi_fn, SumSquares):
-            psi_fn = absorbFFTConv(psi_fn)
-            problem.psi_fns[i] = psi_fn
+            problem.psi_fns[i] = absorbFFTConv(psi_fn)
 
         if isinstance(psi_fn, SumSquares):
-            psi_fn = absorbCrop(psi_fn)
-            problem.psi_fns[i] = psi_fn
+            problem.psi_fns[i] = absorbCrop(psi_fn)
 
     return problem

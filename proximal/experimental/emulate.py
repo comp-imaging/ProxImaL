@@ -11,7 +11,7 @@ def GradForward(input: ndarray) -> ndarray:
     input = input.reshape((*dims, 1))
     output = np.empty((*dims, 1, 2), order="F", dtype=np.float32)
 
-    Halide("A_grad").A_grad(input, output)
+    Halide("A_grad").run(input, output)
     return output.reshape((*dims, 2))
 
 
@@ -21,7 +21,7 @@ def GradAdjoint(input: ndarray) -> ndarray:
     input = input.reshape((*dims, 1, 2))
     output = np.empty((*dims, 1), order="F", dtype=np.float32)
 
-    Halide("At_grad").At_grad(input, output)
+    Halide("At_grad").run(input, output)
     return output.reshape(dims)
 
 
@@ -31,6 +31,7 @@ def CropForward(input: ndarray, crop_args: Crop) -> ndarray:
 
 def CropAdjoint(input: ndarray, crop_args: Crop) -> ndarray:
     dims = crop_args.input_dims
+    assert dims is not None
     output = np.zeros(dims, order="F", dtype=np.float32)
     output[crop_args.top : crop_args.top + crop_args.height, crop_args.left : crop_args.left + crop_args.width] = input
     return output
@@ -45,7 +46,7 @@ def ConvForward(input: ndarray, conv_args: FFTConv) -> ndarray:
     assert kernel.dtype == np.float32
     assert np.isfortran(kernel)
 
-    Halide("A_conv").A_conv(input, kernel, output)
+    Halide("A_conv").run(input, kernel, output)
     return output.reshape(dims)
 
 
@@ -58,7 +59,7 @@ def ConvAdjoint(input: ndarray, conv_args: FFTConv) -> ndarray:
     assert kernel.dtype == np.float32
     assert np.isfortran(kernel)
 
-    Halide("At_conv").At_conv(input, kernel, output)
+    Halide("At_conv").run(input, kernel, output)
     return output.reshape(dims)
 
 
