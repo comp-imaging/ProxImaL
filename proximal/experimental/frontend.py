@@ -86,13 +86,14 @@ class ProxImaLDSLVisitor(NodeVisitor):
             assert isinstance(offset_op[0][1], (float, np.ndarray))
             offset = offset_op[0][1]
 
+        has_scaleoffset: bool = scale != 1.0 or isinstance(offset, np.ndarray) or offset != 0.0
         new_linop = MultiplyAdd(scale=scale, offset=offset)
         assert isinstance(lin_op, list)
         if isinstance(lin_op[0], Variable):
-            return [new_linop]
+            return [new_linop] if has_scaleoffset else []
 
         assert isinstance(lin_op[0][0], LinOp)
-        if scale != 1.0 or isinstance(offset, np.ndarray) or offset != 0.0:
+        if has_scaleoffset:
             lin_op[0].append(new_linop)
 
         return lin_op[0]
@@ -110,10 +111,8 @@ class ProxImaLDSLVisitor(NodeVisitor):
             return [lin_op]
 
         assert isinstance(expression, list)
-        assert len(expression) > 0
-        assert isinstance(expression[0], LinOp)
-
         expression.append(lin_op)
+
         return expression
 
     def visit_Offset(self, _, visited_children) -> float:
@@ -138,7 +137,6 @@ class ProxImaLDSLVisitor(NodeVisitor):
     def generic_visit(self, node, visited_children):
         """The generic visit method."""
         return visited_children or node
-
 
 
 def parse(

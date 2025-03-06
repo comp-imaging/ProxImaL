@@ -1,4 +1,6 @@
-from typing import Protocol, runtime_checkable
+from typing import Callable, Protocol, runtime_checkable
+
+from numpy import ndarray
 
 
 @runtime_checkable
@@ -20,3 +22,7 @@ class ProxFn(Protocol):
 
     def toLatex(self) -> str:
         pass
+
+
+# Generic numpy functions
+LinOpImpl = Callable[[ndarray], ndarray]

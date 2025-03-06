@@ -1,5 +1,6 @@
 from proximal.experimental.frontend import parse
 import numpy as np
+from proximal.experimental.lin_ops import MultiplyAdd, FFTConv
 
 
 def test_single_fn() -> None:
@@ -48,3 +49,18 @@ nonneg(u)
         variable_dims=dims,
         const_buffers={"b": np.ones(dims)},
     )
+
+def test_conv_only() -> None:
+    dims = [5, 5, 5]
+    problem = parse(
+        "sum_squares(conv(u) - b)",
+        variable_dims=dims,
+        const_buffers={"b": np.ones(dims)},
+    )
+
+    assert len(problem.psi_fns) == 1
+
+    prox_fn = problem.psi_fns[0]
+    assert len(prox_fn.lin_ops) == 2
+    assert isinstance(prox_fn.lin_ops[0], FFTConv)
+    assert isinstance(prox_fn.lin_ops[-1], MultiplyAdd)

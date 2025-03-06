@@ -11,8 +11,9 @@ from proximal.experimental.optimize.group import group
 from proximal.experimental.optimize.split import split
 from proximal.experimental.problem import Problem, Variable
 from proximal.experimental.prox_fns import GroupNorm, Nonneg, SumSquares
+from proximal.experimental.optimize.scale import scale
 
-dims = [512, 512, 64]
+dims = [512, 512]
 
 problem = Problem(
     u=Variable(shape=dims),
@@ -68,4 +69,5 @@ print(
 {problem}"""
 )
 
-problem.propagateBounds()
+problem = scale(problem)
+print(problem.Knorm)
