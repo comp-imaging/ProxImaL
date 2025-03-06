@@ -30,9 +30,7 @@ class ProxFnBase:
     b: ndarray | float = 0.0
 
     def formatParameters(self) -> tuple[str, str, str, str]:
-        _alpha = (
-            f"{scientificToLatex(self.alpha):s}" if not isclose(self.alpha, 1.0) else ""
-        )
+        _alpha = f"{scientificToLatex(self.alpha):s}" if not isclose(self.alpha, 1.0) else ""
         _beta = f"{self.beta:0.3g}" if not isclose(self.beta, 1.0) else ""
 
         if self.gamma == 0.0:
@@ -78,7 +76,6 @@ class LeastSquaresFFT(ProxFnBase):
 @dataclass
 class FFTConvSumSquares(ProxFnBase):
     def toLatex(self) -> str:
-
         alpha, beta, gamma, b = self.formatParameters()
         return f"{alpha} \\Vert {beta} F^T H F v {b} \\Vert_2^2 {gamma}"
 
@@ -86,7 +83,6 @@ class FFTConvSumSquares(ProxFnBase):
 @dataclass
 class GroupNorm(ProxFnBase):
     def toLatex(self) -> str:
-
         alpha, beta, gamma, b = self.formatParameters()
         return f"{alpha} \\Vert {beta} v {b} \\Vert_{{2, 1}} {gamma}"
 
@@ -94,6 +90,5 @@ class GroupNorm(ProxFnBase):
 @dataclass
 class Nonneg(ProxFnBase):
     def toLatex(self) -> str:
-
         _, beta, gamma, b = self.formatParameters()
         return f"I_+ ({beta} v {b}) {gamma}"

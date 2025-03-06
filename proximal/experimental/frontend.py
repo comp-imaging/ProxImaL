@@ -28,14 +28,17 @@ def getProxFn(name: str) -> ProxFnBase:
 def getLinOp(name: str) -> LinOp:
     match name:
         case "conv":
-            return FFTConv(kernel=np.ones(3), input_dims=None, output_dims=None)
+            return FFTConv(kernel=np.ones(3))
         case "grad":
-            return Grad(input_dims=None, output_dims=None)
+            return Grad()
         case _:
             raise RuntimeError(f"Linear operator {key} not found")
 
 
 class ProxImaLDSLVisitor(NodeVisitor):
+    def __init__(self, const_buffers: dict):
+        self.const_buffers = const_buffers
+
     def visit_Problem(self, _, visited_children) -> list[ProxFnBase]:
         first, others = visited_children
 
@@ -78,20 +81,26 @@ class ProxImaLDSLVisitor(NodeVisitor):
         if isinstance(scale_op, list):
             scale = scale_op[0][0]
 
-        offset = 0.0
+        offset: float | np.ndarray = 0.0
         if isinstance(offset_op, list):
+            assert isinstance(offset_op[0][1], (float, np.ndarray))
             offset = offset_op[0][1]
 
-        new_linop = MultiplyAdd(scale=scale, offset=offset, input_dims=None, output_dims=None)
+        new_linop = MultiplyAdd(scale=scale, offset=offset)
         assert isinstance(lin_op, list)
         if isinstance(lin_op[0], Variable):
             return [new_linop]
 
         assert isinstance(lin_op[0][0], LinOp)
-        if scale != 1.0 or offset != 0.0:
+        if scale != 1.0 or isinstance(offset, np.ndarray) or offset != 0.0:
             lin_op[0].append(new_linop)
 
         return lin_op[0]
+
+    def visit_ConstBuffer(self, node, _) -> np.ndarray:
+        name = node.text
+        assert name in self.const_buffers
+        return self.const_buffers[name]
 
     def visit_LinOp(self, _, visited_children) -> list[LinOp]:
         name, _, expression, _ = visited_children
@@ -131,10 +140,13 @@ class ProxImaLDSLVisitor(NodeVisitor):
         return visited_children or node
 
 
-visitor = ProxImaLDSLVisitor()
 
-
-def parse(expression: str, variable: str = "u", variable_dims: list[int] = [5, 5, 5]) -> Problem:
+def parse(
+    expression: str,
+    variable: str = "u",
+    variable_dims: list[int] = [5, 5, 5],
+    const_buffers: dict = {},
+) -> Problem:
     grammar = Grammar(
         r"""
     Problem         = ScaledProxFn ("+" ScaledProxFn)*
@@ -142,7 +154,7 @@ def parse(expression: str, variable: str = "u", variable_dims: list[int] = [5, 5
     ProxFn          = ProxFnKey "(" ScaleOffset ")"
     ScaleOffset     = (NUMBER FACTOR_OPERATOR)* (LinOp / Variable) (TERM_OPERATOR Offset)?
     LinOp           = LinOpKey "(" ( ScaleOffset ) ")"
-    Offset          = NUMBER
+    Offset          = NUMBER / ConstBuffer
 
     TERM_OPERATOR   = ~"[-+]"
     FACTOR_OPERATOR = "*"
@@ -152,8 +164,8 @@ def parse(expression: str, variable: str = "u", variable_dims: list[int] = [5, 5
 
     ProxFnKey       = "sum_squares" / "norm1" / "group_norm" / "nonneg"
     LinOpKey        = "grad" / "conv"
-    ConstBuffer     = "b"
     """
+        f"""ConstBuffer     = "{'","'.join([key for key in const_buffers])}" """
         f'Variable        = "{variable:s}"'
     )
 
@@ -161,5 +173,6 @@ def parse(expression: str, variable: str = "u", variable_dims: list[int] = [5, 5
     # TODO: Build the whitespace logic into Parismonious.
     ast = grammar.parse(re.sub(r"[ \t\r\n]*", "", expression))
 
+    visitor = ProxImaLDSLVisitor(const_buffers)
     prox_fns = visitor.visit(ast)
     return Problem(prox_fns, Variable(variable_dims))

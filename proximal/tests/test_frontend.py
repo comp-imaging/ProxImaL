@@ -1,4 +1,5 @@
 from proximal.experimental.frontend import parse
+import numpy as np
 
 
 def test_single_fn() -> None:
@@ -22,6 +23,10 @@ def test_scaled_fn() -> None:
     assert parse("2.3e3 * nonneg(u)")
 
 
+def test_buffer() -> None:
+    assert parse("sum_squares(u - b)", const_buffers={"b": np.ones(3)})
+
+
 def test_complex_problem() -> None:
     assert parse(
         """
@@ -30,4 +35,16 @@ sum_squares(conv(u) - 1) +
 0.1 * sum_squares(grad(u)) +
 nonneg(3 * u - 1)
 """
+    )
+
+    dims = [5, 5, 5]
+    assert parse(
+        """
+sum_squares(conv(u) - b) +
+1.0e-5 * group_norm(grad(u)) +
+1.0e-3 * sum_squares(grad(u)) +
+nonneg(u)
+""",
+        variable_dims=dims,
+        const_buffers={"b": np.ones(dims)},
     )

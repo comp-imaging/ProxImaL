@@ -38,7 +38,6 @@ class Problem:
         self.u = u
 
     def __repr__(self) -> str:
-
         formatted = f"""\\begin{{align}}
 \\hat u &= \\arg \\min_{{u \\in \\mathbb{{R}}^{len(self.u.shape)} }}
 f(u) + \\sum_{{j=1}}^{len(self.psi_fns)} g_j\\left( \\mathbf{{K}}_j u \\right) \\\\
@@ -59,11 +58,24 @@ f(u) + \\sum_{{j=1}}^{len(self.psi_fns)} g_j\\left( \\mathbf{{K}}_j u \\right) \
             )
 
         for e in equations:
-            formatted += (
-                f"g_{e.idx}(v) &= {e.fn} & \\mathbf{{K}}_{e.idx} &= {e.K} \\\\\n"
-            )
+            formatted += f"g_{e.idx}(v) &= {e.fn} & \\mathbf{{K}}_{e.idx} &= {e.K} \\\\\n"
 
         formatted += """\\end{align}
 """
 
         return formatted
+
+    def propagateBounds(self) -> None:
+        for fn in self.psi_fns:
+            current_dims = self.u.shape
+
+            for lin_op in fn.lin_ops:
+                lin_op.input_dims = current_dims
+                lin_op.queryBounds()
+                current_dims = lin_op.output_dims
+
+        current_dims = self.u.shape
+        for lin_op in self.omega_fn.lin_ops:
+            lin_op.input_dims = current_dims
+            lin_op.queryBounds()
+            current_dims = lin_op.output_dims

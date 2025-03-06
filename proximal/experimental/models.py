@@ -1,9 +1,12 @@
-from typing import Protocol
-from typing import runtime_checkable
+from typing import Protocol, runtime_checkable
+
 
 @runtime_checkable
 class LinOp(Protocol):
     latex_notation: str
+
+    def queryBounds(self) -> None:
+        pass
 
 
 class ProxFn(Protocol):

@@ -4,6 +4,7 @@ sys.path.append("/home/antony/Projects/ProxImaL/")
 
 import numpy as np
 
+from proximal.experimental.frontend import parse
 from proximal.experimental.lin_ops import FFTConv, Grad, MultiplyAdd
 from proximal.experimental.optimize.absorb import absorb
 from proximal.experimental.optimize.group import group
@@ -18,12 +19,10 @@ problem = Problem(
     psi_fns=[
         SumSquares(
             lin_ops=[
-                FFTConv(kernel=np.ones(3), input_dims=dims, output_dims=dims),
+                FFTConv(kernel=np.ones(3)),
                 # MultiplyAdd(
                 #    scale=0.4,
                 #    offset=1.0,
-                #    input_dims=dims,
-                #    output_dims=dims,
                 # ),
             ],
             b=np.ones(dims),
@@ -31,19 +30,30 @@ problem = Problem(
         GroupNorm(
             alpha=1e-5,
             lin_ops=[
-                Grad(input_dims=dims, output_dims=[*dims, 2]),
+                Grad(),
             ],
         ),
         SumSquares(
             alpha=1e-3,
             lin_ops=[
-                Grad(input_dims=dims, output_dims=[*dims, 2]),
+                Grad(),
             ],
         ),
         Nonneg(
             lin_ops=[],
         ),
     ],
+)
+
+problem = parse(
+    """
+sum_squares(conv(u) - b) +
+1.0e-5 * group_norm(grad(u)) +
+1.0e-3 * sum_squares(grad(u)) +
+nonneg(u)
+""",
+    variable_dims=dims,
+    const_buffers={"b": np.ones(dims)},
 )
 
 print(
@@ -57,3 +67,5 @@ print(
     f"""After:
 {problem}"""
 )
+
+problem.propagateBounds()
