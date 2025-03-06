@@ -1,9 +1,8 @@
 from typing import Protocol
+from typing import runtime_checkable
 
-
+@runtime_checkable
 class LinOp(Protocol):
-    input_dims: list[int]
-    output_dims: list[int]
     latex_notation: str
 
 
