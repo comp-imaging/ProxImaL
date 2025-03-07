@@ -1,6 +1,7 @@
-from proximal.experimental.frontend import parse
 import numpy as np
-from proximal.experimental.lin_ops import MultiplyAdd, FFTConv
+
+from proximal.experimental.frontend import parse
+from proximal.experimental.lin_ops import FFTConv, MultiplyAdd
 
 
 def test_single_fn() -> None:
@@ -49,6 +50,7 @@ nonneg(u)
         variable_dims=dims,
         const_buffers={"b": np.ones(dims)},
     )
+
 
 def test_conv_only() -> None:
     dims = [5, 5, 5]

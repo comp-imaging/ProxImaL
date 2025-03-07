@@ -2,9 +2,9 @@ import numpy as np
 from numpy import ndarray
 from scipy.sparse.linalg import LinearOperator, eigs
 
-from proximal.experimental.problem import Problem
-from proximal.experimental.codegen import generateImpl
+from proximal.experimental.emulate import generateImpl
 from proximal.experimental.models import LinOp, LinOpImpl, ProxFn
+from proximal.experimental.problem import Problem
 
 
 def generateLinOpImpl(lin_ops: list[LinOp]) -> tuple[LinOpImpl, LinOpImpl]:
@@ -89,6 +89,7 @@ def estimateCompGraphNorm(psi_fns: list[ProxFn], dims: tuple[int], tol=1e-3) -> 
 
     Knorm = np.sqrt(eigs(A, k=1, M=None, sigma=None, which="LM", tol=tol)[0].real)
     return float(Knorm)
+
 
 def scale(problem: Problem) -> Problem:
     problem.propagateBounds()
