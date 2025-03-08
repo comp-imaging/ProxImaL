@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from math import isclose
+from typing import Callable
 
 from numpy import ndarray
 
@@ -75,9 +76,23 @@ class LeastSquaresFFT(ProxFnBase):
 
 @dataclass
 class FFTConvSumSquares(ProxFnBase):
+    kernel: ndarray | None = None
+
     def toLatex(self) -> str:
         alpha, beta, gamma, b = self.formatParameters()
         return f"{alpha} \\Vert {beta} F^T H F v {b} \\Vert_2^2 {gamma}"
+
+
+weight_function = Callable[[int, int], float]
+
+
+@dataclass
+class WeightedLeastSquares(ProxFnBase):
+    weights: ndarray | weight_function | None = None
+
+    def toLatex(self) -> str:
+        alpha, beta, gamma, b = self.formatParameters()
+        return f"{alpha} \\Vert {beta} w^T v {b} \\Vert_2^2 {gamma}"
 
 
 @dataclass

@@ -1,7 +1,7 @@
-from proximal.experimental.lin_ops import FFTConv, MultiplyAdd
+from proximal.experimental.lin_ops import Crop, FFTConv, MultiplyAdd
 from proximal.experimental.models import ProxFn
 from proximal.experimental.problem import Problem
-from proximal.experimental.prox_fns import LeastSquaresFFT, SumSquares
+from proximal.experimental.prox_fns import LeastSquaresFFT, SumSquares, WeightedLeastSquares
 
 
 def absorbFFTConv(prox_fn: SumSquares) -> LeastSquaresFFT:
@@ -36,6 +36,28 @@ def absorbMultiplyAdd(prox_fn: ProxFn) -> ProxFn:
     return prox_fn
 
 
+def absorbCrop(prox_fn: SumSquares) -> ProxFn:
+    """sum_square(Crop(u)) -> WeighteddLeastSquare(u)."""
+
+    if len(prox_fn.lin_ops) == 0 or not isinstance(prox_fn.lin_ops[-1], Crop):
+        return prox_fn
+
+    # Generate the values of the binary mask representing the crop
+    crop_op: Crop = prox_fn.lin_ops[-1]
+
+    def mask(x: int, y: int) -> float:
+        return (crop_op.left <= x < crop_op.left + crop_op.width) and (crop_op.top <= x < crop_op.top + crop_op.height)
+
+    return WeightedLeastSquares(
+        lin_ops=prox_fn.lin_ops[:-1],
+        alpha=prox_fn.alpha,
+        beta=prox_fn.beta,
+        gamma=prox_fn.gamma,
+        b=prox_fn.b,
+        weights=mask,
+    )
+
+
 def absorb(problem: Problem) -> Problem:
     assert problem.omega_fn is None, "Problem is already split, why?"
 
@@ -44,5 +66,8 @@ def absorb(problem: Problem) -> Problem:
 
         if isinstance(psi_fn, SumSquares):
             problem.psi_fns[i] = absorbFFTConv(psi_fn)
+
+        if isinstance(psi_fn, SumSquares):
+            problem.psi_fns[i] = absorbCrop(psi_fn)
 
     return problem

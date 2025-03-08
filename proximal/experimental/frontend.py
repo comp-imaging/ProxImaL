@@ -4,7 +4,7 @@ import numpy as np
 from parsimonious.grammar import Grammar
 from parsimonious.nodes import NodeVisitor
 
-from proximal.experimental.lin_ops import FFTConv, Grad, MultiplyAdd
+from proximal.experimental.lin_ops import Crop, FFTConv, Grad, MultiplyAdd
 from proximal.experimental.models import LinOp
 from proximal.experimental.problem import Problem, Variable
 from proximal.experimental.prox_fns import GroupNorm, Nonneg, ProxFnBase, SumSquares
@@ -27,10 +27,10 @@ def getProxFn(name: str) -> ProxFnBase:
 
 def getLinOp(name: str) -> LinOp:
     match name:
-        case "conv":
-            return FFTConv(kernel=np.ones(3))
         case "grad":
             return Grad()
+        case "crop":
+            return Crop(left=0, top=0, width=10, height=10)
         case _:
             raise RuntimeError(f"Linear operator {key} not found")
 
@@ -103,6 +103,20 @@ class ProxImaLDSLVisitor(NodeVisitor):
         assert name in self.const_buffers
         return self.const_buffers[name]
 
+    def visit_ConvOp(self, _, visited_children) -> list[LinOp]:
+        _, kernel, _, expression, _ = visited_children
+
+        assert isinstance(kernel, np.ndarray)
+        lin_op = FFTConv(kernel=kernel)
+
+        if isinstance(expression, Variable):
+            return [lin_op]
+
+        assert isinstance(expression, list)
+        expression.append(lin_op)
+
+        return expression
+
     def visit_LinOp(self, _, visited_children) -> list[LinOp]:
         name, _, expression, _ = visited_children
 
@@ -149,9 +163,10 @@ def parse(
         r"""
     Problem         = ScaledProxFn ("+" ScaledProxFn)*
     ScaledProxFn    = (NUMBER FACTOR_OPERATOR)* ProxFn
-    ProxFn          = ProxFnKey "(" ScaleOffset ")"
-    ScaleOffset     = (NUMBER FACTOR_OPERATOR)* (LinOp / Variable) (TERM_OPERATOR Offset)?
-    LinOp           = LinOpKey "(" ( ScaleOffset ) ")"
+    ProxFn          = ProxFnKey LPar ScaleOffset RPar
+    ScaleOffset     = (NUMBER FACTOR_OPERATOR)* (ConvOp / LinOp / Variable) (TERM_OPERATOR Offset)?
+    ConvOp          = "conv(" ConstBuffer "," ScaleOffset RPar
+    LinOp           = LinOpKey LPar ScaleOffset RPar
     Offset          = NUMBER / ConstBuffer
 
     TERM_OPERATOR   = ~"[-+]"
@@ -161,10 +176,13 @@ def parse(
     SCIENTIFIC      = ~r"\d+\.\d+e-?\d+"
 
     ProxFnKey       = "sum_squares" / "norm1" / "group_norm" / "nonneg"
-    LinOpKey        = "grad" / "conv"
+    LinOpKey        = "grad" / "crop"
+    LPar            = "("
+    RPar            = ")"
     """
-        f"""ConstBuffer     = "{'","'.join([key for key in const_buffers])}" """
-        f'Variable        = "{variable:s}"'
+        f"""ConstBuffer     = "{'"/"'.join([key for key in const_buffers])}"
+"""
+        f'Variable        = "{variable:s}"\n'
     )
 
     # Remove all newlines and whitespaces, and then parse the expression.

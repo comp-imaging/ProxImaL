@@ -29,35 +29,41 @@ def test_buffer() -> None:
     assert parse("sum_squares(u - b)", const_buffers={"b": np.ones(3)})
 
 
+def test_conv_op() -> None:
+    assert parse("sum_squares(conv(k, u))", const_buffers={"k": np.ones((3, 3))})
+
+
 def test_complex_problem() -> None:
+    blur_kernel = np.ones((3, 3))
     assert parse(
         """
-sum_squares(conv(u) - 1) +
+sum_squares(conv(k, u) - 1) +
 2.0e-3 * group_norm(grad(u)) +
 0.1 * sum_squares(grad(u)) +
 nonneg(3 * u - 1)
-"""
+""",
+        const_buffers={"k": blur_kernel},
     )
 
     dims = [5, 5, 5]
     assert parse(
         """
-sum_squares(conv(u) - b) +
+sum_squares(conv(k, u) - b) +
 1.0e-5 * group_norm(grad(u)) +
 1.0e-3 * sum_squares(grad(u)) +
 nonneg(u)
 """,
         variable_dims=dims,
-        const_buffers={"b": np.ones(dims)},
+        const_buffers={"k": blur_kernel, "b": np.ones(dims)},
     )
 
 
 def test_conv_only() -> None:
-    dims = [5, 5, 5]
+    dims = [5, 5]
     problem = parse(
-        "sum_squares(conv(u) - b)",
+        "sum_squares(conv(k, u) - b)",
         variable_dims=dims,
-        const_buffers={"b": np.ones(dims)},
+        const_buffers={"k": np.ones((3, 3)), "b": np.ones(dims)},
     )
 
     assert len(problem.psi_fns) == 1

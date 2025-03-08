@@ -1,6 +1,6 @@
 from proximal.experimental.models import ProxFn
 from proximal.experimental.problem import Problem
-from proximal.experimental.prox_fns import SumSquares
+from proximal.experimental.prox_fns import SumSquares, WeightedLeastSquares
 
 
 def findSimpleSumSquares(prox_fns: list[ProxFn]) -> list[int]:
@@ -8,7 +8,7 @@ def findSimpleSumSquares(prox_fns: list[ProxFn]) -> list[int]:
     idx: list[int] = []
 
     for i, prox_fn in enumerate(prox_fns):
-        if isinstance(prox_fn, SumSquares) and len(prox_fn.lin_ops) == 0:
+        if isinstance(prox_fn, (SumSquares, WeightedLeastSquares)) and len(prox_fn.lin_ops) == 0:
             idx.append(i)
 
     return idx
