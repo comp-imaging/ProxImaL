@@ -10,6 +10,7 @@ from proximal.experimental.optimize.absorb import absorb
 from proximal.experimental.optimize.group import group
 from proximal.experimental.optimize.split import split
 from proximal.experimental.optimize.scale import scale
+from proximal.experimental.codegen import LinearizedADMM
 
 dims = [512, 512]
 out_dims = [128, 128]
@@ -41,3 +42,5 @@ print(
 
 problem = scale(problem)
 print(f"Knorm = {problem.Knorm}")
+
+print(LinearizedADMM(problem).generateProblemDefinition())

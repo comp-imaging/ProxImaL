@@ -30,7 +30,7 @@ def absorbMultiplyAdd(prox_fn: ProxFn) -> ProxFn:
     scale = prox_fn.lin_ops[-1].scale
     offset = prox_fn.lin_ops[-1].offset
     prox_fn.beta *= scale
-    prox_fn.b -= prox_fn.beta * offset
+    prox_fn.b = prox_fn.b - prox_fn.beta * offset
     prox_fn.lin_ops = prox_fn.lin_ops[:-1]
 
     return prox_fn
@@ -62,12 +62,15 @@ def absorb(problem: Problem) -> Problem:
     assert problem.omega_fn is None, "Problem is already split, why?"
 
     for i, psi_fn in enumerate(problem.psi_fns):
-        problem.psi_fns[i] = absorbMultiplyAdd(psi_fn)
+        psi_fn = absorbMultiplyAdd(psi_fn)
+        problem.psi_fns[i] = psi_fn
 
         if isinstance(psi_fn, SumSquares):
-            problem.psi_fns[i] = absorbFFTConv(psi_fn)
+            psi_fn = absorbFFTConv(psi_fn)
+            problem.psi_fns[i] = psi_fn
 
         if isinstance(psi_fn, SumSquares):
-            problem.psi_fns[i] = absorbCrop(psi_fn)
+            psi_fn = absorbCrop(psi_fn)
+            problem.psi_fns[i] = psi_fn
 
     return problem
