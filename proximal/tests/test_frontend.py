@@ -1,7 +1,7 @@
 import numpy as np
 
 from proximal.experimental.frontend import parse
-from proximal.experimental.lin_ops import FFTConv, MultiplyAdd
+from proximal.experimental.ir.lin_ops import FFTConv, MultiplyAdd
 
 
 def test_single_fn() -> None:

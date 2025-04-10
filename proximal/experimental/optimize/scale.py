@@ -3,8 +3,8 @@ from numpy import ndarray
 from scipy.sparse.linalg import LinearOperator, eigs
 
 from proximal.experimental.emulate import generateImpl
+from proximal.experimental.ir.problem import Problem
 from proximal.experimental.models import LinOp, LinOpImpl, ProxFn
-from proximal.experimental.problem import Problem
 
 
 def generateLinOpImpl(lin_ops: list[LinOp]) -> tuple[LinOpImpl, LinOpImpl]:

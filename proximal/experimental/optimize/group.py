@@ -1,6 +1,6 @@
+from proximal.experimental.ir.problem import Problem
+from proximal.experimental.ir.prox_fns import SumSquares
 from proximal.experimental.models import LinOp, ProxFn
-from proximal.experimental.problem import Problem
-from proximal.experimental.prox_fns import SumSquares
 
 
 def hash(lin_ops: list[LinOp]) -> str:

@@ -1,7 +1,7 @@
 import numpy as np
 from numpy import ndarray
 
-from proximal.experimental.lin_ops import Crop, FFTConv, Grad, MultiplyAdd
+from proximal.experimental.ir.lin_ops import Crop, FFTConv, Grad, MultiplyAdd
 from proximal.experimental.models import LinOp, LinOpImpl
 from proximal.halide.halide import Halide
 

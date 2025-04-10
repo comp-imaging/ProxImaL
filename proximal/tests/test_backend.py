@@ -1,8 +1,8 @@
 import numpy as np
 
-from proximal.experimental.lin_ops import FFTConv, Grad, MultiplyAdd
-from proximal.experimental.problem import Problem, Variable
-from proximal.experimental.prox_fns import GroupNorm, Nonneg, SumSquares
+from proximal.experimental.ir.lin_ops import FFTConv, Grad, MultiplyAdd
+from proximal.experimental.ir.problem import Problem, Variable
+from proximal.experimental.ir.prox_fns import GroupNorm, Nonneg, SumSquares
 
 
 def test_complex_problem() -> None:

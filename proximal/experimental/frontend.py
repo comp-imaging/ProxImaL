@@ -4,10 +4,10 @@ import numpy as np
 from parsimonious.grammar import Grammar
 from parsimonious.nodes import NodeVisitor
 
-from proximal.experimental.lin_ops import Crop, FFTConv, Grad, MultiplyAdd
+from proximal.experimental.ir.lin_ops import Crop, FFTConv, Grad, MultiplyAdd
+from proximal.experimental.ir.problem import Problem, Variable
+from proximal.experimental.ir.prox_fns import GroupNorm, Nonneg, ProxFnBase, SumSquares
 from proximal.experimental.models import LinOp
-from proximal.experimental.problem import Problem, Variable
-from proximal.experimental.prox_fns import GroupNorm, Nonneg, ProxFnBase, SumSquares
 
 
 def getProxFn(name: str) -> ProxFnBase:
@@ -32,7 +32,7 @@ def getLinOp(name: str) -> LinOp:
         case "crop":
             return Crop(left=0, top=0, width=10, height=10)
         case _:
-            raise RuntimeError(f"Linear operator {key} not found")
+            raise RuntimeError(f"Linear operator {name} not found")
 
 
 class ProxImaLDSLVisitor(NodeVisitor):

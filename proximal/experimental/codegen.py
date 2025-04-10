@@ -3,10 +3,10 @@ from dataclasses import dataclass
 from jinja2 import Environment, PackageLoader
 from numpy import ndarray
 
-from proximal.experimental.lin_ops import FFTConv, Grad
+from proximal.experimental.ir.lin_ops import FFTConv, Grad
+from proximal.experimental.ir.problem import Problem
+from proximal.experimental.ir.prox_fns import FFTConvSumSquares, GroupNorm, Nonneg, SumSquares, WeightedLeastSquares
 from proximal.experimental.models import LinOp, ProxFn
-from proximal.experimental.problem import Problem
-from proximal.experimental.prox_fns import FFTConvSumSquares, GroupNorm, Nonneg, SumSquares, WeightedLeastSquares
 
 env = Environment(loader=PackageLoader("proximal"))
 

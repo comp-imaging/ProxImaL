@@ -1,7 +1,7 @@
-from proximal.experimental.lin_ops import Crop, FFTConv, MultiplyAdd
+from proximal.experimental.ir.lin_ops import Crop, FFTConv, MultiplyAdd
+from proximal.experimental.ir.problem import Problem
+from proximal.experimental.ir.prox_fns import LeastSquaresFFT, SumSquares, WeightedLeastSquares
 from proximal.experimental.models import ProxFn
-from proximal.experimental.problem import Problem
-from proximal.experimental.prox_fns import LeastSquaresFFT, SumSquares, WeightedLeastSquares
 
 
 def absorbFFTConv(prox_fn: SumSquares) -> LeastSquaresFFT:

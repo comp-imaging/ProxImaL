@@ -4,13 +4,13 @@ sys.path.append("/home/antony/Projects/ProxImaL/")
 
 import numpy as np
 
+from proximal.experimental.codegen import LinearizedADMM
 from proximal.experimental.frontend import parse
-from proximal.experimental.lin_ops import Crop
+from proximal.experimental.ir.lin_ops import Crop
 from proximal.experimental.optimize.absorb import absorb
 from proximal.experimental.optimize.group import group
-from proximal.experimental.optimize.split import split
 from proximal.experimental.optimize.scale import scale
-from proximal.experimental.codegen import LinearizedADMM
+from proximal.experimental.optimize.split import split
 
 dims = [512, 512]
 out_dims = [128, 128]
