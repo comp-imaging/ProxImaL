@@ -12,7 +12,7 @@ class MultiplyAdd:
     input_dims: list[int] | None = None
     output_dims: list[int] | None = None
 
-    latex_notation: str = "\\eta"
+    latex_notation: str = r"\eta"
 
     def queryBounds(self):
         assert self.input_dims is not None
@@ -24,7 +24,7 @@ class Grad:
     input_dims: list[int] | None = None
     output_dims: list[int] | None = None
 
-    latex_notation: str = "\\nabla"
+    latex_notation: str = r"\nabla"
 
     def queryBounds(self):
         assert self.input_dims is not None
@@ -38,7 +38,7 @@ class FFTConv:
     input_dims: list[int] | None = None
     output_dims: list[int] | None = None
 
-    latex_notation: str = "\\mathcal{F}^T \\mathbf{D} \\mathcal{F}"
+    latex_notation: str = r"\mathcal{F}^T \mathbf{D} \mathcal{F}"
 
     def queryBounds(self):
         assert self.input_dims is not None
@@ -55,7 +55,7 @@ class Crop:
     input_dims: list[int] | None = None
     output_dims: list[int] | None = None
 
-    latex_notation: str = "\\mathbf{M}"
+    latex_notation: str = r"\mathbf{M}"
 
     def queryBounds(self):
         assert self.input_dims is not None

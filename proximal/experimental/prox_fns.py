@@ -17,7 +17,7 @@ def scientificToLatex(value: float) -> str:
     exponent = int(items[1])
     if isclose(float(mantissa), 1.0):
         return f"10^{{ {exponent} }}"
-    return f"{mantissa:s} \\times 10^{{ {exponent:d} }}"
+    return rf"{mantissa:s} \times 10^{{ {exponent:d} }}"
 
 
 @dataclass
@@ -37,9 +37,9 @@ class ProxFnBase:
         if self.gamma == 0.0:
             _gamma = ""
         elif isclose(self.gamma, 1.0):
-            _gamma = "+ \\Vert v \\Vert_2^2"
+            _gamma = r"+ \Vert v \Vert_2^2"
         else:
-            _gamma = f"+ {scientificToLatex(self.gamma):s} \\Vert v \\Vert_2^2"
+            _gamma = rf"+ {scientificToLatex(self.gamma):s} \Vert v \Vert_2^2"
 
         if isinstance(self.b, ndarray):
             _b = "- b"
@@ -55,7 +55,7 @@ class ProxFnBase:
 class SumSquares(ProxFnBase):
     def toLatex(self) -> str:
         alpha, beta, gamma, b = self.formatParameters()
-        return f"{alpha} \\Vert {beta} v {b} \\Vert_2^2 {gamma}"
+        return rf"{alpha} \Vert {beta} v {b} \Vert_2^2 {gamma}"
 
 
 @dataclass
@@ -69,9 +69,9 @@ class LeastSquaresFFT(ProxFnBase):
 
         alpha, beta, gamma, b = self.formatParameters()
         if self.new_b is None:
-            return f"{alpha} \\Vert {beta} F^T D F v \\Vert_2^2 {gamma}"
+            return rf"{alpha} \Vert {beta} F^T D F v \Vert_2^2 {gamma}"
 
-        return f"{alpha} \\Vert {beta} F^T D F v - \\mathbf{{b}} \\Vert_2^2 {gamma}"
+        return rf"{alpha} \Vert {beta} F^T D F v - \mathbf{{b}} \Vert_2^2 {gamma}"
 
 
 @dataclass
@@ -80,7 +80,7 @@ class FFTConvSumSquares(ProxFnBase):
 
     def toLatex(self) -> str:
         alpha, beta, gamma, b = self.formatParameters()
-        return f"{alpha} \\Vert {beta} F^T H F v {b} \\Vert_2^2 {gamma}"
+        return rf"{alpha} \Vert {beta} F^T H F v {b} \Vert_2^2 {gamma}"
 
 
 weight_function = Callable[[int, int], float]
@@ -92,14 +92,14 @@ class WeightedLeastSquares(ProxFnBase):
 
     def toLatex(self) -> str:
         alpha, beta, gamma, b = self.formatParameters()
-        return f"{alpha} \\Vert {beta} w^T v {b} \\Vert_2^2 {gamma}"
+        return rf"{alpha} \Vert {beta} w^T v {b} \Vert_2^2 {gamma}"
 
 
 @dataclass
 class GroupNorm(ProxFnBase):
     def toLatex(self) -> str:
         alpha, beta, gamma, b = self.formatParameters()
-        return f"{alpha} \\Vert {beta} v {b} \\Vert_{{2, 1}} {gamma}"
+        return rf"{alpha} \Vert {beta} v {b} \Vert_{{2, 1}} {gamma}"
 
 
 @dataclass

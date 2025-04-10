@@ -38,14 +38,16 @@ class Problem:
         self.u = u
 
     def __repr__(self) -> str:
-        formatted = f"""\\begin{{align}}
-\\hat u &= \\arg \\min_{{u \\in \\mathbb{{R}}^{len(self.u.shape)} }}
-f(u) + \\sum_{{j=1}}^{len(self.psi_fns)} g_j\\left( \\mathbf{{K}}_j u \\right) \\\\
+        formatted = rf"""\begin{{align}}
+\hat u &= \arg \min_{{u \in \mathbb{{R}}^{len(self.u.shape)} }}
+f(u) + \sum_{{j=1}}^{len(self.psi_fns)} g_j\left( \mathbf{{K}}_j u \right) \\
 """
         if self.omega_fn is None:
-            formatted += f"f(u) &= \\emptyset \\\\\n"
+            formatted += rf"""f(u) &= \emptyset \\
+"""
         else:
-            formatted += f"f(u) &= {self.omega_fn.toLatex().replace('v', 'u')} \\\\\n"
+            formatted += rf"""f(u) &= {self.omega_fn.toLatex().replace("v", "u")} \\
+"""
 
         equations: list[CostFnFormatted] = []
         for i, psi_fn in enumerate(self.psi_fns):
@@ -58,9 +60,10 @@ f(u) + \\sum_{{j=1}}^{len(self.psi_fns)} g_j\\left( \\mathbf{{K}}_j u \\right) \
             )
 
         for e in equations:
-            formatted += f"g_{e.idx}(v) &= {e.fn} & \\mathbf{{K}}_{e.idx} &= {e.K} \\\\\n"
+            formatted += rf"""g_{e.idx}(v) &= {e.fn} & \mathbf{{K}}_{e.idx} &= {e.K} \\
+"""
 
-        formatted += """\\end{align}
+        formatted += r"""\end{align}
 """
 
         return formatted
