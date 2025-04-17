@@ -32,15 +32,36 @@ struct Transform {
     constexpr static auto N = problem_config::psi_size;
 
     /** Compute dx, dy of a two dimensional image with c number of channels. */
-    FuncTuple<N> forward(const Func& z) {
+    FuncTuple<N> forward(const Func& u) {
         /* Begin code-generation */
-        {{ K.halide_forward_graph.gen_code() }}
+{%- for item in forward_op -%}
+{%- for code in item.stages -%}
+        {{ code }}
+{%- endfor -%}
+{%- endfor -%}
+	return {
+{%- for item in forward_op -%}
+        {{ item.output_name }}{{ ", " if not loop.last else "" }}
+{%- endfor -%}
+    };
         /* End code-generation */
     }
 
-    Func adjoint(const FuncTuple<N>& u) {
+    Func adjoint(const FuncTuple<N>& z) {
         /* Begin code-generation */
-        {{ K.halide_adjoint_graph.gen_code() }}
+{%- for item in adjoint_op -%}
+{%- for code in item.stages -%}
+        {{ code }}
+{%- endfor -%}
+{%- endfor -%}
+
+    using Halide::_;
+    Func sum_KTz{"sum_KTz"};
+    sum_KTz(_) = {%- for item in adjoint_op -%}
+        {{ item.output_name }}(_){{ " + " if not loop.last else "" }}
+{%- endfor -%};
+
+	return sum_KTz;
         /* End code-generation */
     }
 } K;
@@ -55,13 +76,13 @@ static_assert(LinOpGrah<Transform>);
 const ParameterizedProx omega_fn{
     /* Begin code-generation */
     /* . prox = */ [](const Func& v, const Expr& rho) -> Func {
-        {{ omega_fns[0].generateHalideCode() }}
+        return {{ omega_fn_name }}(v, 1.0f / rho);
     },
-    /* .alpha = */ {{ omega_fns[0].alpha }},
-    /* .beta = */ {{ omega_fns[0].beta }},
-    /* .gamma = */ {{ omega_fns[0].gamma }},
-    /* ._c = */ {{ omega_fns[0].c }},
-    /* .d = */ {{ omega_fns[0].d }},
+    /* .alpha = */ {{ omega_fn.alpha }}f,
+    /* .beta = */ {{ omega_fn.beta }}f,
+    /* .gamma = */ {{ omega_fn.gamma }}f,
+    /* ._c = */ 0.0f,
+    /* .d = */ 0.0f,
     /* .n_dim = 3, */
     /* End code-generation */
 };
@@ -81,16 +102,16 @@ static_assert(Prox<ParameterizedProx>);
  */
 const std::array<ParameterizedProx, problem_config::psi_size> psi_fns{
     /* Begin code generation */
-{% for p in psi_fns %}
+{% for p,name in psi_fns %}
     /* . prox = */ [](const Func& v, const Expr& rho) -> Func {
-        {{ p.generateHalideCode() }}
+        return {{ name }}(v, 1 / rho);
     },
-    /* .alpha = */ {{ p.alpha }},
-    /* .beta = */ {{ p.beta }},
-    /* .gamma = */ {{ p.gamma }},
-    /* ._c = */ {{ p.c }},
-    /* .d = */ {{ p.d }},
-    /* .n_dim = */ {{ p.lin_op.shape.size }}
+    /* .alpha = */ {{ p.alpha }}f,
+    /* .beta = */ {{ p.beta }}f,
+    /* .gamma = */ {{ p.gamma }}f,
+    /* ._c = */ 0.0f,
+    /* .d = */ 0.0f,
+    /* .n_dim = */ {{ p.lin_ops[-1].output_dims|length if (p.lin_ops|length) > 0 else u.shape|length }}
     }
 {% endfor %}
     /* End code-generation */
