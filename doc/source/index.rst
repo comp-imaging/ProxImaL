@@ -6,7 +6,10 @@
 Welcome to ProxImaL
 =====================
 
-ProxImaL is a Python-embedded modeling language for image optimization problems.
+.. image::
+   https://github.com/comp-imaging/ProxImaL/actions/workflows/python-package.yml/badge.svg
+
+`ProxImaL <https://github.com/comp-imaging/ProxImaL>`_ is a Python-embedded modeling language for image optimization problems.
 It allows you to express your problem in a natural way that follows the math,
 and automatically determines an efficient method for solving the problem.
 ProxImaL makes it easy to experiment with many different priors and other problem reformulations,
@@ -55,12 +58,12 @@ For example, the following code denoises an image using simple sparse gradient a
 The example above uses simple, well-known priors. Much better results can be obtained using the more sophisticated priors provided in ProxImaL.
 
 ProxImaL was designed and implemented by Felix Heide and Steven Diamond.
-See `the accompanying paper <http://web.stanford.edu/~stevend2/pdf/proximal.pdf>`_ for a full discussion of ProxImaL's design and examples of state-of-the-art results obtained with ProxImaL.
+See `the accompanying paper <https://stevendiamond.me/pdf/proximal.pdf>`_ for a full discussion of ProxImaL's design and examples of state-of-the-art results obtained with ProxImaL.
 
 .. toctree::
    :hidden:
 
-   install/index
+   install
    tutorial/index
    examples/index
-   publications/index
+   publications
