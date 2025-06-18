@@ -1,5 +1,5 @@
 <!doctype html>
-<html class="no-js" lang="en" data-content_root="./">
+<html class="no-js" lang="en" data-content_root="../">
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -13,13 +13,13 @@
             gtag('config', 'UA-50248335-1');
             
         </script>
-    <link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Install Guide" href="install.html" />
+    <link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" />
 
     <!-- Generated with Sphinx 8.2.3 and Furo 2024.08.06 -->
-        <title>ProxImaL Language</title>
-      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
-    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=354aac6f" />
-    <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=302659d7" />
+        <title>TV-regularized image deconvolution - ProxImaL Language</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=354aac6f" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=302659d7" />
     
     
 
@@ -176,7 +176,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="#"><div class="brand">ProxImaL Language</div></a>
+      <a href="../index.html"><div class="brand">ProxImaL Language</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -197,22 +197,22 @@
   <aside class="sidebar-drawer">
     <div class="sidebar-container">
       
-      <div class="sidebar-sticky"><a class="sidebar-brand" href="#">
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../index.html">
   
   
   <span class="sidebar-brand-text">ProxImaL Language</span>
   
-</a><form class="sidebar-search-container" method="get" action="search.html" role="search">
+</a><form class="sidebar-search-container" method="get" action="../search.html" role="search">
   <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
   <input type="hidden" name="check_keywords" value="yes">
   <input type="hidden" name="area" value="default">
 </form>
 <div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
   <ul>
-<li class="toctree-l1"><a class="reference internal" href="install.html">Install Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="tutorial/index.html">Tutorial</a></li>
-<li class="toctree-l1"><a class="reference internal" href="examples/index.html">Examples</a></li>
-<li class="toctree-l1"><a class="reference internal" href="publications.html">Publications</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../install.html">Install Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tutorial/index.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="index.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../publications.html">Publications</a></li>
 </ul>
 
 </div>
@@ -233,7 +233,7 @@
         </a>
         <div class="content-icon-container">
           <div class="view-this-page">
-  <a class="muted-link" href="_sources/index.rst.txt" title="View this page">
+  <a class="muted-link" href="../_sources/examples/deconv.rst.txt" title="View this page">
     <svg><use href="#svg-eye"></use></svg>
     <span class="visually-hidden">View this page</span>
   </a>
@@ -253,56 +253,25 @@
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          <section id="welcome-to-proximal">
-<h1>Welcome to ProxImaL<a class="headerlink" href="#welcome-to-proximal" title="Link to this heading">¶</a></h1>
-<img alt="https://github.com/comp-imaging/ProxImaL/actions/workflows/python-package.yml/badge.svg" src="https://github.com/comp-imaging/ProxImaL/actions/workflows/python-package.yml/badge.svg" />
-<p><a class="reference external" href="https://github.com/comp-imaging/ProxImaL">ProxImaL</a> is a Python-embedded modeling language for image optimization problems.
-It allows you to express your problem in a natural way that follows the math,
-and automatically determines an efficient method for solving the problem.
-ProxImaL makes it easy to experiment with many different priors and other problem reformulations,
-without worrying about the details of how the problem is solved.</p>
-<p>For example, the following code denoises an image using simple sparse gradient and nonnegativity priors:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">proximal</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">scipy.misc</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
-
-<span class="c1"># Generate data.</span>
-<span class="n">I</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">ascent</span><span class="p">()</span>
-<span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
-<span class="n">b</span> <span class="o">=</span> <span class="n">I</span> <span class="o">+</span> <span class="mi">10</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="o">*</span><span class="n">I</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
-
-<span class="c1"># Construct and solve problem.</span>
-<span class="n">x</span> <span class="o">=</span> <span class="n">Variable</span><span class="p">(</span> <span class="n">I</span><span class="o">.</span><span class="n">shape</span> <span class="p">)</span>
-<span class="n">prob</span> <span class="o">=</span> <span class="n">Problem</span><span class="p">(</span><span class="n">sum_squares</span><span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">b</span><span class="o">/</span><span class="mi">255</span><span class="p">)</span> <span class="o">+</span> <span class="mf">.1</span><span class="o">*</span><span class="n">norm1</span><span class="p">(</span> <span class="n">grad</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="p">)</span> <span class="o">+</span> <span class="n">nonneg</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
-<span class="n">prob</span><span class="o">.</span><span class="n">solve</span><span class="p">()</span>
-
-<span class="c1"># Plot the original, noisy, and denoised images.</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span><span class="mi">8</span><span class="p">))</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">131</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">gray</span><span class="p">()</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">I</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">&#39;Original image&#39;</span><span class="p">)</span>
-
-<span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">132</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">gray</span><span class="p">()</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">b</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">&#39;Noisy image&#39;</span><span class="p">)</span>
-
-<span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">133</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">gray</span><span class="p">()</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">value</span><span class="o">*</span><span class="mi">255</span><span class="p">)</span> <span class="c1"># x.value is the optimal value of x.</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">&#39;Denoising results&#39;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+          <section id="tv-regularized-image-deconvolution">
+<h1>TV-regularized image deconvolution<a class="headerlink" href="#tv-regularized-image-deconvolution" title="Link to this heading">¶</a></h1>
+<p>Signal distortion model:</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[\min_u \| \mathtt{conv}(k, u)  - b \|_2^2 + \lambda \| \nabla u \|_1\]</div>
+</div>
+<p>Textual representation in ProxImaL:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">prob</span> <span class="o">=</span> <span class="n">Problem</span><span class="p">(</span>
+    <span class="n">sum_squares</span><span class="p">(</span><span class="n">conv</span><span class="p">(</span><span class="n">K</span><span class="p">,</span> <span class="n">u</span><span class="p">,</span> <span class="n">dims</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span> <span class="o">-</span> <span class="n">b</span><span class="p">)</span> <span class="o">+</span>
+    <span class="n">lambda_tv</span> <span class="o">*</span> <span class="n">group_norm1</span><span class="p">(</span><span class="n">grad</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">dims</span><span class="o">=</span><span class="mi">2</span><span class="p">),</span> <span class="p">[</span><span class="mi">2</span><span class="p">]),</span>
+<span class="p">)</span>
 </pre></div>
 </div>
-<a class="reference internal image-reference" href="_images/hello_world_results.png"><img alt="_images/hello_world_results.png" src="_images/hello_world_results.png" style="width: 980.0px; height: 344.0px;" />
-</a>
-<p>The example above uses simple, well-known priors. Much better results can be obtained using the more sophisticated priors provided in ProxImaL.</p>
-<p>ProxImaL was designed and implemented by Felix Heide and Steven Diamond.
-See <a class="reference external" href="https://stevendiamond.me/pdf/proximal.pdf">the accompanying paper</a> for a full discussion of ProxImaL’s design and examples of state-of-the-art results obtained with ProxImaL.</p>
-<div class="toctree-wrapper compound">
-</div>
+<p>Example code: <a class="reference external" href="https://github.com/comp-imaging/ProxImaL/blob/master/proximal/examples/test_deconv.py">https://github.com/comp-imaging/ProxImaL/blob/master/proximal/examples/test_deconv.py</a></p>
+<p>Expected output:</p>
+<figure class="align-default">
+<img alt="../_images/deconv.png" src="../_images/deconv.png" />
+</figure>
 </section>
 
         </article>
@@ -310,15 +279,7 @@ See <a class="reference external" href="https://stevendiamond.me/pdf/proximal.pd
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="install.html">
-              <div class="page-info">
-                <div class="context">
-                  <span>Next</span>
-                </div>
-                <div class="title">Install Guide</div>
-              </div>
-              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
-            </a>
+          
           
         </div>
         <div class="bottom-of-page">
@@ -349,9 +310,10 @@ See <a class="reference external" href="https://stevendiamond.me/pdf/proximal.pd
       
     </aside>
   </div>
-</div><script src="_static/documentation_options.js?v=938c9ccc"></script>
-    <script src="_static/doctools.js?v=9bcbadda"></script>
-    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
-    <script src="_static/scripts/furo.js?v=5fa4622c"></script>
+</div><script src="../_static/documentation_options.js?v=938c9ccc"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/scripts/furo.js?v=5fa4622c"></script>
+    <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     </body>
 </html>
