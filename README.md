@@ -51,7 +51,15 @@ The example above uses simple, well-known priors. Much better results can be obt
 ProxImaL was designed and implemented by Felix Heide and Steven Diamond.
 See [the accompanying paper](https://stevendiamond.me/pdf/proximal.pdf) for a full discussion of ProxImaL's design and examples of state-of-the-art results obtained with ProxImaL.
 
-A tutorial and other documentation can be found at [proximal-lang.org](http://www.proximal-lang.org/).
+A tutorial and other documentation can be found at https://comp-imaging.github.io/ProxImaL/ .
 
 This git repository holds the latest development version of ProxImaL. For installation instructions,
-see the [install guide](http://www.proximal-lang.org/en/latest/install/index.html) at [proximal-lang.org](http://www.proximal-lang.org/).
+see the [install guide](https://comp-imaging.github.io/ProxImaL/install.html).
+
+Legacy documentations
+--------------------------
+
+The original tutorial and documentations can be found at [proximal-lang.org](http://www.proximal-lang.org/).
+
+Similar versions of the original documentation (dated 2017) can also be found at
+https://proximal.readthedocs.io/en/stable/

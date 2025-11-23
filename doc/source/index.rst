@@ -66,4 +66,5 @@ See `the accompanying paper <https://stevendiamond.me/pdf/proximal.pdf>`_ for a 
    install
    tutorial/index
    examples/index
+   experimental_features
    publications
