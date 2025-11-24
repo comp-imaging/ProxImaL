@@ -13,10 +13,10 @@
             gtag('config', 'UA-50248335-1');
             
         </script>
-    <link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="prev" title="Experimental ProxImaL intermediate representation" href="experimental_features.html" />
+    <link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Publications" href="publications.html" /><link rel="prev" title="Examples" href="examples/index.html" />
 
     <!-- Generated with Sphinx 8.2.3 and Furo 2024.08.06 -->
-        <title>Publications - ProxImaL Language</title>
+        <title>Experimental ProxImaL intermediate representation - ProxImaL Language</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=354aac6f" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=302659d7" />
@@ -188,7 +188,7 @@
           <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
         </button>
       </div>
-      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
         <div class="visually-hidden">Toggle table of contents sidebar</div>
         <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
       </label>
@@ -212,8 +212,8 @@
 <li class="toctree-l1"><a class="reference internal" href="install.html">Install Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial/index.html">Tutorial</a></li>
 <li class="toctree-l1"><a class="reference internal" href="examples/index.html">Examples</a></li>
-<li class="toctree-l1"><a class="reference internal" href="experimental_features.html">Experimental ProxImaL intermediate representation</a></li>
-<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Publications</a></li>
+<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Experimental ProxImaL intermediate representation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="publications.html">Publications</a></li>
 </ul>
 
 </div>
@@ -234,7 +234,7 @@
         </a>
         <div class="content-icon-container">
           <div class="view-this-page">
-  <a class="muted-link" href="_sources/publications.rst.txt" title="View this page">
+  <a class="muted-link" href="_sources/experimental_features.rst.txt" title="View this page">
     <svg><use href="#svg-eye"></use></svg>
     <span class="visually-hidden">View this page</span>
   </a>
@@ -248,16 +248,174 @@
               <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
             </button>
           </div>
-          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
             <div class="visually-hidden">Toggle table of contents sidebar</div>
             <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          <section id="publications">
-<span id="citing"></span><h1>Publications<a class="headerlink" href="#publications" title="Link to this heading">¶</a></h1>
-<p>The following publications discuss the ideas behind ProxImaL and show how ProxImaL can be used to obtain state-of-the-art results in computational photography.</p>
-<p><a class="reference external" href="https://stevendiamond.me/pdf/proximal.pdf">ProxImaL: Efficient Image Optimization Using Proximal Algorithms</a>. F. Heide, S. Diamond, M. Niessner, J. Ragan-Kelley, W. Heidrich, and G. Wetzstein. Proceedings of ACM SIGGRAPH, 2016.</p>
+          <section id="experimental-proximal-intermediate-representation">
+<h1>Experimental ProxImaL intermediate representation<a class="headerlink" href="#experimental-proximal-intermediate-representation" title="Link to this heading">¶</a></h1>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This feature is currently work in progress.</p>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">proximal.experimental</span></code> namespace introduces a new internal representation
+(IR) for describing optimization problems in ProxImaL. Loosely mirroring the
+LLVM and Halide projects, the IR provides a unified foundation for problem
+rewriting, problem formulation rendering, and code generation. It replaces a
+number of common code paths previously scattered across <code class="docutils literal notranslate"><span class="pre">proximal.*</span></code> with a
+single, consistent architecture.</p>
+<p>The IR is implemented using Python <code class="docutils literal notranslate"><span class="pre">dataclass</span></code> structures (Python 3.11+). All
+problem-level transformations, including grouping, absorption, splitting, and
+diagonal scaling, operate exclusively on these IR objects should the end user
+chooses to adopt the new ProxImaL syntaxes.</p>
+<p>Image distortion models and the corresponding image reconstruction problem
+formulation can be directly composed with the IR objects, albeit with a very
+verbose code. To aid the transition, a minimal parser is available at
+<code class="docutils literal notranslate"><span class="pre">px.experimental.frontend.parser</span></code>. This “easy mode” allows users to write
+simple optimization problems using a lightweight external domain-specific
+language (DSL) similar to the original language syntax at
+<code class="docutils literal notranslate"><span class="pre">proximal.prox_fns.*</span></code>, and <code class="docutils literal notranslate"><span class="pre">proximal.lin_ops.*</span></code>.</p>
+<section id="quick-start">
+<h2>Quick start<a class="headerlink" href="#quick-start" title="Link to this heading">¶</a></h2>
+<p>The following example (from <code class="docutils literal notranslate"><span class="pre">examples/test_proximal_lite.py</span></code>) shows
+how to define a problem using the experimental frontend and apply the
+built-in rewriting pipeline:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">problem</span> <span class="o">=</span> <span class="n">parse</span><span class="p">(</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">sum_squares(conv(k, u) - b) +</span>
+<span class="sd">1.0e-5 * group_norm(grad(u)) +</span>
+<span class="sd">1.0e-3 * sum_squares(grad(u)) +</span>
+<span class="sd">nonneg(u)</span>
+<span class="sd">&quot;&quot;&quot;</span><span class="p">,</span>
+    <span class="n">variable_dims</span><span class="o">=</span><span class="n">dims</span><span class="p">,</span>
+    <span class="n">const_buffers</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;b&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">out_dims</span><span class="p">),</span>
+                   <span class="s2">&quot;k&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">N</span><span class="p">,</span> <span class="n">N</span><span class="p">),</span> <span class="n">order</span><span class="o">=</span><span class="s2">&quot;F&quot;</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">N</span><span class="o">*</span><span class="n">N</span><span class="p">)},</span>
+<span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Before:</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">problem</span><span class="p">)</span>
+
+<span class="n">optimized_problem</span> <span class="o">=</span> <span class="n">scale</span><span class="p">(</span><span class="n">split</span><span class="p">(</span><span class="n">group</span><span class="p">(</span><span class="n">absorb</span><span class="p">(</span><span class="n">problem</span><span class="p">))))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;After:</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">optimized_problem</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="visualization-of-the-proximal-ir">
+<h2>Visualization of the ProxImal-IR<a class="headerlink" href="#visualization-of-the-proximal-ir" title="Link to this heading">¶</a></h2>
+<figure class="align-default" id="id1">
+<img alt="_images/proximal-ir-jupyter.png" src="_images/proximal-ir-jupyter.png" />
+<figcaption>
+<p><span class="caption-text">Screenshot of the LaTeX Math equations for each problem rewriting step.</span><a class="headerlink" href="#id1" title="Link to this image">¶</a></p>
+</figcaption>
+</figure>
+</section>
+<section id="rationale">
+<h2>Rationale<a class="headerlink" href="#rationale" title="Link to this heading">¶</a></h2>
+<p>The experimental IR addresses several limitations in the previous design:</p>
+<ul class="simple">
+<li><p>Problem rewriting behavior is now predictable and uniformly defined.</p></li>
+<li><p>Grouping, absorption, and scaling logic are implemented in single,
+consolidated modules.</p></li>
+<li><p>Visualization uses symbolic LaTeX rendering for clearer inspection
+of mathematical expression, step-by-step from absorption to splitting and scaling.</p></li>
+<li><p>The IR directly supports future code-generation targets, including
+Halide and PyCUDA.</p></li>
+</ul>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Advanced problem formulations, e.g. multi-channel image deconvolution and/or
+poisson deconvolution, are work in progress.</p>
+</div>
+<p>The new IR simplifies inspection of intermediate problem forms, which
+is especially useful when tuning deep signal distortion pipelines.</p>
+</section>
+<section id="comparison-with-the-previous-architecture">
+<h2>Comparison with the previous architecture<a class="headerlink" href="#comparison-with-the-previous-architecture" title="Link to this heading">¶</a></h2>
+<p>The following table summarizes major differences between the legacy system
+(<code class="docutils literal notranslate"><span class="pre">proximal.*</span></code>) and the experimental IR:</p>
+<div class="table-wrapper docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Feature</p></th>
+<th class="head"><p>Previous System (<code class="docutils literal notranslate"><span class="pre">proximal.*</span></code>)</p></th>
+<th class="head"><p>Experimental IR (<code class="docutils literal notranslate"><span class="pre">proximal.experimental.*</span></code>)</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Stability</p></td>
+<td><p>✅ Stable</p></td>
+<td><p>Experimental; API may change</p></td>
+</tr>
+<tr class="row-odd"><td><p>Typical usage</p></td>
+<td><p>Academic benchmarking</p></td>
+<td><p>✅ Code generation and deployment on embedded hardware</p></td>
+</tr>
+<tr class="row-even"><td><p>Visualization</p></td>
+<td><p>Graph-based operator DAG</p></td>
+<td><p>✅ LaTeX equation rendering</p></td>
+</tr>
+<tr class="row-odd"><td><p>Grouping logic</p></td>
+<td><p>Requires explicit, carefully structured user code</p></td>
+<td><p>✅ Automatic grouping via IR hashing</p></td>
+</tr>
+<tr class="row-even"><td><p>Absorption rules</p></td>
+<td><p>Distributed across multiple algorithm modules</p></td>
+<td><p>✅ Centralized in <code class="docutils literal notranslate"><span class="pre">optimize.absorb</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>Diagonal scaling</p></td>
+<td><p>Spread across several algorithm files</p></td>
+<td><p>✅ Centralized in <code class="docutils literal notranslate"><span class="pre">optimize.scale</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p>Halide/PyCUDA support</p></td>
+<td><p>✅ Working implementations for PyCUDA, Numpy, Numexpr, and Halide.</p></td>
+<td><p>Unstable; Hybrid Halide &amp; Numpy for simulation; pure Halide output for baremetal targets.</p></td>
+</tr>
+<tr class="row-odd"><td><p>Extendability</p></td>
+<td><p>✅ Easy to add new operators and prox functions</p></td>
+<td><p>Experimental; custom ops become black-box IR nodes</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="planned-development-roadmap">
+<h2>Planned development roadmap<a class="headerlink" href="#planned-development-roadmap" title="Link to this heading">¶</a></h2>
+<p>The following features are planned or in progress:</p>
+<div class="table-wrapper docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Component</p></th>
+<th class="head"><p>Status</p></th>
+<th class="head"><p>Notes</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Numpy solver backend</p></td>
+<td><p>To be implemented</p></td>
+<td><p>Will utilize IR for execution</p></td>
+</tr>
+<tr class="row-odd"><td><p>PyCUDA backend (operator graph)</p></td>
+<td><p>Planned</p></td>
+<td><p>IR representation may remove the need for explicit graph building</p></td>
+</tr>
+<tr class="row-even"><td><p>PyCUDA kernel generation</p></td>
+<td><p>Planned</p></td>
+<td><p>Likely under <code class="docutils literal notranslate"><span class="pre">px.experimental.codegen.pycuda.*</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>Halide code generation</p></td>
+<td><p>Supported experimentally</p></td>
+<td><p>Uses IR as the canonical input</p></td>
+</tr>
+<tr class="row-even"><td><p>Custom linear/prox operators</p></td>
+<td><p>Limited support</p></td>
+<td><p>IR will treat unknown operators as black-box nodes</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>The experimental IR provides the foundation for future compilation targets,
+including pure Halide pipelines and optimized embedded-device execution.</p>
+</section>
 </section>
 
         </article>
@@ -265,15 +423,23 @@
       <footer>
         
         <div class="related-pages">
-          
-          <a class="prev-page" href="experimental_features.html">
+          <a class="next-page" href="publications.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">Publications</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="examples/index.html">
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
               <div class="page-info">
                 <div class="context">
                   <span>Previous</span>
                 </div>
                 
-                <div class="title">Experimental ProxImaL intermediate representation</div>
+                <div class="title">Examples</div>
                 
               </div>
             </a>
@@ -300,8 +466,31 @@
         
       </footer>
     </div>
-    <aside class="toc-drawer no-toc">
+    <aside class="toc-drawer">
       
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">Experimental ProxImaL intermediate representation</a><ul>
+<li><a class="reference internal" href="#quick-start">Quick start</a></li>
+<li><a class="reference internal" href="#visualization-of-the-proximal-ir">Visualization of the ProxImal-IR</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#comparison-with-the-previous-architecture">Comparison with the previous architecture</a></li>
+<li><a class="reference internal" href="#planned-development-roadmap">Planned development roadmap</a></li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
       
       
     </aside>
