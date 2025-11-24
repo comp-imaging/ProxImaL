@@ -16,7 +16,7 @@ Basic examples
 .. include:: tv_denoise.rst
 
 .. include:: deconv.rst
-    
+
 .. include:: poisson.rst
 
 .. _advanced:
@@ -26,6 +26,7 @@ Advanced examples
 
 .. include:: optical-flow.rst
 
+.. include:: deconv-sv-psf.rst
 
 .. _applications:
 
@@ -35,7 +36,5 @@ Real-world applications
 * Pulse calling of antibody-antigen binding events
 
 * Phychographical phase retrieval
-
-* Image deconvolution with spatial varying point spread functions
 
 * Bayer filter de-interleaving of raw images
