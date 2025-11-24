@@ -13,10 +13,10 @@
             gtag('config', 'UA-50248335-1');
             
         </script>
-    <link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="Experimental ProxImaL intermediate representation" href="../experimental_features.html" /><link rel="prev" title="Tutorial" href="../tutorial/index.html" />
+    <link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" />
 
     <!-- Generated with Sphinx 8.2.3 and Furo 2024.08.06 -->
-        <title>Examples - ProxImaL Language</title>
+        <title>Image deconvolution with spatial varying point spread functions (SV-PSFs) - ProxImaL Language</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=354aac6f" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=302659d7" />
@@ -188,7 +188,7 @@
           <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
         </button>
       </div>
-      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
         <div class="visually-hidden">Toggle table of contents sidebar</div>
         <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
       </label>
@@ -208,10 +208,10 @@
   <input type="hidden" name="area" value="default">
 </form>
 <div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
-  <ul class="current">
+  <ul>
 <li class="toctree-l1"><a class="reference internal" href="../install.html">Install Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../tutorial/index.html">Tutorial</a></li>
-<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="index.html">Examples</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../experimental_features.html">Experimental ProxImaL intermediate representation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../publications.html">Publications</a></li>
 </ul>
@@ -234,7 +234,7 @@
         </a>
         <div class="content-icon-container">
           <div class="view-this-page">
-  <a class="muted-link" href="../_sources/examples/index.rst.txt" title="View this page">
+  <a class="muted-link" href="../_sources/examples/deconv-sv-psf.rst.txt" title="View this page">
     <svg><use href="#svg-eye"></use></svg>
     <span class="visually-hidden">View this page</span>
   </a>
@@ -248,103 +248,14 @@
               <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
             </button>
           </div>
-          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
             <div class="visually-hidden">Toggle table of contents sidebar</div>
             <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          <section id="examples">
-<span id="id1"></span><h1>Examples<a class="headerlink" href="#examples" title="Link to this heading">¶</a></h1>
-<p>These examples show many different ways to use ProxImaL. The <a class="reference internal" href="#basic"><span class="std std-ref">Basic examples</span></a>
-section shows how to solve some common optimization problems in ProxImaL. The
-<a class="reference internal" href="#advanced"><span class="std std-ref">Advanced examples</span></a> and <a class="reference internal" href="#applications"><span class="std std-ref">Real-world applications</span></a> sections contains more complex
-examples aimed at experts in convex optimization.</p>
-<section id="basic-examples">
-<span id="basic"></span><h2>Basic examples<a class="headerlink" href="#basic-examples" title="Link to this heading">¶</a></h2>
-<section id="total-variation-denoising">
-<h3>Total variation denoising<a class="headerlink" href="#total-variation-denoising" title="Link to this heading">¶</a></h3>
-<p>Signal distortion model:</p>
-<div class="math-wrapper docutils container">
-<div class="math notranslate nohighlight">
-\[\min_u \| u  - b \|_2^2 + 0.1 \| \nabla_x u \|_1 + 0.1 \| \nabla_y u \|_1  + \mathtt{nonneg}(u)\]</div>
-</div>
-<p>Textual representation in ProxImaL:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">prob</span> <span class="o">=</span> <span class="n">Problem</span><span class="p">(</span>
-    <span class="n">sum_squares</span><span class="p">(</span><span class="n">u</span> <span class="o">-</span> <span class="n">b</span> <span class="o">/</span> <span class="mi">255</span><span class="p">)</span> <span class="o">+</span> <span class="mf">.1</span> <span class="o">*</span> <span class="n">norm1</span><span class="p">(</span><span class="n">grad</span><span class="p">(</span><span class="n">u</span><span class="p">))</span> <span class="o">+</span> <span class="n">nonneg</span><span class="p">(</span><span class="n">u</span><span class="p">))</span>
-</pre></div>
-</div>
-<p>Example code: <a class="reference external" href="https://github.com/comp-imaging/ProxImaL/blob/master/proximal/examples/basic_denoise.py">https://github.com/comp-imaging/ProxImaL/blob/master/proximal/examples/basic_denoise.py</a></p>
-<p>Expected output:</p>
-<img alt="../_images/hello_world_results.png" src="../_images/hello_world_results.png" />
-</section>
-<section id="tv-regularized-image-deconvolution">
-<h3>TV-regularized image deconvolution<a class="headerlink" href="#tv-regularized-image-deconvolution" title="Link to this heading">¶</a></h3>
-<p>Signal distortion model:</p>
-<div class="math-wrapper docutils container">
-<div class="math notranslate nohighlight">
-\[\min_u \| \mathtt{conv}(k, u)  - b \|_2^2 + \lambda \| \nabla u \|_1\]</div>
-</div>
-<p>Textual representation in ProxImaL:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">prob</span> <span class="o">=</span> <span class="n">Problem</span><span class="p">(</span>
-    <span class="n">sum_squares</span><span class="p">(</span><span class="n">conv</span><span class="p">(</span><span class="n">K</span><span class="p">,</span> <span class="n">u</span><span class="p">,</span> <span class="n">dims</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span> <span class="o">-</span> <span class="n">b</span><span class="p">)</span> <span class="o">+</span>
-    <span class="n">lambda_tv</span> <span class="o">*</span> <span class="n">group_norm1</span><span class="p">(</span><span class="n">grad</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">dims</span><span class="o">=</span><span class="mi">2</span><span class="p">),</span> <span class="p">[</span><span class="mi">2</span><span class="p">]),</span>
-<span class="p">)</span>
-</pre></div>
-</div>
-<p>Example code: <a class="reference external" href="https://github.com/comp-imaging/ProxImaL/blob/master/proximal/examples/test_deconv.py">https://github.com/comp-imaging/ProxImaL/blob/master/proximal/examples/test_deconv.py</a></p>
-<p>Expected output:</p>
-<figure class="align-default">
-<img alt="../_images/deconv.png" src="../_images/deconv.png" />
-</figure>
-</section>
-<section id="total-variation-denoising-with-multiplicative-poisson-noise">
-<h3>Total variation denoising with multiplicative Poisson noise<a class="headerlink" href="#total-variation-denoising-with-multiplicative-poisson-noise" title="Link to this heading">¶</a></h3>
-<p>Signal distortion model:</p>
-<div class="math-wrapper docutils container">
-<div class="math notranslate nohighlight">
-\[\min_u \| u , b \|_\mathtt{Poisson} + \lambda \| \nabla u \|_1\]</div>
-</div>
-<p>Textual representation in ProxImaL:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">prob</span> <span class="o">=</span> <span class="n">Problem</span><span class="p">([</span>
-    <span class="n">poisson_norm</span><span class="p">(</span><span class="n">conv</span><span class="p">(</span><span class="n">K</span><span class="p">,</span> <span class="n">u</span><span class="p">),</span> <span class="n">b</span><span class="p">),</span>
-    <span class="n">lambda_tv</span> <span class="o">*</span> <span class="n">group_norm1</span><span class="p">(</span><span class="n">grad</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">dims</span><span class="o">=</span><span class="mi">2</span><span class="p">),</span> <span class="p">[</span><span class="mi">2</span><span class="p">])</span>
-<span class="p">])</span>
-</pre></div>
-</div>
-<p>Example code: <a class="reference external" href="https://github.com/comp-imaging/ProxImaL/blob/master/proximal/examples/test_poisson.py">https://github.com/comp-imaging/ProxImaL/blob/master/proximal/examples/test_poisson.py</a></p>
-<p>Expected output:</p>
-<img alt="../_images/poisson.png" src="../_images/poisson.png" />
-</section>
-</section>
-<section id="advanced-examples">
-<span id="advanced"></span><h2>Advanced examples<a class="headerlink" href="#advanced-examples" title="Link to this heading">¶</a></h2>
-<section id="horn-schunck-optical-flow-algorithm">
-<h3>Horn-Schunck optical flow algorithm<a class="headerlink" href="#horn-schunck-optical-flow-algorithm" title="Link to this heading">¶</a></h3>
-<p>Signal distortion model:</p>
-<div class="math-wrapper docutils container">
-<div class="math notranslate nohighlight">
-\[\min_{\{u, v\}}
-\| \mathtt{Diag}(f_x) u  + \mathtt{Diag}(f_y) v - f_t \|_2^2
-+ \alpha \| \nabla u \|_2^2
-+ \alpha \| \nabla v \|_2^2.\]</div>
-</div>
-<p>Textual representation in ProxImaL:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">prob</span> <span class="o">=</span> <span class="n">px</span><span class="o">.</span><span class="n">Problem</span><span class="p">([</span>
-    <span class="n">alpha</span> <span class="o">*</span> <span class="n">px</span><span class="o">.</span><span class="n">sum_squares</span><span class="p">(</span><span class="n">px</span><span class="o">.</span><span class="n">grad</span><span class="p">(</span><span class="n">u</span><span class="p">)),</span>
-    <span class="n">alpha</span> <span class="o">*</span> <span class="n">px</span><span class="o">.</span><span class="n">sum_squares</span><span class="p">(</span><span class="n">px</span><span class="o">.</span><span class="n">grad</span><span class="p">(</span><span class="n">v</span><span class="p">)),</span>
-    <span class="n">px</span><span class="o">.</span><span class="n">sum_squares</span><span class="p">(</span><span class="n">px</span><span class="o">.</span><span class="n">mul_elemwise</span><span class="p">(</span><span class="n">fx</span><span class="p">,</span> <span class="n">u</span><span class="p">)</span> <span class="o">+</span> <span class="n">px</span><span class="o">.</span><span class="n">mul_elemwise</span><span class="p">(</span><span class="n">fy</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span> <span class="o">+</span> <span class="n">ft</span><span class="p">,),</span>
-<span class="p">])</span>
-</pre></div>
-</div>
-<p>Example code: <a class="reference external" href="https://github.com/comp-imaging/ProxImaL/blob/master/proximal/examples/test_optical_flow.py">https://github.com/comp-imaging/ProxImaL/blob/master/proximal/examples/test_optical_flow.py</a></p>
-<p>Expected output:</p>
-<figure class="align-default">
-<img alt="../_images/optical_flow.png" src="../_images/optical_flow.png" />
-</figure>
-</section>
-<section id="image-deconvolution-with-spatial-varying-point-spread-functions-sv-psfs">
-<h3>Image deconvolution with spatial varying point spread functions (SV-PSFs)<a class="headerlink" href="#image-deconvolution-with-spatial-varying-point-spread-functions-sv-psfs" title="Link to this heading">¶</a></h3>
+          <section id="image-deconvolution-with-spatial-varying-point-spread-functions-sv-psfs">
+<h1>Image deconvolution with spatial varying point spread functions (SV-PSFs)<a class="headerlink" href="#image-deconvolution-with-spatial-varying-point-spread-functions-sv-psfs" title="Link to this heading">¶</a></h1>
 <p>References: Denis, L., Thiébaut, E., Soulez, F. et al. Fast Approximations of
 Shift-Variant Blur. Int J Comput Vis 115, 253–278 (2015).
 <a class="reference external" href="https://doi.org/10.1007/s11263-015-0817-x">https://doi.org/10.1007/s11263-015-0817-x</a></p>
@@ -382,42 +293,14 @@ Shift-Variant Blur. Int J Comput Vis 115, 253–278 (2015).
 <img alt="../_images/deconv-sv-psf-closeup.png" src="../_images/deconv-sv-psf-closeup.png" />
 </figure>
 </section>
-</section>
-<section id="real-world-applications">
-<span id="applications"></span><h2>Real-world applications<a class="headerlink" href="#real-world-applications" title="Link to this heading">¶</a></h2>
-<ul class="simple">
-<li><p>Pulse calling of antibody-antigen binding events</p></li>
-<li><p>Phychographical phase retrieval</p></li>
-<li><p>Bayer filter de-interleaving of raw images</p></li>
-</ul>
-</section>
-</section>
 
         </article>
       </div>
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="../experimental_features.html">
-              <div class="page-info">
-                <div class="context">
-                  <span>Next</span>
-                </div>
-                <div class="title">Experimental ProxImaL intermediate representation</div>
-              </div>
-              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
-            </a>
-          <a class="prev-page" href="../tutorial/index.html">
-              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
-              <div class="page-info">
-                <div class="context">
-                  <span>Previous</span>
-                </div>
-                
-                <div class="title">Tutorial</div>
-                
-              </div>
-            </a>
+          
+          
         </div>
         <div class="bottom-of-page">
           <div class="left-details">
@@ -441,38 +324,8 @@ Shift-Variant Blur. Int J Comput Vis 115, 253–278 (2015).
         
       </footer>
     </div>
-    <aside class="toc-drawer">
+    <aside class="toc-drawer no-toc">
       
-      
-      <div class="toc-sticky toc-scroll">
-        <div class="toc-title-container">
-          <span class="toc-title">
-            On this page
-          </span>
-        </div>
-        <div class="toc-tree-container">
-          <div class="toc-tree">
-            <ul>
-<li><a class="reference internal" href="#">Examples</a><ul>
-<li><a class="reference internal" href="#basic-examples">Basic examples</a><ul>
-<li><a class="reference internal" href="#total-variation-denoising">Total variation denoising</a></li>
-<li><a class="reference internal" href="#tv-regularized-image-deconvolution">TV-regularized image deconvolution</a></li>
-<li><a class="reference internal" href="#total-variation-denoising-with-multiplicative-poisson-noise">Total variation denoising with multiplicative Poisson noise</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#advanced-examples">Advanced examples</a><ul>
-<li><a class="reference internal" href="#horn-schunck-optical-flow-algorithm">Horn-Schunck optical flow algorithm</a></li>
-<li><a class="reference internal" href="#image-deconvolution-with-spatial-varying-point-spread-functions-sv-psfs">Image deconvolution with spatial varying point spread functions (SV-PSFs)</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#real-world-applications">Real-world applications</a></li>
-</ul>
-</li>
-</ul>
-
-          </div>
-        </div>
-      </div>
       
       
     </aside>
