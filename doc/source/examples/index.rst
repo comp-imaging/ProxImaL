@@ -33,8 +33,8 @@ Advanced examples
 Real-world applications
 -------------------------
 
-* Pulse calling of antibody-antigen binding events
-
 * Phychographical phase retrieval
 
 * Bayer filter de-interleaving of raw images
+
+.. include:: molecular-pulse-calling.rst
