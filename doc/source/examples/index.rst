@@ -38,3 +38,5 @@ Real-world applications
 * Bayer filter de-interleaving of raw images
 
 .. include:: molecular-pulse-calling.rst
+
+.. include:: pixel-sr.rst
