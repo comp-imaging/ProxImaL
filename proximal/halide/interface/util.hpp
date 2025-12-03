@@ -20,9 +20,9 @@ namespace {
 /** Return halide buffer, with broadcasting */
 template <int N, typename T>
 Halide::Runtime::Buffer<T>
-getHalideBuffer(const array_t<T>& input, bool host_dirty=true) {
-    const int w = input.shape(1);
-    const int h = input.shape(0);
+getHalideBuffer(const array_t<T>& input, bool host_dirty = true, bool swap_axes = true) {
+    const auto [w, h] = swap_axes ? std::pair<int, int>(input.shape(1), input.shape(0))
+                                  : std::pair<int, int>(input.shape(0), input.shape(1));
     const int s = (input.ndim() >= 3) ? input.shape(2) : 1;
     const int t = (input.ndim() >= 4) ? input.shape(3) : 1;
 

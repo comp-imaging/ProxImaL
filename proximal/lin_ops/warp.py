@@ -10,7 +10,7 @@ class warp(LinOp):
     """Warp using a homography.
     """
 
-    def __init__(self, arg, H, implem=None):
+    def __init__(self, arg, H, target_shape=None, implem=None):
         self.H = H.copy()
 
         # Compute inverse
@@ -34,15 +34,18 @@ class warp(LinOp):
         if len(H.shape) == 3:
             shape += (H.shape[2],)
 
+        if target_shape is None:
+            target_shape = shape
+
         # Temp array for halide
-        self.tmpfwd = np.zeros((shape[0], shape[1],
-                                shape[2] if (len(shape) > 2) else 1,
+        self.tmpfwd = np.zeros((target_shape[0], target_shape[1],
+                                target_shape[2] if (len(shape) > 2) else 1,
                                 H.shape[2] if (len(H.shape) > 2) else 1),
                                dtype=np.float32, order='F')
         self.tmpadj = np.zeros((shape[0], shape[1], shape[2] if (
             len(shape) > 2) else 1), dtype=np.float32, order='F')
 
-        super(warp, self).__init__([arg], shape, implem)
+        super(warp, self).__init__([arg], target_shape, implem)
 
     def forward(self, inputs, outputs):
         """The forward operator.
@@ -54,29 +57,28 @@ class warp(LinOp):
 
             # Halide implementation
             Halide('A_warp').A_warp(inputs[0], self.H, self.tmpfwd)  # Call
-            np.copyto(outputs[0], np.reshape(self.tmpfwd, self.shape))
+            np.copyto(outputs[0], self.tmpfwd.reshape(self.shape))
 
         else:
 
             # CV2 version
             inimg = inputs[0]
             if len(self.H.shape) == 2:
-                warpedInput = cv2.warpPerspective(np.asfortranarray(inimg), self.H,
-                                                  inimg.shape[1::-1], flags=cv2.INTER_LINEAR | cv2.WARP_INVERSE_MAP,
+                warpedInput = cv2.warpPerspective(inimg.T, self.H,
+                                                  self.tmpfwd.shape[:2], flags=cv2.INTER_LINEAR | cv2.WARP_INVERSE_MAP,
                                                   borderMode=cv2.BORDER_CONSTANT, borderValue=0.)
                 # Necessary due to array layout in opencv
-                np.copyto(outputs[0], warpedInput)
+                np.copyto(outputs[0], warpedInput.T.reshape(self.shape))
 
             else:
                 for j in range(self.H.shape[2]):
-                    warpedInput = cv2.warpPerspective(np.asfortranarray(inimg),
-                                                      self.H[:, :, j], inimg.shape[1::-1],
+                    warpedInput = cv2.warpPerspective(inimg.T,
+                                                      self.H[:, :, j], inimg.shape[:2],
                                                       flags=cv2.INTER_LINEAR | cv2.WARP_INVERSE_MAP,
                                                       borderMode=cv2.BORDER_CONSTANT,
                                                       borderValue=0.)
                     # Necessary due to array layout in opencv
-
-                    np.copyto(outputs[0][:, :, :, j], warpedInput)
+                    np.copyto(outputs[0][:, :, :, j], warpedInput.T)
 
     def adjoint(self, inputs, outputs):
         """The adjoint operator.
@@ -99,20 +101,20 @@ class warp(LinOp):
             inimg = inputs[0]
             if len(self.H.shape) == 2:
                 # + cv2.WARP_INVERSE_MAP
-                warpedInput = cv2.warpPerspective(np.asfortranarray(inimg), self.H,
-                                                  inimg.shape[1::-1], flags=cv2.INTER_LINEAR,
+                self.tmpadj = cv2.warpPerspective(inimg.T, self.H,
+                                                  self.tmpadj.shape[:2], flags=cv2.INTER_LINEAR,
                                                   borderMode=cv2.BORDER_CONSTANT, borderValue=0.)
-                np.copyto(outputs[0], warpedInput)
+                np.copyto(outputs[0], self.tmpadj.T)
 
             else:
                 outputs[0][:] = 0.0
                 for j in range(self.H.shape[2]):
-                    warpedInput = cv2.warpPerspective(np.asfortranarray(inimg[:, :, :, j]),
+                    warpedInput = cv2.warpPerspective(inimg[:, :, :, j].T,
                                                       self.H, inimg.shape[1::-1],
                                                       flags=cv2.INTER_LINEAR,
                                                       borderMode=cv2.BORDER_CONSTANT,
                                                       borderValue=0.)
                     # Necessary due to array layout in opencv
-                    outputs[0] += warpedInput
+                    outputs[0] += warpedInput.T
 
     # TODO what is the spectral norm of a warp?

@@ -43,9 +43,8 @@ Textual representation in ProxImaL:
                 warp(
                     pad(u + u_0, b.shape),
                     M,
-                ),
+                ) - b,
             )
-            - b
         ) +
         5e-3 * group_norm1(grad(u), group_dims=[2]),
     )

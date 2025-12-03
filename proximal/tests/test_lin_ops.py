@@ -476,13 +476,13 @@ class TestLinOps(BaseTest):
             order='F')
 
         # Reference
-        output_ref = cv2.warpPerspective(np_img,
+        output_ref = cv2.warpPerspective(np_img.T,
                                          H,
-                                         np_img.shape[1::-1],
+                                         np_img.shape[:2],
                                          flags=cv2.INTER_LINEAR |
                                          cv2.WARP_INVERSE_MAP,
                                          borderMode=cv2.BORDER_CONSTANT,
-                                         borderValue=0.)
+                                         borderValue=0.).T
 
         # Halide
         output = np.zeros_like(np_img)
@@ -497,11 +497,11 @@ class TestLinOps(BaseTest):
                                                   output_trans)  # Call
 
         # Compute reference
-        output_ref_trans = cv2.warpPerspective(output,
+        output_ref_trans = cv2.warpPerspective(output.T,
                                                H,
-                                               np_img.shape[1::-1],
+                                               np_img.shape[:2],
                                                flags=cv2.INTER_LINEAR,
                                                borderMode=cv2.BORDER_CONSTANT,
-                                               borderValue=0.)
+                                               borderValue=0.).T
 
         self.assertItemsAlmostEqual(output_trans, output_ref_trans, eps=1e-1)

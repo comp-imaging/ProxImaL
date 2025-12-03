@@ -22,15 +22,7 @@ class warp_trans_gen : public Generator<warp_trans_gen> {
         Expr height = input.height();
         Expr nhom = Hinv.channels();
 
-        // TODO: swap x-y axes here because of how Numpy defines an axis in Fortran order,
-        // A better way is to either
-        // (i) define stride in halide_dimension_t, or
-        // (ii) use c-order in numpy
-        Func input_swap_axes;
-        input_swap_axes(y, x, c, k) = input(x, y, c, k);
-
-        // Again, swap axes back
-        output(y, x, c) = At_warpHomography(input_swap_axes, width, height, Hinv, nhom)(x, y, c);
+        output = At_warpHomography(input, width, height, Hinv, nhom);
     }
 
     void schedule() {

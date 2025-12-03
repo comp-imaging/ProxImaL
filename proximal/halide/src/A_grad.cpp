@@ -18,7 +18,7 @@ class grad_gen : public Generator<grad_gen> {
         Expr height = input.height();
 
         // Warping
-        output(x, y, c, k) = K_grad_mat(input, width, height)(x, y, c, k);
+        output = K_grad_mat(input, width, height);
     }
 
     void schedule() {

@@ -16,9 +16,7 @@ class grad_trans_gen : public Generator<grad_trans_gen> {
     void generate() {
         Expr width = input.width();
         Expr height = input.height();
-
-        // Warping
-        output(x, y, c) = KT_grad_mat(input, width, height)(x, y, c);
+        output = KT_grad_mat(input, width, height);
     }
 
     void schedule() {
