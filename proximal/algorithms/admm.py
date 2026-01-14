@@ -24,6 +24,7 @@ def partition(prox_fns, try_diagonalize=True):
     else:
         quad_funcs = func_opts[False]
     psi_fns = [fn for fn in prox_fns if fn not in quad_funcs]
+    assert len(psi_fns) > 0, "Problem splitting results in empty psi_fns. Is it a pure least square problem?"
     return psi_fns, quad_funcs
 
 

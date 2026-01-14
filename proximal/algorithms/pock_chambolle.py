@@ -40,6 +40,7 @@ def partition(prox_fns, try_diagonalize=True):
         omega_fns = [x_update]
 
     psi_fns = [func for func in prox_fns if func not in split_fn + quad_fns]
+    assert len(psi_fns) > 0, "Problem splitting results in empty psi_fns. Is it a pure least square problem?"
     return psi_fns, omega_fns
 
 dsp_cnt = 0
