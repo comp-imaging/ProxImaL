@@ -213,6 +213,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../tutorial/index.html">Tutorial</a></li>
 <li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Examples</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../experimental_features.html">Experimental ProxImaL intermediate representation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../codegen.html">ProxImaL-to-Halide code generation templates</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../publications.html">Publications</a></li>
 </ul>
 
@@ -456,9 +457,8 @@ Circuits Syst. 2019 Aug;13(4):781-792. doi:
             <span class="n">warp</span><span class="p">(</span>
                 <span class="n">pad</span><span class="p">(</span><span class="n">u</span> <span class="o">+</span> <span class="n">u_0</span><span class="p">,</span> <span class="n">b</span><span class="o">.</span><span class="n">shape</span><span class="p">),</span>
                 <span class="n">M</span><span class="p">,</span>
-            <span class="p">),</span>
+            <span class="p">)</span> <span class="o">-</span> <span class="n">b</span><span class="p">,</span>
         <span class="p">)</span>
-        <span class="o">-</span> <span class="n">b</span>
     <span class="p">)</span> <span class="o">+</span>
     <span class="mf">5e-3</span> <span class="o">*</span> <span class="n">group_norm1</span><span class="p">(</span><span class="n">grad</span><span class="p">(</span><span class="n">u</span><span class="p">),</span> <span class="n">group_dims</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">]),</span>
 <span class="p">)</span>
@@ -468,8 +468,8 @@ Circuits Syst. 2019 Aug;13(4):781-792. doi:
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
 <p>Illumination background extraction for <code class="docutils literal notranslate"><span class="pre">u_0</span></code> via the one-dimensional
-Pixel-SR method (aka the <a class="reference external" href="https://www.tek.com/en/documents/application-note/real-time-versus-equivalent-time-sampling">equivalent time sampling method</a>), is omitted here for the
-sake of demonstration.</p>
+Pixel-SR method (aka the <a class="reference external" href="https://www.tek.com/en/documents/application-note/real-time-versus-equivalent-time-sampling">equivalent time sampling method</a>),
+is omitted here for the sake of demonstration.</p>
 </div>
 <p><strong>Expected output:</strong></p>
 <figure class="align-default" id="id2">

@@ -1,5 +1,5 @@
 <!doctype html>
-<html class="no-js" lang="en" data-content_root="../">
+<html class="no-js" lang="en" data-content_root="./">
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -13,13 +13,13 @@
             gtag('config', 'UA-50248335-1');
             
         </script>
-    <link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" />
+    <link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Publications" href="publications.html" /><link rel="prev" title="Experimental ProxImaL intermediate representation" href="experimental_features.html" />
 
     <!-- Generated with Sphinx 8.2.3 and Furo 2024.08.06 -->
-        <title>Pixel super-resolution of oil emulsion droplets under high-speed camera - ProxImaL Language</title>
-      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
-    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=354aac6f" />
-    <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=302659d7" />
+        <title>ProxImaL-to-Halide code generation templates - ProxImaL Language</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=354aac6f" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=302659d7" />
     
     
 
@@ -176,7 +176,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">ProxImaL Language</div></a>
+      <a href="index.html"><div class="brand">ProxImaL Language</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -188,7 +188,7 @@
           <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
         </button>
       </div>
-      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
         <div class="visually-hidden">Toggle table of contents sidebar</div>
         <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
       </label>
@@ -197,24 +197,24 @@
   <aside class="sidebar-drawer">
     <div class="sidebar-container">
       
-      <div class="sidebar-sticky"><a class="sidebar-brand" href="../index.html">
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="index.html">
   
   
   <span class="sidebar-brand-text">ProxImaL Language</span>
   
-</a><form class="sidebar-search-container" method="get" action="../search.html" role="search">
+</a><form class="sidebar-search-container" method="get" action="search.html" role="search">
   <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
   <input type="hidden" name="check_keywords" value="yes">
   <input type="hidden" name="area" value="default">
 </form>
 <div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
-  <ul>
-<li class="toctree-l1"><a class="reference internal" href="../install.html">Install Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../tutorial/index.html">Tutorial</a></li>
-<li class="toctree-l1"><a class="reference internal" href="index.html">Examples</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../experimental_features.html">Experimental ProxImaL intermediate representation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../codegen.html">ProxImaL-to-Halide code generation templates</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../publications.html">Publications</a></li>
+  <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="install.html">Install Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial/index.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/index.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="experimental_features.html">Experimental ProxImaL intermediate representation</a></li>
+<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">ProxImaL-to-Halide code generation templates</a></li>
+<li class="toctree-l1"><a class="reference internal" href="publications.html">Publications</a></li>
 </ul>
 
 </div>
@@ -235,7 +235,7 @@
         </a>
         <div class="content-icon-container">
           <div class="view-this-page">
-  <a class="muted-link" href="../_sources/examples/pixel-sr.rst.txt" title="View this page">
+  <a class="muted-link" href="_sources/codegen.rst.txt" title="View this page">
     <svg><use href="#svg-eye"></use></svg>
     <span class="visually-hidden">View this page</span>
   </a>
@@ -249,77 +249,77 @@
               <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
             </button>
           </div>
-          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
             <div class="visually-hidden">Toggle table of contents sidebar</div>
             <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          <section id="pixel-super-resolution-of-oil-emulsion-droplets-under-high-speed-camera">
-<h1>Pixel super-resolution of oil emulsion droplets under high-speed camera<a class="headerlink" href="#pixel-super-resolution-of-oil-emulsion-droplets-under-high-speed-camera" title="Link to this heading">¶</a></h1>
-<p><strong>References:</strong> A.C.S. Chan, H.C. Ng, S.C.V. Bogaraju, H.K.H. So, E.Y. Lam, and
-K.K. Tsia, “All-passive pixel super-resolution of time-stretch imaging,”
-Scientific Reports, vol. 7, no. 44608, 2017. DOI:
-<a class="reference external" href="http://dx.doi.org/10.1038/srep44608">http://dx.doi.org/10.1038/srep44608</a>.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>The original pixel super-resolution algorithm is meant for a streaming processor
-architecture, likely optimized for reconfigurable hardware having
-fixed-point arithmetic such as FPGAs. The convex-optimization approach
-implemented here instead processes data in batches of roughly 1000 raster scan lines,
-and is better suited to GPU execution having single/half-precision floating
-point arithmetic. Batch-based processing may introduce boundary artifacts,
-reflecting a trade-off inherent to this non-streaming formulation.</p>
-<p>Refer to the following article for the baremetal FPGA implementation: Shi R,
-Wong JSJ, Lam EY, Tsia KK, So HK. A Real-Time Coprime Line Scan
-Super-Resolution System for Ultra-Fast Microscopy. IEEE Trans Biomed
-Circuits Syst. 2019 Aug;13(4):781-792. doi:
-<a class="reference external" href="https://doi.org/10.1109/TBCAS.2019.2914946">https://doi.org/10.1109/TBCAS.2019.2914946</a>.</p>
-</div>
-<p>Raw data:
-<a class="reference external" href="http://academictorrents.com/details/a8d14f22c9ce1cc59c9f480df5deb0f7e94861f4">http://academictorrents.com/details/a8d14f22c9ce1cc59c9f480df5deb0f7e94861f4</a></p>
-<p>Signal distortion model:</p>
-<div class="math-wrapper docutils container">
-<div class="math notranslate nohighlight">
-\[\min_u \left\Vert \mathbf{M} [\mathbf{W} (u + u_0) - b] \right\Vert_2^2 +
-0.005 \| \nabla u \|_{2,1}.\]</div>
-</div>
-<p>Textual representation in ProxImaL:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">prob</span> <span class="o">=</span> <span class="n">Problem</span><span class="p">(</span>
-    <span class="n">sum_squares</span><span class="p">(</span>
-        <span class="n">mul_elemwise</span><span class="p">(</span>
-            <span class="n">mask</span><span class="p">,</span>
-            <span class="n">warp</span><span class="p">(</span>
-                <span class="n">pad</span><span class="p">(</span><span class="n">u</span> <span class="o">+</span> <span class="n">u_0</span><span class="p">,</span> <span class="n">b</span><span class="o">.</span><span class="n">shape</span><span class="p">),</span>
-                <span class="n">M</span><span class="p">,</span>
-            <span class="p">)</span> <span class="o">-</span> <span class="n">b</span><span class="p">,</span>
-        <span class="p">)</span>
-    <span class="p">)</span> <span class="o">+</span>
-    <span class="mf">5e-3</span> <span class="o">*</span> <span class="n">group_norm1</span><span class="p">(</span><span class="n">grad</span><span class="p">(</span><span class="n">u</span><span class="p">),</span> <span class="n">group_dims</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">]),</span>
+          <section id="proximal-to-halide-code-generation-templates">
+<h1>ProxImaL-to-Halide code generation templates<a class="headerlink" href="#proximal-to-halide-code-generation-templates" title="Link to this heading">¶</a></h1>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading">¶</a></h2>
+<p>The folder <code class="docutils literal notranslate"><span class="pre">proximal/templates/*.j2</span></code> contains code templates to translate the
+ProxImaL-optimized inverse problem formulation from Python to Halide/C++17 code
+generator. The templates are written in Jinja2 language.</p>
+<p>Usage:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">jinja2</span><span class="w"> </span><span class="kn">import</span> <span class="n">Environment</span><span class="p">,</span> <span class="n">PackageLoader</span>
+
+<span class="c1"># Loads the template/ folder in proximal package</span>
+<span class="n">env</span> <span class="o">=</span> <span class="n">Environment</span><span class="p">(</span>
+    <span class="n">loader</span><span class="o">=</span><span class="n">PackageLoader</span><span class="p">(</span><span class="s1">&#39;proximal&#39;</span><span class="p">)</span>
 <span class="p">)</span>
+
+<span class="c1"># Substitute values and export the problem input and output image sizes.</span>
+<span class="n">template</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">get_template</span><span class="p">(</span><span class="s1">&#39;problem-config.h.j2&#39;</span><span class="p">)</span>
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;proximal/halide/src/user-problem/problem-config.h&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">template</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="n">psi_fns</span><span class="o">=</span><span class="n">psi_fns</span><span class="p">,</span> <span class="n">omega_fns</span><span class="o">=</span><span class="n">omega_fns</span><span class="p">,</span> <span class="n">K</span><span class="o">=</span><span class="n">K</span><span class="p">))</span>
+
+<span class="c1"># Export the proximal functions and mapping functions after absortion,</span>
+<span class="c1"># splitting, and scaling by ProxImaL core functions.</span>
+<span class="n">template</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">get_template</span><span class="p">(</span><span class="s1">&#39;problem-definition.h.j2&#39;</span><span class="p">)</span>
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;proximal/halide/src/user-problem/problem-definition.h&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">template</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="n">psi_fns</span><span class="o">=</span><span class="n">psi_fns</span><span class="p">,</span> <span class="n">omega_fns</span><span class="o">=</span><span class="n">omega_fns</span><span class="p">,</span> <span class="n">K</span><span class="o">=</span><span class="n">K</span><span class="p">,</span>
+        <span class="c1"># ... and other necessary components ...</span>
+    <span class="p">))</span>
 </pre></div>
 </div>
-<p>Example code: <a class="reference external" href="https://github.com/comp-imaging/ProxImaL/blob/master/proximal/examples/test_pixel_sr.py">https://github.com/comp-imaging/ProxImaL/blob/master/proximal/examples/test_pixel_sr.py</a></p>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>Illumination background extraction for <code class="docutils literal notranslate"><span class="pre">u_0</span></code> via the one-dimensional
-Pixel-SR method (aka the <a class="reference external" href="https://www.tek.com/en/documents/application-note/real-time-versus-equivalent-time-sampling">equivalent time sampling method</a>),
-is omitted here for the sake of demonstration.</p>
-</div>
-<p><strong>Expected output:</strong></p>
+<p>After that, invoke <code class="docutils literal notranslate"><span class="pre">ninja</span> <span class="pre">-C</span> <span class="pre">proximal/halide/build</span></code> to generate the
+Halide-optimized (L-)ADMM algorithm solver of the user-defined problem family.</p>
+</section>
+<section id="working-principle">
+<h2>Working principle<a class="headerlink" href="#working-principle" title="Link to this heading">¶</a></h2>
+<p>The ProxImaL compiler is composed of two software stacks: the problem
+formulation language as the design frontend, and the code generator as the
+hardware specific backend. The two stacks meet at the middle, as illustrated in
+the hourglass model of the following figure.</p>
+<p>It is expected that various applications, ranging from consumer-oriented imaging
+(e.g. Bayer raw image demoasicking) to research-oriented imaging (e.g.
+Ptychographic phase retrieval and 2D/3D deconvolution) is mapped to
+hardware-accelerated compute platforms (e.g. <code class="docutils literal notranslate"><span class="pre">x86-64</span></code> / <code class="docutils literal notranslate"><span class="pre">aarch64</span></code> CPUs,
+<code class="docutils literal notranslate"><span class="pre">OpenCL</span></code> / <code class="docutils literal notranslate"><span class="pre">NvPTX</span></code> GPUs) through a unifying interface, illustrated as the
+“narrow waist” in the hourglass model.</p>
 <figure class="align-default" id="id1">
-<img alt="../_images/pixel-sr-time-trace.png" src="../_images/pixel-sr-time-trace.png" />
+<img alt="_images/hourglass.svg" src="_images/hourglass.svg" />
 <figcaption>
-<p><span class="caption-text">Raster scan lines captured and digitized at 5 Giga-Sample/second.</span><a class="headerlink" href="#id1" title="Link to this image">¶</a></p>
+<p><span class="caption-text">The hourglass architecture of the ProxImaL project. The application-driven
+problem formulation (e.g. Bayer raw demoasicing, 2D/3D deconvolution,
+Ptychographic phase retrieval) and the architectures (e.g. multi-core CPUs,
+GPUs) meets at a narrow waist in the middle.</span><a class="headerlink" href="#id1" title="Link to this image">¶</a></p>
+<div class="legend">
+<p>Figure adapted from Lee, Edward A., Stephen Neuendorffer, and Michael J.
+Wirthlin. “Actor-Oriented Design of Embedded Hardware and Software Systems.”
+Journal of Circuits, Systems and Computers, vol. 12, no. 3, 2003, pp.
+231-260. <a class="reference external" href="https://doi.org/10.1142/S0218126603000751">https://doi.org/10.1142/S0218126603000751</a></p>
+</div>
 </figcaption>
 </figure>
-<figure class="align-default" id="id2">
-<img alt="../_images/pixel-sr-results.png" src="../_images/pixel-sr-results.png" />
-<figcaption>
-<p><span class="caption-text">Reconstructed oil emulsion droplets in the microfluidic channel, at the
-linear velocity of 0.3 meter/second and a droplet generation rate of 5,800 Droplet/s.</span><a class="headerlink" href="#id2" title="Link to this image">¶</a></p>
-</figcaption>
-</figure>
+<p>On the other hand, it is expected that various problem solvers (e.g. Linearized
+ADMM, Pock-Chambolle, ADMM), and various hardware-accelerated compute
+architectures (e.g. Intel/AMD CPUs, ARM CPUs, Nvidia/AMD GPUs) can be exposed
+bottom-up, again meeting in the middle of the “hourglass” through the code
+generation templates.</p>
+</section>
 </section>
 
         </article>
@@ -327,8 +327,26 @@ linear velocity of 0.3 meter/second and a droplet generation rate of 5,800 Dropl
       <footer>
         
         <div class="related-pages">
-          
-          
+          <a class="next-page" href="publications.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">Publications</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="experimental_features.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">Experimental ProxImaL intermediate representation</div>
+                
+              </div>
+            </a>
         </div>
         <div class="bottom-of-page">
           <div class="left-details">
@@ -352,16 +370,35 @@ linear velocity of 0.3 meter/second and a droplet generation rate of 5,800 Dropl
         
       </footer>
     </div>
-    <aside class="toc-drawer no-toc">
+    <aside class="toc-drawer">
       
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">ProxImaL-to-Halide code generation templates</a><ul>
+<li><a class="reference internal" href="#overview">Overview</a></li>
+<li><a class="reference internal" href="#working-principle">Working principle</a></li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
       
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=938c9ccc"></script>
-    <script src="../_static/doctools.js?v=9bcbadda"></script>
-    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
-    <script src="../_static/scripts/furo.js?v=5fa4622c"></script>
-    <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</div><script src="_static/documentation_options.js?v=938c9ccc"></script>
+    <script src="_static/doctools.js?v=9bcbadda"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/scripts/furo.js?v=5fa4622c"></script>
     </body>
 </html>

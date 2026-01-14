@@ -43,9 +43,8 @@ Textual representation in ProxImaL:
                 warp(
                     pad(u + u_0, b.shape),
                     M,
-                ),
+                ) - b,
             )
-            - b
         ) +
         5e-3 * group_norm1(grad(u), group_dims=[2]),
     )
@@ -55,8 +54,9 @@ Example code: https://github.com/comp-imaging/ProxImaL/blob/master/proximal/exam
 .. warning::
 
     Illumination background extraction for ``u_0`` via the one-dimensional
-    Pixel-SR method (aka the `equivalent time sampling method <https://www.tek.com/en/documents/application-note/real-time-versus-equivalent-time-sampling>`_), is omitted here for the
-    sake of demonstration.
+    Pixel-SR method (aka the `equivalent time sampling method
+    <https://www.tek.com/en/documents/application-note/real-time-versus-equivalent-time-sampling>`_),
+    is omitted here for the sake of demonstration.
 
 **Expected output:**
 
