@@ -170,7 +170,7 @@ def solve(
             metstr = "" if metric is None else f", {metric.message(v)}"
             print(
                 f"iter {i:d}: ||r||_2 = {np.linalg.norm(r):.3g}, eps_pri = {eps_pri:.3g}, "
-                f"||s||_2 = {np.linalg.norm(s):.3f}, eps_dual = {eps_dual:.3f}{objstr:s}{metstr:s}"
+                f"||s||_2 = {np.linalg.norm(s):.3g}, eps_dual = {eps_dual:.3g}{objstr:s}{metstr:s}"
             )
 
         iter_timing.toc()
