@@ -67,4 +67,5 @@ See `the accompanying paper <https://stevendiamond.me/pdf/proximal.pdf>`_ for a 
    tutorial/index
    examples/index
    experimental_features
+   codegen
    publications
