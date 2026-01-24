@@ -1,7 +1,7 @@
 import numpy as np
 
 from proximal.experimental.frontend import parse
-from proximal.experimental.ir.lin_ops import FFTConv, MultiplyAdd
+from proximal.experimental.ir.lin_ops import Crop, FFTConv, MultiplyAdd
 
 
 def test_single_fn() -> None:
@@ -72,3 +72,48 @@ def test_conv_only() -> None:
     assert len(prox_fn.lin_ops) == 2
     assert isinstance(prox_fn.lin_ops[0], FFTConv)
     assert isinstance(prox_fn.lin_ops[-1], MultiplyAdd)
+
+
+def test_crop_only() -> None:
+    dims = [5, 5]
+    problem = parse(
+        "sum_squares(u[1:3, 2:5] - b)",
+        variable_dims=dims,
+        const_buffers={"b": np.ones(dims)},
+    )
+
+    assert len(problem.psi_fns) == 1
+
+    prox_fn = problem.psi_fns[0]
+    assert len(prox_fn.lin_ops) == 2
+    assert isinstance(prox_fn.lin_ops[1], MultiplyAdd)
+    assert isinstance(prox_fn.lin_ops[0], Crop)
+
+    crop_op = prox_fn.lin_ops[0]
+    assert crop_op.left == 1
+    assert crop_op.width == 2
+    assert crop_op.top == 2
+    assert crop_op.height == 3
+
+
+def test_masked_convolution() -> None:
+    dims = [5, 5]
+    problem = parse(
+        "sum_squares(conv(k, u)[1:3, 2:5] - b)",
+        variable_dims=dims,
+        const_buffers={"k": np.ones((3, 3)), "b": np.ones(dims)},
+    )
+
+    assert len(problem.psi_fns) == 1
+
+    prox_fn = problem.psi_fns[0]
+    assert len(prox_fn.lin_ops) == 3
+    assert isinstance(prox_fn.lin_ops[2], MultiplyAdd)
+    assert isinstance(prox_fn.lin_ops[1], Crop)
+    assert isinstance(prox_fn.lin_ops[0], FFTConv)
+
+    crop_op = prox_fn.lin_ops[1]
+    assert crop_op.left == 1
+    assert crop_op.width == 2
+    assert crop_op.top == 2
+    assert crop_op.height == 3

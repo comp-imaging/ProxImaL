@@ -77,28 +77,36 @@ class ProxImaLDSLVisitor(NodeVisitor):
         return visited_children[0]
 
     def visit_ScaleOffset(self, _, visited_children) -> list[LinOp]:
-        scale_op, lin_op, offset_op = visited_children
+        scale_op, lin_op_option, crop_option, offset_option = visited_children
 
-        scale = 1.0
+        # Decode scale value with default value 1.0
+        scale: float = 1.0
         if isinstance(scale_op, list):
             scale = scale_op[0][0]
 
+        # If crop operation exists, decode it.
+        crop_op: Crop | None = crop_option[0] if isinstance(crop_option, list) else None
+
+        # Decode offset value with default value 0.0
         offset: float | np.ndarray = 0.0
-        if isinstance(offset_op, list):
-            assert isinstance(offset_op[0][1], (float, np.ndarray))
-            offset = offset_op[0][1]
+        if isinstance(offset_option, list):
+            assert isinstance(offset_option[0][1], (float, np.ndarray))
+            offset = offset_option[0][1]
 
         has_scaleoffset: bool = scale != 1.0 or isinstance(offset, np.ndarray) or offset != 0.0
-        new_linop = MultiplyAdd(scale=scale, offset=offset)
-        assert isinstance(lin_op, list)
-        if isinstance(lin_op[0], Variable):
-            return [new_linop] if has_scaleoffset else []
+        scaleoffset_op = MultiplyAdd(scale=scale, offset=offset)
 
-        assert isinstance(lin_op[0][0], LinOp)
+        assert isinstance(lin_op_option, list)
+        lin_op = lin_op_option[0]
+
+        lin_ops: list[LinOp] = [] if isinstance(lin_op, Variable) else lin_op
+
+        if crop_op is not None:
+            lin_ops.append(crop_op)
         if has_scaleoffset:
-            lin_op[0].append(new_linop)
+            lin_ops.append(scaleoffset_op)
 
-        return lin_op[0]
+        return lin_ops
 
     def visit_ConstBuffer(self, node, _) -> np.ndarray:
         name = node.text
@@ -119,6 +127,16 @@ class ProxImaLDSLVisitor(NodeVisitor):
 
         return expression
 
+    def visit_CropOp(self, _, visited_children) -> LinOp:
+        _, x_range, _, y_range, _ = visited_children
+
+        return Crop(
+            left=x_range.start,
+            width=x_range.stop - x_range.start,
+            top=y_range.start,
+            height=y_range.stop - y_range.start,
+        )
+
     def visit_LinOp(self, _, visited_children) -> list[LinOp]:
         name, _, expression, _ = visited_children
 
@@ -130,6 +148,12 @@ class ProxImaLDSLVisitor(NodeVisitor):
         expression.append(lin_op)
 
         return expression
+
+    def visit_Slice(self, _, visited_children) -> slice:
+        start, _, stop = visited_children
+        if start > stop:
+            raise ValueError(f"Crop operator: expected start <= stop, found {start:d} < {stop:d}")
+        return slice(start, stop)
 
     def visit_Offset(self, _, visited_children) -> float:
         # TODO Support constant buffer
@@ -150,6 +174,9 @@ class ProxImaLDSLVisitor(NodeVisitor):
     def visit_NUMBER(self, node, _) -> float:
         return float(node.text)
 
+    def visit_INTEGER(self, node, _) -> int:
+        return int(node.text)
+
     def generic_visit(self, node, visited_children):
         """The generic visit method."""
         return visited_children or node
@@ -166,21 +193,26 @@ def parse(
     Problem         = ScaledProxFn ("+" ScaledProxFn)*
     ScaledProxFn    = (NUMBER FACTOR_OPERATOR)* ProxFn
     ProxFn          = ProxFnKey LPar ScaleOffset RPar
-    ScaleOffset     = (NUMBER FACTOR_OPERATOR)* (ConvOp / LinOp / Variable) (TERM_OPERATOR Offset)?
-    ConvOp          = "conv(" ConstBuffer "," ScaleOffset RPar
+    ScaleOffset     = (NUMBER FACTOR_OPERATOR)* (ConvOp / LinOp / Variable) CropOp? (TERM_OPERATOR Offset)?
+    ConvOp          = "conv(" ConstBuffer Comma ScaleOffset RPar
+    CropOp          = "[" Slice Comma Slice "]"
     LinOp           = LinOpKey LPar ScaleOffset RPar
     Offset          = NUMBER / ConstBuffer
+
+    Slice           = INTEGER ":" INTEGER
 
     TERM_OPERATOR   = ~"[-+]"
     FACTOR_OPERATOR = "*"
     NUMBER          = SCIENTIFIC / DECIMAL
     DECIMAL         = ~r"\d+\.?\d*"
     SCIENTIFIC      = ~r"\d+\.\d+e-?\d+"
+    INTEGER         = ~r"[1-9]\d*" / "0"
 
     ProxFnKey       = "sum_squares" / "norm1" / "group_norm" / "nonneg"
-    LinOpKey        = "grad" / "crop"
+    LinOpKey        = "grad"
     LPar            = "("
     RPar            = ")"
+    Comma           = ","
     """
         f"""ConstBuffer     = "{'"/"'.join([key for key in const_buffers])}"
 """

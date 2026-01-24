@@ -92,7 +92,7 @@ class WeightedLeastSquares(ProxFnBase):
 
     def toLatex(self) -> str:
         alpha, beta, gamma, b = self.formatParameters()
-        return rf"{alpha} \Vert {beta} w^T v {b} \Vert_2^2 {gamma}"
+        return rf"{alpha} \Vert {beta} \mathtt{{Diag}}(w) v {b} \Vert_2^2 {gamma}"
 
 
 @dataclass
