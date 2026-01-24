@@ -4,22 +4,22 @@ from proximal.experimental.ir.prox_fns import LeastSquaresFFT, SumSquares, Weigh
 from proximal.experimental.models import ProxFn
 
 
-def absorbFFTConv(prox_fn: SumSquares) -> SumSquares | LeastSquaresFFT:
+def absorbFFTConv(prox_fn: SumSquares) -> tuple[bool, SumSquares | LeastSquaresFFT]:
     is_lin_ops_empty: bool = len(prox_fn.lin_ops) == 0
     if is_lin_ops_empty:
         # Nothing to absorb
-        return prox_fn
+        return False, prox_fn
 
     lin_op = prox_fn.lin_ops[-1]
     has_fft_conv: bool = isinstance(lin_op, FFTConv)
     if not has_fft_conv:
         # Only FFTConv is supported. Skipping...
-        return prox_fn
+        return False, prox_fn
 
     # A trick to force the static analyzer to recognize the FFTConv type
     assert isinstance(lin_op, FFTConv)
 
-    return LeastSquaresFFT(
+    return True, LeastSquaresFFT(
         alpha=prox_fn.alpha,
         gamma=prox_fn.gamma,
         # todo: pre-compute FFT
@@ -29,11 +29,11 @@ def absorbFFTConv(prox_fn: SumSquares) -> SumSquares | LeastSquaresFFT:
     )
 
 
-def absorbMultiplyAdd(prox_fn: ProxFn) -> ProxFn:
+def absorbMultiplyAdd(prox_fn: ProxFn) -> tuple[bool, ProxFn]:
     """Absorb (a * x + b) into the proximal function."""
 
     if len(prox_fn.lin_ops) == 0 or not isinstance(prox_fn.lin_ops[-1], MultiplyAdd):
-        return prox_fn
+        return False, prox_fn
 
     scale = prox_fn.lin_ops[-1].scale
     offset = prox_fn.lin_ops[-1].offset
@@ -41,14 +41,14 @@ def absorbMultiplyAdd(prox_fn: ProxFn) -> ProxFn:
     prox_fn.b = prox_fn.b - prox_fn.beta * offset
     prox_fn.lin_ops = prox_fn.lin_ops[:-1]
 
-    return prox_fn
+    return True, prox_fn
 
 
-def absorbCrop(prox_fn: SumSquares) -> ProxFn:
+def absorbCrop(prox_fn: SumSquares) -> tuple[bool, ProxFn]:
     """sum_square(Crop(u)) -> WeighteddLeastSquare(u)."""
 
     if len(prox_fn.lin_ops) == 0 or not isinstance(prox_fn.lin_ops[-1], Crop):
-        return prox_fn
+        return False, prox_fn
 
     # Generate the values of the binary mask representing the crop
     crop_op: Crop = prox_fn.lin_ops[-1]
@@ -56,7 +56,7 @@ def absorbCrop(prox_fn: SumSquares) -> ProxFn:
     def mask(x: int, y: int) -> float:
         return (crop_op.left <= x < crop_op.left + crop_op.width) and (crop_op.top <= x < crop_op.top + crop_op.height)
 
-    return WeightedLeastSquares(
+    return True, WeightedLeastSquares(
         lin_ops=prox_fn.lin_ops[:-1],
         alpha=prox_fn.alpha,
         beta=prox_fn.beta,
@@ -69,13 +69,20 @@ def absorbCrop(prox_fn: SumSquares) -> ProxFn:
 def absorb(problem: Problem) -> Problem:
     assert problem.omega_fn is None, "Problem is already split, why?"
 
-    for i, psi_fn in enumerate(problem.psi_fns):
-        problem.psi_fns[i] = absorbMultiplyAdd(psi_fn)
+    for i in range(len(problem.psi_fns)):
+        should_retry = True
+        while should_retry:
+            psi_fn = problem.psi_fns[i]
+            should_retry, psi_fn = absorbMultiplyAdd(psi_fn)
 
-        if isinstance(psi_fn, SumSquares):
-            problem.psi_fns[i] = absorbFFTConv(psi_fn)
+            if isinstance(psi_fn, SumSquares):
+                is_success, psi_fn = absorbFFTConv(psi_fn)
+                should_retry = should_retry or is_success
 
-        if isinstance(psi_fn, SumSquares):
-            problem.psi_fns[i] = absorbCrop(psi_fn)
+            if isinstance(psi_fn, SumSquares):
+                is_success, psi_fn = absorbCrop(psi_fn)
+                should_retry = should_retry or is_success
+
+            problem.psi_fns[i] = psi_fn
 
     return problem
