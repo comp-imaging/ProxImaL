@@ -28,14 +28,18 @@ Advanced examples
 
 .. include:: deconv-sv-psf.rst
 
+.. include:: fourier-ptychography.rst
+
 .. _applications:
 
 Real-world applications
 -------------------------
 
-* Phychographical phase retrieval
+* Ptychographical phase retrieval for remote sensing;
 
-* Bayer filter de-interleaving of raw images
+* Fourier ptychographic microscopy (FPM) for stain-free biological cell culture;
+
+* Bayer filter de-interleaving of raw pixels from CMOS image sensors;
 
 .. include:: molecular-pulse-calling.rst
 
