@@ -45,7 +45,8 @@ Textual representation in ProxImaL:
             ptychography(u) * sqrt(1e3),
             simulated_lowres * 1e3,
         ) +
-        sum_squares(u - 1.0) * 0.07,
+        sum_squares(u - 1.0) * 0.07 +
+        nonneg(u),
     )
 
 Example code: https://github.com/comp-imaging/ProxImaL/blob/master/proximal/examples/fourier-ptychography.py

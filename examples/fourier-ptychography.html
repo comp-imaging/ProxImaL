@@ -295,7 +295,8 @@ b_j \right\Vert_\mathrm{Poisson} +
         <span class="n">ptychography</span><span class="p">(</span><span class="n">u</span><span class="p">)</span> <span class="o">*</span> <span class="n">sqrt</span><span class="p">(</span><span class="mf">1e3</span><span class="p">),</span>
         <span class="n">simulated_lowres</span> <span class="o">*</span> <span class="mf">1e3</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">+</span>
-    <span class="n">sum_squares</span><span class="p">(</span><span class="n">u</span> <span class="o">-</span> <span class="mf">1.0</span><span class="p">)</span> <span class="o">*</span> <span class="mf">0.07</span><span class="p">,</span>
+    <span class="n">sum_squares</span><span class="p">(</span><span class="n">u</span> <span class="o">-</span> <span class="mf">1.0</span><span class="p">)</span> <span class="o">*</span> <span class="mf">0.07</span> <span class="o">+</span>
+    <span class="n">nonneg</span><span class="p">(</span><span class="n">u</span><span class="p">),</span>
 <span class="p">)</span>
 </pre></div>
 </div>
