@@ -26,18 +26,25 @@ Signal distortion model:
     \def\Fourier{\mathbf{F}}
     \def\Pupil{\mathbf{P}}
     \def\Shift{\mathbf{S}}
+    \def\Bayer{\mathbf{M}_\mathrm{Bayer,G}}
+    \def\Nonneg{\mathcal{I}_+}
     \hat u = \arg \min_{u \in \mathbb{C}}
     \sum_{j=1}^K \left\Vert
-    | \Fourier^T \Pupil \Shift_j \Fourier u |^2 ,
+    \Bayer | \Fourier^T \Pupil \Shift_j \Fourier u |^2 ,
     b_j \right\Vert_\mathrm{Poisson} +
-    0.07 \Vert u - (1 + 0\mathrm{j}) \Vert_2^2.
+    0.07 \Vert u - (1 + 0\mathrm{j}) \Vert_2^2 +
+    \Nonneg [ \mathrm{Im}(u) ].
 
 Textual representation in ProxImaL:
 
 .. code-block:: python
 
     problem = Problem(
-        poisson_phase_norm(ptychography(u) * sqrt(1e3), simulated_lowres * 1e3) +
+        weighted_poisson_phase_norm(
+            bayer_mask_green_channel,
+            ptychography(u) * sqrt(1e3),
+            simulated_lowres * 1e3,
+        ) +
         sum_squares(u - 1.0) * 0.07,
     )
 

@@ -279,15 +279,22 @@ Eyes)” Scientific Reports 9, 11114 (2019).
 \[\def\Fourier{\mathbf{F}}
 \def\Pupil{\mathbf{P}}
 \def\Shift{\mathbf{S}}
+\def\Bayer{\mathbf{M}_\mathrm{Bayer,G}}
+\def\Nonneg{\mathcal{I}_+}
 \hat u = \arg \min_{u \in \mathbb{C}}
 \sum_{j=1}^K \left\Vert
-| \Fourier^T \Pupil \Shift_j \Fourier u |^2 ,
+\Bayer | \Fourier^T \Pupil \Shift_j \Fourier u |^2 ,
 b_j \right\Vert_\mathrm{Poisson} +
-0.07 \Vert u - (1 + 0\mathrm{j}) \Vert_2^2.\]</div>
+0.07 \Vert u - (1 + 0\mathrm{j}) \Vert_2^2 +
+\Nonneg [ \mathrm{Im}(u) ].\]</div>
 </div>
 <p>Textual representation in ProxImaL:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">problem</span> <span class="o">=</span> <span class="n">Problem</span><span class="p">(</span>
-    <span class="n">poisson_phase_norm</span><span class="p">(</span><span class="n">ptychography</span><span class="p">(</span><span class="n">u</span><span class="p">)</span> <span class="o">*</span> <span class="n">sqrt</span><span class="p">(</span><span class="mf">1e3</span><span class="p">),</span> <span class="n">simulated_lowres</span> <span class="o">*</span> <span class="mf">1e3</span><span class="p">)</span> <span class="o">+</span>
+    <span class="n">weighted_poisson_phase_norm</span><span class="p">(</span>
+        <span class="n">bayer_mask_green_channel</span><span class="p">,</span>
+        <span class="n">ptychography</span><span class="p">(</span><span class="n">u</span><span class="p">)</span> <span class="o">*</span> <span class="n">sqrt</span><span class="p">(</span><span class="mf">1e3</span><span class="p">),</span>
+        <span class="n">simulated_lowres</span> <span class="o">*</span> <span class="mf">1e3</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">+</span>
     <span class="n">sum_squares</span><span class="p">(</span><span class="n">u</span> <span class="o">-</span> <span class="mf">1.0</span><span class="p">)</span> <span class="o">*</span> <span class="mf">0.07</span><span class="p">,</span>
 <span class="p">)</span>
 </pre></div>
