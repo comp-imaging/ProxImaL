@@ -23,16 +23,13 @@ def getDctOp(n_samples, n_modes):
 
     def fwd(coeff, baseline):
         assert coeff.size < baseline.size
-        zero_padded = np.zeros((n_samples * 3,), dtype=np.float32)
-        zero_padded[: coeff.size] = coeff
-        baseline[:] = idct(zero_padded, norm="ortho")[n_samples : n_samples * 2]
+        baseline[:] = idct(coeff, n=n_samples * 2, norm="ortho")[:n_samples]
 
     def adj(baseline, coeff):
         assert coeff.size < baseline.size
-        mirror_image = np.empty((n_samples * 3,), dtype=np.float32)
-        mirror_image[:n_samples] = baseline[::-1]
-        mirror_image[n_samples : n_samples * 2] = baseline
-        mirror_image[n_samples * 2 :] = baseline[::-1]
+        mirror_image = np.empty((n_samples * 2,), dtype=np.float32)
+        mirror_image[:n_samples] = baseline
+        mirror_image[n_samples:] = baseline[::-1]
 
         coeff[:] = dct(mirror_image, norm="ortho")[: coeff.size]
 
@@ -98,4 +95,4 @@ if __name__ == "__main__":
 
     plt.xlabel("time / second")
     plt.tight_layout()
-    plt.savefig('NIRS-results.png')
+    plt.savefig("NIRS-results.png")
