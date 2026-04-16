@@ -43,4 +43,6 @@ Real-world applications
 
 .. include:: molecular-pulse-calling.rst
 
+.. include:: near-infrared-spectroscopic-pulse-calling.rst
+
 .. include:: pixel-sr.rst
