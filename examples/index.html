@@ -480,6 +480,33 @@ reflecting a trade-off inherent to this non-streaming formulation.</p>
 <p>Expected output:</p>
 <img alt="../_images/qsi-pulses.png" src="../_images/qsi-pulses.png" />
 </section>
+<section id="spike-baseline-signal-separation-of-time-lapse-signals">
+<h3>Spike-baseline signal separation of time-lapse signals<a class="headerlink" href="#spike-baseline-signal-separation-of-time-lapse-signals" title="Link to this heading">¶</a></h3>
+<p><strong>Reference:</strong> I. W. Selesnick, H. L. Graber, D. S. Pfeil and R. L. Barbour,
+“Simultaneous Low-Pass Filtering and Total Variation Denoising,” in IEEE
+Transactions on Signal Processing, vol. 62, no. 5, pp. 1109-1124, March1, 2014,
+<a class="reference external" href="https://doi.org/10.1109/TSP.2014.2298836">https://doi.org/10.1109/TSP.2014.2298836</a></p>
+<p>Signal distortion model:</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[\min_{u,v} \| \mathrm{DCT}^{-1}(v) - u - b \|_2^2 +
+ 0.16 \Vert \nabla u \Vert_1
+ + 0.04 \Vert u \Vert_1
+ + \mathtt{nonneg}(u)\]</div>
+</div>
+<p>Textual representation in ProxImaL:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">prob</span> <span class="o">=</span> <span class="n">Problem</span><span class="p">([</span>
+        <span class="n">sum_squares</span><span class="p">(</span><span class="n">idct_op</span><span class="p">(</span><span class="n">baseline</span><span class="p">)</span> <span class="o">-</span> <span class="n">spikes</span> <span class="o">-</span> <span class="n">measurement</span><span class="p">),</span>
+        <span class="mf">0.16</span> <span class="o">*</span> <span class="n">norm1</span><span class="p">(</span><span class="n">grad</span><span class="p">(</span><span class="n">spikes</span><span class="p">)),</span>
+        <span class="mf">0.04</span> <span class="o">*</span> <span class="n">norm1</span><span class="p">(</span><span class="n">spikes</span><span class="p">),</span>
+        <span class="n">nonneg</span><span class="p">(</span><span class="n">u</span><span class="p">),</span>
+<span class="p">])</span>
+</pre></div>
+</div>
+<p>Example code: <a class="reference external" href="https://github.com/comp-imaging/ProxImaL/blob/master/proximal/examples/near-infrared-spectroscopic-imaging.py">https://github.com/comp-imaging/ProxImaL/blob/master/proximal/examples/near-infrared-spectroscopic-imaging.py</a></p>
+<p>Expected output:</p>
+<img alt="../_images/NIRS-results.png" src="../_images/NIRS-results.png" />
+</section>
 <section id="pixel-super-resolution-of-oil-emulsion-droplets-under-high-speed-camera">
 <h3>Pixel super-resolution of oil emulsion droplets under high-speed camera<a class="headerlink" href="#pixel-super-resolution-of-oil-emulsion-droplets-under-high-speed-camera" title="Link to this heading">¶</a></h3>
 <p><strong>References:</strong> A.C.S. Chan, H.C. Ng, S.C.V. Bogaraju, H.K.H. So, E.Y. Lam, and
@@ -624,6 +651,7 @@ linear velocity of 0.3 meter/second and a droplet generation rate of 5,800 Dropl
 </li>
 <li><a class="reference internal" href="#real-world-applications">Real-world applications</a><ul>
 <li><a class="reference internal" href="#pulse-calling-of-single-molecule-events">Pulse calling of single-molecule events</a></li>
+<li><a class="reference internal" href="#spike-baseline-signal-separation-of-time-lapse-signals">Spike-baseline signal separation of time-lapse signals</a></li>
 <li><a class="reference internal" href="#pixel-super-resolution-of-oil-emulsion-droplets-under-high-speed-camera">Pixel super-resolution of oil emulsion droplets under high-speed camera</a></li>
 </ul>
 </li>
